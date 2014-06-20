@@ -11,6 +11,7 @@
 #include <iostream>
 #include <string>
 #include <ctime>
+#include <stdlib.h>
 
 // #include "grid_cell.h"
 #include "Grid_Creator.h"
