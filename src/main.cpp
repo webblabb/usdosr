@@ -40,13 +40,14 @@ int main(int argc, char* argv[])
 			  << "ms." << std::endl;
 			  
 	std::clock_t grid_start = std::clock();	  
- 	G.initiateGrid(200,10); // max 200 farms in cell, kernel radius 10
+ 	G.initiateGrid(200,40); // max 200 farms in cell, kernel radius 40
 	std::clock_t grid_end = std::clock();
 	std::cout << "CPU time for generating grid: "
 			  << 1000.0 * (grid_end - grid_start) / CLOCKS_PER_SEC
 			  << "ms." << std::endl;
-	//G.printCells(); // cellList.txt: columns are id, x, y, s, number of farms
+	G.printCells(); // cellList.txt: columns are id, x, y, s, number of farms
 	G.makeCellRefs();
+	
 	
 return 0;
 

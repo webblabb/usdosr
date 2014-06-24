@@ -421,13 +421,13 @@ double Grid_Creator::shortestCellDist(grid_cell* cell1, grid_cell* cell2)
 
 return cellDist;	
 }
-// 
+
 // double Grid_Creator::gridKernel(double dist)
 // // retrieves kernel value based on distance
 // {
 // return(dist);
 // }
-// 
+
 void Grid_Creator::makeCellRefs()
 // output a map (think vector of vectors) of distances between all pairs of cells
 {
@@ -441,6 +441,6 @@ void Grid_Creator::makeCellRefs()
 			// distance between c1, c2
 			}
 		}
-	if (verbose){std::cout << "Distance between 0 and 255: " << 		cellDists[int(allCells.front()->get_id())][int(allCells.back()->get_id())] 
-	<< std::endl; 
+	if (verbose){std::cout << "Distance between first and last: " << 		cellDists[int(allCells.front()->get_id())][int(allCells.back()->get_id())] 
+	<< std::endl; }
 }
