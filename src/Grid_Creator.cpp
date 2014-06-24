@@ -327,89 +327,100 @@ void Grid_Creator::initiateGrid(const unsigned int maxFarms, const int kernelRad
 
 void Grid_Creator::printCells() const
 {
-	std::string toPrint;
-	toPrint.reserve(allCells.size() * 50);
+	std::string tabdelim;
+	tabdelim.reserve(allCells.size() * 50);
 	for(auto it = allCells.begin(); it != allCells.end(); it++)
 	{
-		toPrint += (*it)->to_string();
+		tabdelim += (*it)->to_string();
 	}
 
 	std::ofstream f("cellList.txt");
 	if(f.is_open())
 	{
-		f << toPrint;
+		f << tabdelim;
 		f.close();
 	}
 }
 
-// double Grid_Creator::shortestCellDist(grid_cell* cell1, grid_cell* cell2)
-// // returns shortest distance between cell1 and cell2
-// {
-// 	double cell1_x, cell1_y, cell2_x, cell2_y; // will use these points to calc distance
-// 
-// 	double cell1_South = cell1->get_y(); // lower boundary of cell1
-// 	double cell1_North = cell1->get_y()+get_s(); // upper boundary of cell1
-// 	double cell1_West = cell1->get_x(); // leftmost boundary of cell1
-// 	double cell1_East = cell1->get_x()+get_s(); // rightmost boundary of cell1
-// 	
-// 	double cell2_South = cell2->get_y(); // lower boundary of cell2
-// 	double cell2_North = cell2->get_y()+get_s(); // upper boundary of cell2
-// 	double cell2_West = cell2->get_x(); // leftmost boundary of cell2
-// 	double cell2_East = cell2->get_x()+get_s(); // rightmost boundary of cell2
-// 	
-// 	// In comparing cell positions, due to nestedness of sub-cells, cell 1 could be:
-// 	// Horizontally: W of, E of, or directly above/below all or part of cell2.
-// 	// Vertically: N of, S of, or directly beside all or part of cell2.
-// 	
-// 	// Determine horizontal relationship and set x values accordingly:
-// 	if (cell1_East <= cell2_West) // cell1 west of cell2
-// 		{
-// 		cell1_x = cell1_East;
-// 		cell2_x = cell2_West;
-// 		}
-// 	// or cell1 is east of cell2
-// 	else if (cell1_West >= cell2_East)
-// 		{
-// 		cell1_x = cell1_West;
-// 		cell2_x = cell1_East;
-// 		}
-// 	// or cell1 is directly atop all or part of cell2
-// 	else
-// 		{
-// 		cell1_x = 0;
-// 		cell2_x = 0;
-// 		// only use distance between y values
-// 		}
-// 	
-// 	// Determine vertical relationship and set y values accordingly:
-// 	if (cell1_South >= cell2_North) // cell1 north of cell2
-// 		{
-// 		cell1_y = cell1_South;
-// 		cell2_y = cell2_North;
-// 		}
-// 	// or cell1 is below cell2
-// 	else if (cell1_North <= cell2_South)
-// 		{
-// 		cell1_y = cell1_North;
-// 		cell2_y = cell2_South;
-// 		}
-// 	// or cell1 is directly beside cell2
-// 	else
-// 		{
-// 		cell1_y = 0;
-// 		cell2_y = 0;
-// 		// only use distance between x values
-// 		}	
-// 	
-// 	double xDiff = cell1_x-cell2_x;
-// 	double yDiff = cell1_y-cell2_y;
-// 	double cellDist = sqrt(xDiff*xDiff + yDiff*yDiff);
-// 	
-// 	if (verbose){cout << cellDist << "between cells" << cell1->get_id() 
-// 					  << "and" << cell2->get_id();}
-// 
-// return cellDist;	
-// }
+double Grid_Creator::shortestCellDist(grid_cell* cell1, grid_cell* cell2)
+// returns shortest distance between cell1 and cell2
+{
+	double cell1_x, cell1_y, cell2_x, cell2_y; // will use these points to calc distance
+
+// 	double cell1_id = cell1->get_id();
+// 	double cell2_id = cell2->get_id();
+
+	double cell1_South = cell1->get_y(); // lower boundary of cell1
+	double cell1_North = cell1->get_y()+cell1->get_s(); // upper boundary of cell1
+	double cell1_West = cell1->get_x(); // leftmost boundary of cell1
+	double cell1_East = cell1->get_x()+cell1->get_s(); // rightmost boundary of cell1
+	
+	double cell2_South = cell2->get_y(); // lower boundary of cell2
+	double cell2_North = cell2->get_y()+cell2->get_s(); // upper boundary of cell2
+	double cell2_West = cell2->get_x(); // leftmost boundary of cell2
+	double cell2_East = cell2->get_x()+cell2->get_s(); // rightmost boundary of cell2
+	
+	// In comparing cell positions, due to nestedness of sub-cells, cell 1 could be:
+	// Horizontally: W of, E of, or directly above/below all or part of cell2.
+	// Vertically: N of, S of, or directly beside all or part of cell2.
+	
+	// Determine horizontal relationship and set x values accordingly:
+// 	if(verbose){std::cout << "Cell " << cell1_id << " is ";}
+	
+	if (cell1_East <= cell2_West) // cell1 west of cell2
+		{
+// 		if(verbose){std::cout << "west of and ";}
+		cell1_x = cell1_East;
+		cell2_x = cell2_West;
+		}
+	// or cell1 is east of cell2
+	else if (cell1_West >= cell2_East)
+		{
+// 		if(verbose){std::cout << "east of and ";}
+		cell1_x = cell1_West;
+		cell2_x = cell1_East;
+		}
+	// or cell1 is directly atop all or part of cell2
+	else // if ((cell1_East > cell2_West) && (cell1_West < cell2_East))
+		{
+// 		if(verbose){std::cout << "vertically aligned with and ";}
+		cell1_x = 0;
+		cell2_x = 0;
+		// only use distance between y values
+		}
+	
+	// Determine vertical relationship and set y values accordingly:
+	if (cell1_South >= cell2_North) // cell1 north of cell2
+		{
+// 		if(verbose){std::cout << "north of cell "<< cell2_id << std::endl;}
+		cell1_y = cell1_South;
+		cell2_y = cell2_North;
+		}
+	// or cell1 is below cell2
+	else if (cell1_North <= cell2_South)
+		{
+// 		if(verbose){std::cout << "south of cell "<< cell2_id << std::endl;}
+		cell1_y = cell1_North;
+		cell2_y = cell2_South;
+		}
+	// or cell1 is directly beside cell2
+	else // if ((cell1_South < cell2_North) && (cell1_North > cell2_South))
+		{
+// 		if(verbose){std::cout << "horizontally aligned with cell "<< cell2_id << std::endl;}
+		cell1_y = 0;
+		cell2_y = 0;
+		// only use distance between x values
+		}	
+	
+	double xDiff = cell1_x-cell2_x;
+	double yDiff = cell1_y-cell2_y;
+	double cellDist = sqrt(xDiff*xDiff + yDiff*yDiff);
+	
+// 	if (verbose){std::cout << cellDist << " between cells " << cell1->get_id() 
+// 					  << " and " << cell2->get_id() << std::endl;}
+
+return cellDist;	
+}
 // 
 // double Grid_Creator::gridKernel(double dist)
 // // retrieves kernel value based on distance
@@ -417,23 +428,19 @@ void Grid_Creator::printCells() const
 // return(dist);
 // }
 // 
-// void Grid_Creator::makeCellRefs()
-// // output a matrix (actually vector of vectors) of distances between all pairs of cells
-// // maybe use unordered map?
-// {
-// 	numCells = allCells.size();
-// 	for (auto c1:allCells)
-// 		{
-// 		int whichCell1 = int(c1->get_id());
-// 		std::vector <double> tempDists(numCells,0);
-// 		std::vector <double> tempKernels(numCells,0);
-// 		for (auto c2:allCells)
-// 			{
-// 			int whichCell2 = int(c2->get_id());
-// 			tempDists[whichCell2] = shortestCellDist(c1, c2); // distance between c1, c2
-// 			tempKernels[whichCell2] = gridKernel(tempDists[whichCell2]); // kernel value
-// 			}
-// 		cellDists[whichCell1] = tempDists;
-// 		gridCellKernel[whichCell1] = tempKernels;
-// 		}
-// }
+void Grid_Creator::makeCellRefs()
+// output a map (think vector of vectors) of distances between all pairs of cells
+{
+	for (auto c1:allCells)
+		{		
+		double whichCell1 = c1->get_id();
+		for (auto c2:allCells)
+			{
+			double whichCell2 = c2->get_id();
+			cellDists[whichCell1][whichCell2] = shortestCellDist(c1, c2); 
+			// distance between c1, c2
+			}
+		}
+	if (verbose){std::cout << "Distance between 0 and 255: " << 		cellDists[int(allCells.front()->get_id())][int(allCells.back()->get_id())] 
+	<< std::endl; 
+}

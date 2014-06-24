@@ -19,6 +19,13 @@ drawCell <- function(cell) { # cell is row from cells
 pToPlot = seq(1,nrow(premises),by=100)
 	
 # plot premises
-plot(premises[pToPlot,"x"], premises[pToPlot,"y"], bty="n", pch="*")
+plot(premises[pToPlot,"x"], premises[pToPlot,"y"], bty="n", pch="*", col="gray")
 # draw cells on top
 apply(cells,1,drawCell)
+# label cells by id number
+for (c in 1:nrow(cells)){
+	xpt = cells[c,"x"]+cells[c,"s"]/2
+	ypt = cells[c,"y"]+cells[c,"s"]/2
+	show = paste(cells[c,"ID"])
+	text(xpt,ypt,show)
+}

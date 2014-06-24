@@ -33,7 +33,7 @@ int main(int argc, char* argv[])
 	
 	// (timed) generate map of farms and xylimits
 	std::clock_t loading_start = std::clock();
-	Grid_Creator G(pfile,1);
+	Grid_Creator G(pfile,1); // 1 turns on verbose option
 	std::clock_t loading_end = std::clock();
 	std::cout << "CPU time for loading data: "
 			  << 1000.0 * (loading_end - loading_start) / CLOCKS_PER_SEC
@@ -45,7 +45,8 @@ int main(int argc, char* argv[])
 	std::cout << "CPU time for generating grid: "
 			  << 1000.0 * (grid_end - grid_start) / CLOCKS_PER_SEC
 			  << "ms." << std::endl;
-	G.printCells(); // cellList.txt: columns are id, x, y, s, number of farms
+	//G.printCells(); // cellList.txt: columns are id, x, y, s, number of farms
+	G.makeCellRefs();
 	
 return 0;
 

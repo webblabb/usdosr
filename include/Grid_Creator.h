@@ -22,8 +22,9 @@ class Grid_Creator
  		std::vector<Farm*> farmList; // vector of pointers to all farms (shortened as grid is created)
 		std::vector<double> xylimits; // [0]x min, [1]x max, [2]y min, [3]y max
 		bool verbose; // if true, outputs processing details
-// 		std::vector <std::vector <double> cellDists; // distances between cell pairs
-// 		std::vector <std::vector <double> gridCellKernel; // kernel values for cellDists
+		
+		std::unordered_map<double, std::unordered_map<double, double>> cellDists; // distances between cell pairs
+// 		std::unordered_map<double, double> gridCellKernel; // kernel values between cell pairs
 		
 		void setVerbose(bool); // inlined
 		
@@ -36,15 +37,15 @@ class Grid_Creator
 		void splitCell(std::vector<double> cellSpecs, std::stack< std::vector<double> >& queue); // replaces parent cell with subdivided offspring quadrants
 // 
 // 		// functions for calculating reference distance/kernel matrices from grid
-// 		double shortestCellDist(grid_cell* cell1, grid_cell* cell2); // calculates shortest distance between two cells
+		double shortestCellDist(grid_cell* cell1, grid_cell* cell2); // calculates shortest distance between two cells
 // 		double gridKernel(double dist); // returns kernel value for a given distance
-// 		void makeCellRefs(); // make reference matrices for distance and kernel
 		
 	public:
 		Grid_Creator(std::string &fname, bool v);
 		~Grid_Creator();
 		void initiateGrid(const unsigned int, const int); // main function that splits/commits cells
 		void printCells() const;
+		void makeCellRefs(); // make reference matrices for distance and kernel
 
 };
 
