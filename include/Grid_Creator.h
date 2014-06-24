@@ -44,6 +44,8 @@ class Grid_Creator
 		Grid_Creator(std::string &fname, bool v);
 		~Grid_Creator();
 		void initiateGrid(const unsigned int, const int); // main function that splits/commits cells
+		void printCells() const;
+
 };
 
 inline bool sortByX(const Farm* farm1, const Farm* farm2)

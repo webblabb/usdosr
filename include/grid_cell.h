@@ -38,6 +38,8 @@ class grid_cell
         std::vector<grid_cell::Point*> get_corners() const; // inlined
         double get_maxSus() const; //inlined
         double get_maxInf() const; //inlined
+        
+        std::string to_string() const;
 
 };
 

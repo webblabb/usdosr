@@ -21,3 +21,5 @@
 *.app
 
 a
+
+.Rapp.history

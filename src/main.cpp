@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
 	std::cout << "CPU time for generating grid: "
 			  << 1000.0 * (grid_end - grid_start) / CLOCKS_PER_SEC
 			  << "ms." << std::endl;
-
+	G.printCells(); // cellList.txt: columns are id, x, y, s, number of farms
 	
 return 0;
 

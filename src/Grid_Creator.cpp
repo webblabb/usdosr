@@ -289,6 +289,7 @@ void Grid_Creator::initiateGrid(const unsigned int maxFarms, const int kernelRad
         else if (farmsInCell.size() > 0 && farmsInCell.size() < maxFarms)
         // farm density is below maximum
             {
+            	cellSpecs[0] = cellCount;
                 commitCell(cellSpecs,farmsInCell);
                 cellCount = cellCount+1;
                 if (verbose){std::cout << "Cell committed: #" << cellCount;}
@@ -306,6 +307,7 @@ void Grid_Creator::initiateGrid(const unsigned int maxFarms, const int kernelRad
     else if ((cellSpecs[3] < kernelRadius*2) // side < kernel diameter
              && (farmsInCell.size() > 0)) // and there are farms in cell
         {
+        cellSpecs[0] = cellCount;
         commitCell(cellSpecs,farmsInCell);
         cellCount = cellCount+1;
         if (verbose){std::cout << "Side smaller than kernel. Cell committed: #" << cellCount;}
@@ -323,6 +325,22 @@ void Grid_Creator::initiateGrid(const unsigned int maxFarms, const int kernelRad
 
 }
 
+void Grid_Creator::printCells() const
+{
+	std::string toPrint;
+	toPrint.reserve(allCells.size() * 50);
+	for(auto it = allCells.begin(); it != allCells.end(); it++)
+	{
+		toPrint += (*it)->to_string();
+	}
+
+	std::ofstream f("cellList.txt");
+	if(f.is_open())
+	{
+		f << toPrint;
+		f.close();
+	}
+}
 
 // double Grid_Creator::shortestCellDist(grid_cell* cell1, grid_cell* cell2)
 // // returns shortest distance between cell1 and cell2
