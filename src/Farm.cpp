@@ -5,7 +5,7 @@
 // #include "Slaughter_transport.h"
 
 //Farm::Farm(int in_id, int in_x, int in_y, short in_size)
-Farm::Farm(int in_id, int in_x, int in_y, int in_size)
+Farm::Farm(double in_id, double in_x, double in_y, double in_size)
 {
 	id = in_id;
 	x_coordinate = in_x;

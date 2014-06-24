@@ -12,9 +12,6 @@
 // members of class Grid_Cell
 //
 //  7 Apr 2014
-//
-// Testing notes: start with 3x3 grid
-
 
 #include <iostream>
 #include <fstream>
@@ -26,8 +23,8 @@
 #include <algorithm> // std::sort
 
 #include "Grid_Creator.h"
-// #include "grid_cell.h" // class grid_cell
-#include "farm.h" // class Farm - need to simplify for this test
+// #include "grid_cell.h" // class grid_cell included in .h file
+// #include "farm.h" // class Farm included in .h file
 #include "String_functions.h" // for str_cast
 
 Grid_Creator::Grid_Creator(std::string &fname, bool v)
@@ -37,9 +34,10 @@ Grid_Creator::Grid_Creator(std::string &fname, bool v)
 	if (verbose){std::cout << "Verbose option on" << std::endl;}
 	// modified from Stefan's Farm Manager
 	// read in file of premises
-	int id, size, x, y;
+	double id, size, x, y;
 
 	std::ifstream f(fname);
+	if(!f){std::cout << "Input file not found." << std::endl;}
 	if(f.is_open())
 	{
 	if (verbose){std::cout << "File open" << std::endl;}
@@ -62,41 +60,60 @@ Grid_Creator::Grid_Creator(std::string &fname, bool v)
 				// compare/replace limits of xy plane
 				if (!xylimits.empty())// if there are values to compare
 					{ 
-					if (x < xylimits[0])
-						{
-						xylimits[0] = x;
-						if (verbose){std::cout << "x min set to " << x << std::endl;}
-						}
-					else if (x > xylimits[1])
-						{
-						xylimits[1] = x;
-						if (verbose){std::cout << "x max set to " << x << std::endl;}
-						}
+					if (x < xylimits[0]){xylimits[0] = x;}
+					else if (x > xylimits[1]){xylimits[1] = x;}
 					
-					if (y < xylimits[2])
-						{
-						xylimits[2] = y;
-						if (verbose){std::cout << "y min set to " << y << std::endl;}
-						}
-					else if (y > xylimits[3])
-						{
-						xylimits[3] = y;
-						if (verbose){std::cout << "y max set to " << y << std::endl;}
-						}
+					if (y < xylimits[2]){xylimits[2] = y;}
+					else if (y > xylimits[3]){xylimits[3] = y;}
 					}
 				else {
-					if (verbose){std::cout << "Initializing xy limits..." << std::endl;}
-					xylimits.push_back(x); // min x value
-					xylimits.push_back(x); // max x value
-					xylimits.push_back(y); // min y value
-					xylimits.push_back(y); // max y value
+					if (verbose){std::cout << "Initializing xy limits...";}
+					xylimits.emplace_back(x); // min x value
+					xylimits.emplace_back(x); // max x value
+					xylimits.emplace_back(y); // min y value
+					xylimits.emplace_back(y); // max y value
 					} 
 
 			} // close "if line_vector not empty"
 		} // close "while not end of file"
 	} // close "if file is open"
+	if (verbose)
+	{std::cout << "finalized." << std::endl;
+	std::cout << "x min = " << xylimits[0] << std::endl;
+	std::cout << "x max = " << xylimits[1] << std::endl;
+	std::cout << "y min = " << xylimits[2] << std::endl;
+	std::cout << "y max = " << xylimits[3] << std::endl;}
+	
 	f.close();
 	if (verbose){std::cout << "File closed" << std::endl;}
+
+	// copy farmlist from farm_map (will be changed as grid is created)
+	if (verbose){std::cout << "Copying farms from farm_map to farmList..." << std::endl;}
+	for (auto prem: farm_map)
+	{
+		farmList.push_back(prem.second); // "second" value from map is Farm pointer
+	}
+	
+	double firstx = farmList.front()->get_x();
+	double lastx = farmList.back()->get_x();
+	if (verbose)
+	{
+		std::cout << "farmList length: " << farmList.size() << std::endl;
+
+		std::cout << "First farm x: " << firstx << std::endl;
+		std::cout << "Last farm x: " << lastx << std::endl;
+		std::cout << "Sorting..." << std::endl;
+	}
+
+	// sort farmList by x
+	std::sort(farmList.begin(),farmList.end(),sortByX); // sorted farms by x-coordinates
+	firstx = farmList.front()->get_x();
+	lastx = farmList.back()->get_x();
+	if (verbose)
+	{
+		std::cout << "First farm x: " << firstx << std::endl;
+		std::cout << "Last farm x: " << lastx << std::endl;
+	}
 
 }
 
@@ -108,173 +125,205 @@ Grid_Creator::~Grid_Creator()
 	}
 }
 
-void Grid_Creator::setVerbose(bool v)
+void Grid_Creator::updateFarmList(std::vector<Farm*>& farmsInCell)
+// remove farmsInCell from farmList, assumes matches are sorted in same order
 {
-	verbose = v;
+	// farmsInCell should already be sorted (subsetted from sorted farmList)
+	if(verbose){std::cout << " Farms in cell: " << farmsInCell.size() 
+		<< std::endl;}
+		
+	auto it2 = farmList.begin();
+	for(auto it = farmsInCell.begin(); it != farmsInCell.end(); it++)
+	// loop through each farm in cell
+	{		
+		while (it2 != farmList.end()) // while end of farmList not reached
+		{
+			if(*it2 == *it) // finds first match in farmList to farmInCell
+			{
+				farmList.erase(it2); // remove from farmList
+				break;
+			}
+			it2++; // 
+		}
+	}
 }
 
-// void Grid_Creator::updateFarmList(std::vector<Farm*>& farmsInCell)
-// // remove farmsInCell from farmList
-// {
-// 	// farmsInCell should already be sorted (subsetted from sorted farmList)
-// 	auto it2 = farmList.begin();
-// 	for(auto it = farmsInCell.begin(); it != farmsInCell.end(); it++)
-// 	// loop through each farm in cell
-// 	{		
-// 		while (it2 != farmList.end())
-// 		{
-// 			if(*it2 == *it)
-// 			{
-// 				it2 = farmList.erase(it2);
-// 				break;
-// 			}
-// 			it2++;
-// 		}
-// 	}
-// }
-// 
-// void Grid_Creator::getFarms(std::vector<double> cellSpecs, std::vector<Farm*>& farmsInCell)
-// // makes list of farms in a cell, stores as vector of Farm pointers
-// {
-//     // cellSpecs[0] is placeholder for ID number
-//     double x = cellSpecs[1];
-//     double y = cellSpecs[2];
-//     double s = cellSpecs[3];
-//     std::vector<Farm*> inCell;
-//     
-//     auto i = farmList.begin();
-//     while ((*i)->get_x() < x){i++;} // iterate through farmList until farms' x coords = x
-//     while ((*i)->get_x() >= x // while farms are within [x, x+s), copy to vector, i++
-//     		&&(*i)->get_x() < x+s)
-//     {
-//     	inCell.emplace_back(*i);
-// 		i++;
-//     }
-//     for (auto it = inCell.end(); it != inCell.begin(); it--)
-//     // loop through the farms within x range to find those within y range 
-//     // (run backwards to avoid erasure/iterator reference issues)
-//     {
-//     	if ((*it)->get_y() < y // if south of lower bound,
-//     	|| (*it)->get_y() >= y+s) // or north of upper bound
-//     		{inCell.erase(it);} // remove farm 
-//     }
-//     // (pointers to) farms remaining in inCell should still be sorted by x-coordinate
-//     farmsInCell = inCell;
-// }
-// 
-// void Grid_Creator::removeParent(std::stack< std::vector<double> >& queue)
-// // The parent cell is the working cell 1st in the queue, so remove first element
-// {
-//     queue.pop();
-// }
-// 
-// void Grid_Creator::addOffspring(std::vector<double> cellSpecs, std::stack< std::vector<double> >& queue)
-// // offspring cells are quadrants of parent cell
-// {
-// 	// cellSpecs[0] is placeholder for ID number
-//     double x = cellSpecs[1];
-//     double y = cellSpecs[2];
-//     double s = cellSpecs[3];
-//     
-//     // lower left quadrant: same x/y, side/2
-//     std::vector<double> lowerLeft = {x, y, s/2};
-//     // lower right quadrant: add side/2 to x, same y, side/2
-//     std::vector<double> lowerRight = {x+s/2, y, s/2};
-//     // upper left quadrant: same x, add side/2 to y, side/2
-//     std::vector<double> upperLeft = {x, y+s/2, s/2};
-//     // upper right quadrant: add side/2 to x and y, side/2
-//     std::vector<double> upperRight = {x+s/2, y+s/2, s/2};
-//     
-//     // add offspring cells to queue (in reverse order so lower left is first)
-//     queue.emplace(upperRight);
-//     queue.emplace(upperLeft);
-//     queue.emplace(lowerRight);
-//     queue.emplace(lowerLeft);
-// }
-// 
-// void Grid_Creator::commitCell(std::vector<double> cellSpecs, std::vector<Farm*>& farmsInCell)
-// // write cellSpecs as class grid_cell into set allCells
-// {
-//     double id, x, y, s;
-//     id = cellSpecs[0];
-//     x = cellSpecs[1];
-//     y = cellSpecs[2];
-//     s = cellSpecs[3];
-//     std::vector<Farm*> farms = farmsInCell;
-//     
-//     allCells.emplace_back(grid_cell(id,x,y,s,farms)); // add to vector of all committed cells
-// }
-// 
-// void Grid_Creator::splitCell(std::vector<double> cellSpecs, std::stack< std::vector<double> >& queue)
-// {
-//     removeParent(queue);
-//     addOffspring(cellSpecs,queue);
-// }
-// 
-// void Grid_Creator::initiateGrid(const std::vector<int> xylimits, const unsigned int maxFarms, const int kernelRadius, std::vector<Farm*> farmList)
-// // maxFarms: If cell contains at least this many farms, subdivision will continue
-// // kernelRadius: maximum diffusion kernel radius (minimum cell size)
-// {
-// 	int cellCount = 0;
-//     std::stack<std::vector <int>> queue;// temporary list of cells to check for meeting criteria for commitment
-//     std::vector<Farm*> farmsInCell; // vector of (pointers to) farms in working cell
-//     
-//     std::sort(farmList.begin(),farmList.end(),sortByX); // sorted farms by x-coordinates
-//     
-//     int min_x = xylimits[0];
-//     int max_x = xylimits[1];
-//     int min_y = xylimits[2];
-//     int max_y = xylimits[3];
-//     
-//     int side_x = max_x - min_x;
-//     int side_y = max_y - min_y;
-//     // use whichever diff is larger, x or y
-//     if (side_y > side_x)
-//        side_x = side_y; 
-//     
-//     // add cell specifications to temporary vector
-//     std::vector<int> cellSpecs = {cellCount, min_x, min_y, side_x};
-// 
-//     // add initial cell to the queue
-//     queue.emplace(cellSpecs);
-// 
-//     // while there are any items in queue
-//     while(queue.size()>0)
-//     {
-//     cellSpecs = queue.top(); // set first in queue as working cell
-//     getFarms(cellSpecs, farmsInCell); // get/write farms in cell (to farmsInCell)
-//     if (cellSpecs[2] >= kernelRadius*2) // side >= kernel diameter
-//         {
-//         if (farmsInCell.size() > 0) // if any farms are in cell
-//         {
-//             if (farmsInCell.size() >= maxFarms) // if farm density too high
-//                 splitCell(cellSpecs,queue);
-//             else // farm density is below maximum
-//             {
-//                 commitCell(cellSpecs,farmsInCell);
-//                 cellCount = cellCount+1.0;
-//                 if (verbose){cout << "Cells committed: " << cellCount;}
-//                 updateFarmList(farmsInCell);
-//                 removeParent(queue);
-//             }
-//         }
-//         else // cell has no farms at all - remove from queue w/o committing
-//             removeParent(queue);
-//     }
-//     else if (cellSpecs[2] < kernelRadius*2 // side < kernel diameter
-//              && farmsInCell.size() > 0) // and there are farms in cell
-//         {
-//         commitCell(cellSpecs,farmsInCell);
-//         cellCount = cellCount+1.0;
-//         if (verbose){cout << "Cells committed: " << cellCount;}
-//         updateFarmList(farmsInCell);
-//         removeParent(queue);
-//         }
-//     else // side is smaller than kernel diameter and no farms in cell
-//         removeParent(queue);
-//     } // end "while anything in queue"
-// }
-// 
+std::vector<Farm*> Grid_Creator::getFarms(std::vector<double> cellSpecs)
+// based on cell specs, finds farms in cell and saves pointers to farmsInCell
+{
+	if(verbose){std::cout << "Getting farms in cell..." << std::endl;}
+
+    // cellSpecs[0] is placeholder for ID number, added when committed
+    double x = cellSpecs[1];
+    double y = cellSpecs[2];
+    double s = cellSpecs[3];
+    std::vector<Farm*> inCell;
+    
+    // look for farms in cell, those falling on grid boundaries are included, will be removed when cell is committed
+    for (auto i:farmList)
+    {
+    	if ((i->get_x() >= x) && (i->get_x() <= x+s)
+    		&& (i->get_y() >= y) && (i->get_y() <= y+s))
+    		{ // farm is within the cell
+    		inCell.emplace_back(i);
+    		}
+    }
+
+    // (pointers to) farms in inCell should still be sorted by x-coordinate
+    return(inCell);
+}
+
+void Grid_Creator::removeParent(std::stack< std::vector<double> >& queue)
+// The parent cell is the working cell 1st in the queue, so remove first element
+{
+    queue.pop();
+}
+
+void Grid_Creator::addOffspring(std::vector<double> cellSpecs, std::stack< std::vector<double> >& queue)
+// offspring cells are quadrants of parent cell
+{
+	// cellSpecs[0] is placeholder for ID number
+    double x = cellSpecs[1];
+    double y = cellSpecs[2];
+    double s = cellSpecs[3];
+    
+    // lower left quadrant: same x/y, side/2
+    std::vector<double> lowerLeft = {0, x, y, s/2};
+    // lower right quadrant: add side/2 to x, same y, side/2
+    std::vector<double> lowerRight = {0, x+s/2, y, s/2};
+    // upper left quadrant: same x, add side/2 to y, side/2
+    std::vector<double> upperLeft = {0, x, y+s/2, s/2};
+    // upper right quadrant: add side/2 to x and y, side/2
+    std::vector<double> upperRight = {0, x+s/2, y+s/2, s/2};
+    
+    // add offspring cells to queue (in reverse order so lower left is first)
+    queue.emplace(upperRight);
+    queue.emplace(upperLeft);
+    queue.emplace(lowerRight);
+    queue.emplace(lowerLeft);
+}
+
+void Grid_Creator::commitCell(std::vector<double> cellSpecs, std::vector<Farm*>& farmsInCell)
+// write cellSpecs as class grid_cell into set allCells
+{
+    double id, x, y, s;
+    id = cellSpecs[0];
+    x = cellSpecs[1];
+    y = cellSpecs[2];
+    s = cellSpecs[3];
+    std::vector<Farm*> farms = farmsInCell;
+    
+    grid_cell* cellToAdd = new grid_cell(id, x, y, s, farms);
+    
+    allCells.emplace_back(cellToAdd); // add to vector of all committed cells
+}
+
+void Grid_Creator::splitCell(std::vector<double> cellSpecs, std::stack< std::vector<double> >& queue)
+{
+    removeParent(queue);
+    addOffspring(cellSpecs,queue);
+}
+
+void Grid_Creator::initiateGrid(const unsigned int maxFarms, const int kernelRadius)
+// maxFarms: If cell contains at least this many farms, subdivision will continue
+// kernelRadius: maximum diffusion kernel radius (minimum cell size)
+{
+    if(verbose){std::cout << "Splitting into grid cells..." << std::endl;}
+ 	double cellCount = 0;
+    std::stack<std::vector <double>> queue;// temporary list of cells to check for meeting criteria for commitment
+    std::vector<Farm*> farmsInCell; // vector of (pointers to) farms in working cell - using vector to get to specific elements
+        
+    double min_x = xylimits[0];
+    double max_x = xylimits[1];
+    double min_y = xylimits[2];
+    double max_y = xylimits[3];
+    
+    double side_x = max_x - min_x;
+    double side_y = max_y - min_y;
+    if(verbose)
+    {
+    	std::cout << "side_x = " << side_x << std::endl;
+    	std::cout << "side_y = " << side_y << std::endl;
+    }
+
+    // use whichever diff is larger, x or y
+    if (side_y > side_x)
+       side_x = side_y; 
+    if(verbose){std::cout << "Using larger value " << side_x << std::endl;}
+    
+    // add cell specifications to temporary vector
+    std::vector<double> cellSpecs = {cellCount, min_x, min_y, side_x};
+    if(verbose){std::cout << "cellSpecs: " << cellSpecs[0] <<", "<< cellSpecs[1] 
+    	<<", "<< cellSpecs[2] <<", "<< cellSpecs[3] << std::endl;}
+
+    // add initial cell to the queue
+    queue.emplace(cellSpecs);
+
+    // while there are any items in queue
+    while(queue.size()>0)
+    {
+    if(verbose){std::cout << std::endl << "Queue length = " << queue.size() << std::endl;}
+    
+    cellSpecs = queue.top(); // set first in queue as working cell
+    farmsInCell = getFarms(cellSpecs); // get/write farms in cell (to farmsInCell)
+    if(verbose)
+    {
+    	std::cout << "Farms in cell from getFarms function = " << farmsInCell.size() 
+    		<< std::endl;
+    	std::cout << "Side length = " << cellSpecs[3] <<
+    	", Diameter = " << kernelRadius*2 << ". ";
+    }
+
+    if (cellSpecs[3] >= kernelRadius*2) // side >= kernel diameter
+    {
+    if(verbose){std::cout << "Side bigger than kernel, continuing..." << std::endl;}
+        if (farmsInCell.size() >= maxFarms)
+        // if farm density too high
+        {
+			if(verbose){std::cout << "Too many farms, splitting cell..." 
+				<< std::endl;}
+			splitCell(cellSpecs,queue);
+			if(verbose){std::cout << std::endl << "Queue length = " << queue.size() 
+				<< std::endl;}
+        }
+        else if (farmsInCell.size() > 0 && farmsInCell.size() < maxFarms)
+        // farm density is below maximum
+            {
+                commitCell(cellSpecs,farmsInCell);
+                cellCount = cellCount+1;
+                if (verbose){std::cout << "Cell committed: #" << cellCount;}
+                 updateFarmList(farmsInCell);
+                removeParent(queue);
+            }
+        }
+        else if (farmsInCell.size() == 0)
+        // cell has no farms at all - remove from queue w/o committing
+        {
+            removeParent(queue);
+            if(verbose){std::cout << "No farms, removed cell, queue length = " 
+            	<< queue.size() << std::endl;}
+        }
+    else if ((cellSpecs[3] < kernelRadius*2) // side < kernel diameter
+             && (farmsInCell.size() > 0)) // and there are farms in cell
+        {
+        commitCell(cellSpecs,farmsInCell);
+        cellCount = cellCount+1;
+        if (verbose){std::cout << "Side smaller than kernel. Cell committed: #" << cellCount;}
+        updateFarmList(farmsInCell);
+        removeParent(queue);
+        }
+    else if (cellSpecs[3] < kernelRadius*2 // side < kernel diameter
+             && farmsInCell.size() == 0) // and no farms in cell
+        {
+        removeParent(queue);
+        if(verbose){std::cout << "No farms, removed cell, queue length = " 
+            	<< queue.size() << std::endl;}
+        }
+    } // end "while anything in queue"
+
+}
+
+
 // double Grid_Creator::shortestCellDist(grid_cell* cell1, grid_cell* cell2)
 // // returns shortest distance between cell1 and cell2
 // {

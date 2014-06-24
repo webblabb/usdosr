@@ -9,32 +9,36 @@
 #include <vector>
 #include "farm.h" // for class Farm
 
-struct Point //Representation of a point
-{
-	double x, y; //Coordinates
-	
-	Point();
-	Point(const double, const double); //Constructor
-};
-
 class grid_cell
 {
+	struct Point
+		{ //Representation of a point
+		double x, y; //Coordinates
+	
+		Point(){};
+		Point(const double in_x, const double in_y){
+			x = in_x;
+			y = in_y;
+			}; //Constructor
+	};
+
     private:
-        double id, x, y, s, maxSus, maxInf;
+        double id, x, y, s, maxSus, maxInf; // x and y are coordinates for lower left corner
         std::vector<Farm*> farms;
 		std::vector<Point*> corners;
     
     public:
-		grid_cell(const double, const double, const double, const std::vector<Farm*>);
+		grid_cell(const double, const double, const double, const double, const std::vector<Farm*>);
 		~grid_cell();
 		double get_id() const; //inlined
         double get_x() const; // inlined
         double get_y() const; // inlined
         double get_s() const; // inlined
         std::vector<Farm*> get_farms() const; // inlined
-        std::vector<Point*> get_corners() const; // inlined
+        std::vector<grid_cell::Point*> get_corners() const; // inlined
         double get_maxSus() const; //inlined
         double get_maxInf() const; //inlined
+
 };
 
 inline double grid_cell::get_id() const
@@ -62,7 +66,7 @@ inline std::vector<Farm*> grid_cell::get_farms() const
     return farms;
 }
 
-inline std::vector<Point*> grid_cell::get_corners() const
+inline std::vector<grid_cell::Point*> grid_cell::get_corners() const
 {
 	return corners;
 }

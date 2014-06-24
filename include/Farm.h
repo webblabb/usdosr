@@ -45,20 +45,20 @@ transport object and associates it (adds it to Transp_vector[timestep]) with thi
 class Farm
 {
 	private:
-		int id, x_coordinate, y_coordinate, size;
+		double id, x_coordinate, y_coordinate, size;
 //		int id, x_coordinate, y_coordinate, infected_at_timestep;
 // 		short size, status;
 // 		Time_transp_map timed_transports;
 // 		Time_sl_map timed_sl_transports;
 	
 	public:
-		Farm(int, int, int, int);
+		Farm(double, double, double, double);
 // 		Farm(int, int, int, short);
 		~Farm();
-		int get_id() const; //Inlined
-		int get_x() const; //Inlined
-		int get_y() const; //Inlined
-		int get_size() const; //Inlined
+		double get_id() const; //Inlined
+		double get_x() const; //Inlined
+		double get_y() const; //Inlined
+		double get_size() const; //Inlined
 
 //  	short get_size() const; //Inlined
 // 		short get_status() const; //Inlined
@@ -73,22 +73,22 @@ class Farm
 // 		void add_sl_transport(int const, Slaughter_transport*);
 };
 
-inline int Farm::get_id() const
+inline double Farm::get_id() const
 {
 	return id;
 }
 
-inline int Farm::get_x() const
+inline double Farm::get_x() const
 {
 	return x_coordinate;
 }
 
-inline int Farm::get_y() const
+inline double Farm::get_y() const
 {
 	return y_coordinate;
 }
 
-inline int Farm::get_size() const
+inline double Farm::get_size() const
 //inline short Farm::get_size() const
 {
 	return size;
