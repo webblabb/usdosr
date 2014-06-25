@@ -19,13 +19,10 @@
 #include <string>
 #include <sstream>
 #include <cmath> // std::sqrt
-#include <stack>
+#include <stack> // for queue
 #include <algorithm> // std::sort
 
 #include "Grid_Creator.h"
-// #include "grid_cell.h" // class grid_cell included in .h file
-// #include "farm.h" // class Farm included in .h file
-#include "String_functions.h" // for str_cast
 
 Grid_Creator::Grid_Creator(std::string &fname, bool v)
 // fills farm_map and xylimits
@@ -148,7 +145,7 @@ void Grid_Creator::updateFarmList(std::vector<Farm*>& farmsInCell)
 	}
 }
 
-std::vector<Farm*> Grid_Creator::getFarms(std::vector<double> cellSpecs)
+std::vector<Farm*> Grid_Creator::getFarms(std::vector<double> cellSpecs, const unsigned int maxFarms)
 // based on cell specs, finds farms in cell and saves pointers to farmsInCell
 {
 	if(verbose){std::cout << "Getting farms in cell..." << std::endl;}
@@ -159,16 +156,18 @@ std::vector<Farm*> Grid_Creator::getFarms(std::vector<double> cellSpecs)
     double s = cellSpecs[3];
     std::vector<Farm*> inCell;
     
-    // look for farms in cell, those falling on grid boundaries are included, will be removed when cell is committed
+    // look for farms in cell, those falling on grid boundaries are included, will be removed from list when cell is committed to avoid double counting
+    
     for (auto i:farmList)
     {
     	if ((i->get_x() >= x) && (i->get_x() <= x+s)
     		&& (i->get_y() >= y) && (i->get_y() <= y+s))
     		{ // farm is within the cell
     		inCell.emplace_back(i);
+    		if (inCell.size() > maxFarms){break;} 
+    		// saves time on retrieving farms if cell will be split & re-checked anyway
     		}
     }
-
     // (pointers to) farms in inCell should still be sorted by x-coordinate
     return(inCell);
 }
@@ -265,10 +264,10 @@ void Grid_Creator::initiateGrid(const unsigned int maxFarms, const int kernelRad
     if(verbose){std::cout << std::endl << "Queue length = " << queue.size() << std::endl;}
     
     cellSpecs = queue.top(); // set first in queue as working cell
-    farmsInCell = getFarms(cellSpecs); // get/write farms in cell (to farmsInCell)
+    farmsInCell = getFarms(cellSpecs, maxFarms); // get/write farms in cell (to farmsInCell)
     if(verbose)
     {
-    	std::cout << "Farms in cell from getFarms function = " << farmsInCell.size() 
+    	std::cout << "Farms in cell = " << farmsInCell.size() 
     		<< std::endl;
     	std::cout << "Side length = " << cellSpecs[3] <<
     	", Diameter = " << kernelRadius*2 << ". ";
@@ -276,15 +275,12 @@ void Grid_Creator::initiateGrid(const unsigned int maxFarms, const int kernelRad
 
     if (cellSpecs[3] >= kernelRadius*2) // side >= kernel diameter
     {
-    if(verbose){std::cout << "Side bigger than kernel, continuing..." << std::endl;}
+    if(verbose){std::cout << "Side bigger than kernel, stepping in..." << std::endl;}
         if (farmsInCell.size() >= maxFarms)
         // if farm density too high
         {
-			if(verbose){std::cout << "Too many farms, splitting cell..." 
-				<< std::endl;}
+			if(verbose){std::cout << "Too many farms, splitting cell..." << std::endl;}
 			splitCell(cellSpecs,queue);
-			if(verbose){std::cout << std::endl << "Queue length = " << queue.size() 
-				<< std::endl;}
         }
         else if (farmsInCell.size() > 0 && farmsInCell.size() < maxFarms)
         // farm density is below maximum
@@ -296,14 +292,14 @@ void Grid_Creator::initiateGrid(const unsigned int maxFarms, const int kernelRad
                  updateFarmList(farmsInCell);
                 removeParent(queue);
             }
-        }
-        else if (farmsInCell.size() == 0)
+        else if (farmsInCell.empty())
         // cell has no farms at all - remove from queue w/o committing
         {
             removeParent(queue);
             if(verbose){std::cout << "No farms, removed cell, queue length = " 
             	<< queue.size() << std::endl;}
         }
+    }
     else if ((cellSpecs[3] < kernelRadius*2) // side < kernel diameter
              && (farmsInCell.size() > 0)) // and there are farms in cell
         {
@@ -315,7 +311,7 @@ void Grid_Creator::initiateGrid(const unsigned int maxFarms, const int kernelRad
         removeParent(queue);
         }
     else if (cellSpecs[3] < kernelRadius*2 // side < kernel diameter
-             && farmsInCell.size() == 0) // and no farms in cell
+             && farmsInCell.empty()) // and no farms in cell
         {
         removeParent(queue);
         if(verbose){std::cout << "No farms, removed cell, queue length = " 
@@ -323,6 +319,8 @@ void Grid_Creator::initiateGrid(const unsigned int maxFarms, const int kernelRad
         }
     } // end "while anything in queue"
 
+	printCells();
+	makeCellRefs();
 }
 
 void Grid_Creator::printCells() const
@@ -333,8 +331,12 @@ void Grid_Creator::printCells() const
 	{
 		tabdelim += (*it)->to_string();
 	}
-
-	std::ofstream f("cellList.txt");
+	
+	std::string ofilename = "cellList_";
+	ofilename += std::to_string(allCells.size());
+	ofilename += "cells.txt";
+	
+	std::ofstream f(ofilename); // will look something like "cellList_932cells.txt"
 	if(f.is_open())
 	{
 		f << tabdelim;
@@ -342,7 +344,7 @@ void Grid_Creator::printCells() const
 	}
 }
 
-double Grid_Creator::shortestCellDist(grid_cell* cell1, grid_cell* cell2)
+double Grid_Creator::shortestCellDist(grid_cell* cell1, grid_cell* cell2) const
 // returns shortest distance between cell1 and cell2
 {
 	double cell1_x, cell1_y, cell2_x, cell2_y; // will use these points to calc distance
@@ -422,14 +424,18 @@ double Grid_Creator::shortestCellDist(grid_cell* cell1, grid_cell* cell2)
 return cellDist;	
 }
 
-// double Grid_Creator::gridKernel(double dist)
+// moved to shared functions
+// double Grid_Creator::gKernel(double dist) const
 // // retrieves kernel value based on distance
 // {
-// return(dist);
+// 		double kern = sqrt(2)*(dist / 2.99); // our old friend the gaussian kernel
+// 
+// return(kern);
 // }
 
 void Grid_Creator::makeCellRefs()
-// output a map (think vector of vectors) of distances between all pairs of cells
+// fill maps (think vector of vectors) of distances between all pairs of cells
+// and kernel values for those distances
 {
 	for (auto c1:allCells)
 		{		
@@ -437,10 +443,13 @@ void Grid_Creator::makeCellRefs()
 		for (auto c2:allCells)
 			{
 			double whichCell2 = c2->get_id();
-			cellDists[whichCell1][whichCell2] = shortestCellDist(c1, c2); 
+			double shortestDist = shortestCellDist(c1, c2);
+			cellDists[whichCell1][whichCell2] = shortestDist;
 			// distance between c1, c2
+			gridCellKernel[whichCell1][whichCell2] = gKernel(shortestDist);
+			// kernel value between c1, c2
 			}
 		}
-	if (verbose){std::cout << "Distance between first and last: " << 		cellDists[int(allCells.front()->get_id())][int(allCells.back()->get_id())] 
+	if (verbose){std::cout << "Number of distances:" << gridCellKernel.size() 
 	<< std::endl; }
 }
