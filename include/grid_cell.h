@@ -8,6 +8,7 @@
 
 #include <vector>
 #include "farm.h" // for class Farm
+#include "shared_functions.h" // for calculating farm susceptibility/infectiousness
 
 class grid_cell
 {

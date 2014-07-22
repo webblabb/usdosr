@@ -13,7 +13,10 @@
 #include <ctime>
 #include <stdlib.h>
 
-// #include "grid_cell.h"
+// for slow calc
+#include <cmath> // std::sqrt
+#include <unordered_map>
+
 #include "Grid_Creator.h"
 #include "Grid_cell_checker.h"
 
@@ -32,35 +35,84 @@ int main(int argc, char* argv[])
 		exit(EXIT_FAILURE);
 	}
 	
-	// (timed) generate map of farms and xylimits
+	// generate map of farms and xylimits
 	std::clock_t loading_start = std::clock();
-	Grid_Creator G(pfile,1); // 1 turns on verbose option
+	Grid_Creator G(pfile,0); // 1 turns on verbose option
 	std::clock_t loading_end = std::clock();
-	std::cout << "CPU time for loading data: "
+	
+	// allocate farms to grid cells by density		  
+	std::clock_t grid_start = std::clock();	  
+ 	G.initiateGrid(700,50); // max farms in cell, kernel radius
+	std::clock_t grid_end = std::clock();
+	
+	// step through as if all farms are infectious and susceptible
+	std::clock_t gridcheck_start = std::clock();	  
+	// copy cell list and kernel values for generated grid G
+	std::vector<grid_cell*> allCells = G.get_allCells();
+	std::unordered_map<double, std::unordered_map<double, double>> gridCellKernel = G.get_gridCellKernel();
+	// feed into cell checker
+	Grid_cell_checker gridder(allCells, gridCellKernel, 0,// verbose
+		 1);  // infectOut
+	std::clock_t gridcheck_end = std::clock();
+	
+	bool pairwise = 1;
+	std::clock_t slow_start = std::clock();
+
+	if (pairwise){
+	// run this farm by farm (no gridding) for comparison
+	int totalinfections = 0;
+	int totalcomparisons = 0;
+	std::unordered_map<int, Farm*> allFarms = G.get_allFarms();
+	
+	for (auto f1:allFarms)
+	{
+		for (auto f2:allFarms)
+		{
+			totalcomparisons++;
+			double f1x = f1.second -> get_x(); // get farm 1 x coordinate
+			double f1y = f1.second -> get_y(); // get farm 1 y coordinate
+			double f2x = f2.second -> get_x(); // get farm 2 x coordinate
+			double f2y = f2.second -> get_y(); // get farm 2 y coordinate
+			double xdiff = (f1x - f2x);
+			double ydiff = (f1y - f2y);
+			double distBWfarms = sqrt(xdiff*xdiff + ydiff*ydiff);
+			double kernelBWfarms = linearDist(distBWfarms);
+			// get farm infectiousness/susceptibility values (assumes infectOut is true)
+			double farmInf = getFarmInf(f1.second);	
+			double farmSus = getFarmSus(f2.second);
+
+			// calculate probability between these specific farms
+			double betweenFarmsProb = 1-exp(-farmSus * farmInf * kernelBWfarms); // prob tx between this farm pair
+			// "prob3" in MT's Fortran code
+			double random3 = unif_rand();
+			if (random3 < betweenFarmsProb){
+				// success... infect
+				totalinfections++;
+				}
+		}
+	}
+	std::cout << "Total infections (1 by 1): " << totalinfections << std::endl 
+			<< "Total comparisons (1 by 1): " << totalcomparisons << std::endl << std::endl;
+	}
+	std::clock_t slow_end = std::clock();
+	
+	std::cout << std::endl << "CPU time for loading data: "
 			  << 1000.0 * (loading_end - loading_start) / CLOCKS_PER_SEC
 			  << "ms." << std::endl;
-			  
-	std::clock_t grid_start = std::clock();	  
- 	G.initiateGrid(6000,40); // max farms in cell, kernel radius
-	std::clock_t grid_end = std::clock();
+
 	std::cout << "CPU time for generating grid: "
 			  << 1000.0 * (grid_end - grid_start) / CLOCKS_PER_SEC
-			  << "ms." << std::endl << std::endl;
-	
-	// get cell list and kernel values for generated grid G
-	std::vector<grid_cell*> allCells = G.get_allCells();
-	std::cout << "Cell IDs: ";
-	for (auto c:allCells)
-	{
-	std::cout << c->get_id() << ", ";
-	}
-	std::cout << std::endl;
-	
-	std::unordered_map<double, std::unordered_map<double, double>> gridCellKernel = G.get_gridCellKernel();
+			  << "ms." << std::endl;
 
-	// feed into cell checker
-	Grid_cell_checker gridder(allCells, gridCellKernel, 1,// verbose
-		 1);  // infectOut
-	
+	std::cout << "CPU time for checking grid: "
+			  << 1000.0 * (gridcheck_end - gridcheck_start) / CLOCKS_PER_SEC
+			  << "ms." << std::endl;
+			  
+	if (pairwise){
+
+	std::cout << "CPU time for checking one by one: "
+			  << 1000.0 * (slow_end - slow_start) / CLOCKS_PER_SEC
+			  << "ms." << std::endl << std::endl;
+	}
 return 0;
 }

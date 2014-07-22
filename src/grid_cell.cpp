@@ -25,21 +25,18 @@ grid_cell::grid_cell(const double in_id, const double in_x, const double in_y, c
 	corners.emplace_back(UL);
 	corners.emplace_back(UR);
 		
-// //calculate maximum susceptibility/infectiousness for farms within cell
-// //get farm sizes
-// 	std::vector <double> allSizes;
-// 	for (auto f : in_farms){
-// 		allSizes.emplace_back(f -> get_size());
-// 		}
-// 	
-// //this vector calculates/holds the susceptibility values for all farms (right now just copies/converts size value)
-// 	std::vector <double> allSus = allSizes;
-// //this vector calculates/holds the infectiousness values for all farms
-// 	std::vector <double> allInf = allSizes;
+// calculate maximum susceptibility/infectiousness for farms within cell, after Tildesley et al 2006 Nature Letters
+// get farm sizes - to be replaced by vector of vectors
+	std::vector <double> allSus;
+	std::vector <double> allInf;
+	for (auto f : in_farms){
+		allSus.emplace_back(getFarmSus(f)); // get each farm's susceptibility and add to vector
+		allInf.emplace_back(getFarmInf(f)); // get each farm's infectiousness and add to vector		
+		}
 
     // max_element "returns an iterator pointing to the element with the largest value"
-	maxSus = 0.7;//*std::max_element(allSus.begin(),allSus.end());
-	maxInf = 0.5;//*std::max_element(allInf.begin(),allInf.end());
+	maxSus = *std::max_element(allSus.begin(),allSus.end());
+	maxInf = *std::max_element(allInf.begin(),allInf.end());
 	}
 
 grid_cell::~grid_cell()
@@ -54,7 +51,7 @@ grid_cell::~grid_cell()
 	}
 }
 
-std::string grid_cell::to_string() const // overloaded to_string function, makes tab-delim string for cell
+std::string grid_cell::to_string() const // overloaded to_string function, makes tab-delim string specifically for cell
 {
 	std::string toPrint;
 	char temp[20];

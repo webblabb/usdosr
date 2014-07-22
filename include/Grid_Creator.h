@@ -46,6 +46,7 @@ class Grid_Creator
 		std::vector<grid_cell*> get_allCells() const; //inlined
 		std::unordered_map<double, std::unordered_map<double, double>> get_cellDists() const; //inlined
 		std::unordered_map<double, std::unordered_map<double, double>> get_gridCellKernel() const; // inlined
+		std::unordered_map<int, Farm*> get_allFarms() const; //inlined
 };
 
 inline bool sortByX(const Farm* farm1, const Farm* farm2)
@@ -73,6 +74,11 @@ inline std::unordered_map<double, std::unordered_map<double, double>> Grid_Creat
 inline std::unordered_map<double, std::unordered_map<double, double>> Grid_Creator::get_gridCellKernel() const
 {
 	return(gridCellKernel);
+}
+
+inline std::unordered_map<int, Farm*> Grid_Creator::get_allFarms() const
+{
+	return(farm_map);
 }
 
 #endif

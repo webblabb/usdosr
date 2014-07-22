@@ -424,15 +424,6 @@ double Grid_Creator::shortestCellDist(grid_cell* cell1, grid_cell* cell2) const
 return cellDist;	
 }
 
-// moved to shared functions
-// double Grid_Creator::gKernel(double dist) const
-// // retrieves kernel value based on distance
-// {
-// 		double kern = sqrt(2)*(dist / 2.99); // our old friend the gaussian kernel
-// 
-// return(kern);
-// }
-
 void Grid_Creator::makeCellRefs()
 // fill maps (think vector of vectors) of distances between all pairs of cells
 // and kernel values for those distances
@@ -446,10 +437,15 @@ void Grid_Creator::makeCellRefs()
 			double shortestDist = shortestCellDist(c1, c2);
 			cellDists[whichCell1][whichCell2] = shortestDist;
 			// distance between c1, c2
-			gridCellKernel[whichCell1][whichCell2] = gKernel(shortestDist);
+			gridCellKernel[whichCell1][whichCell2] = linearDist(shortestDist);
 			// kernel value between c1, c2
 			}
 		}
-	if (verbose){std::cout << "Number of distances:" << gridCellKernel.size() 
-	<< std::endl; }
+	if (verbose)
+	{
+		std::cout << "Dist b/w first and last:" << cellDists[0][255] 
+	<< std::endl;
+		std::cout << "Kernel b/w first and last:" << gridCellKernel[0][255] 
+	<< std::endl;
+	 }
 }

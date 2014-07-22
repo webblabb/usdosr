@@ -22,6 +22,11 @@ class Grid_cell_checker
 		bool infectOut; // if true, looks at transmission TO other cells, otherwise FROM other cells
 		std::vector<grid_cell*> allCells;
 		std::unordered_map<double, std::unordered_map<double, double>> gridCellKernel;
+		// counter variables to keep track of infection/efficiency
+// 		int celltocellskips = 0; 
+		int farmtocellskips = 0;
+		int farmsinskippedcells = 0;
+		int totalinfections = 0;
 		
 		// functions for calculating reference distance/kernel matrices from grid
 		void setVerbose(bool); // inlined
