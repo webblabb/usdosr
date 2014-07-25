@@ -30,8 +30,8 @@ grid_cell::grid_cell(const double in_id, const double in_x, const double in_y, c
 	std::vector <double> allSus;
 	std::vector <double> allInf;
 	for (auto f : in_farms){
-		allSus.emplace_back(getFarmSus(f)); // get each farm's susceptibility and add to vector
-		allInf.emplace_back(getFarmInf(f)); // get each farm's infectiousness and add to vector		
+		allSus.emplace_back(getFarmSus(f)); // get farm's susceptibility and add to vector
+		allInf.emplace_back(getFarmInf(f)); // get farm's infectiousness and add to vector		
 		}
 
     // max_element "returns an iterator pointing to the element with the largest value"

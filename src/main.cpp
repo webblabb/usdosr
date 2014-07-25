@@ -42,7 +42,7 @@ int main(int argc, char* argv[])
 	
 	// allocate farms to grid cells by density		  
 	std::clock_t grid_start = std::clock();	  
- 	G.initiateGrid(700,50); // max farms in cell, kernel radius
+ 	G.initiateGrid(15,50); // max farms in cell, kernel radius
 	std::clock_t grid_end = std::clock();
 	
 	// step through as if all farms are infectious and susceptible
@@ -54,47 +54,6 @@ int main(int argc, char* argv[])
 	Grid_cell_checker gridder(allCells, gridCellKernel, 0,// verbose
 		 1);  // infectOut
 	std::clock_t gridcheck_end = std::clock();
-	
-	bool pairwise = 1;
-	std::clock_t slow_start = std::clock();
-
-	if (pairwise){
-	// run this farm by farm (no gridding) for comparison
-	int totalinfections = 0;
-	int totalcomparisons = 0;
-	std::unordered_map<int, Farm*> allFarms = G.get_allFarms();
-	
-	for (auto f1:allFarms)
-	{
-		for (auto f2:allFarms)
-		{
-			totalcomparisons++;
-			double f1x = f1.second -> get_x(); // get farm 1 x coordinate
-			double f1y = f1.second -> get_y(); // get farm 1 y coordinate
-			double f2x = f2.second -> get_x(); // get farm 2 x coordinate
-			double f2y = f2.second -> get_y(); // get farm 2 y coordinate
-			double xdiff = (f1x - f2x);
-			double ydiff = (f1y - f2y);
-			double distBWfarms = sqrt(xdiff*xdiff + ydiff*ydiff);
-			double kernelBWfarms = linearDist(distBWfarms);
-			// get farm infectiousness/susceptibility values (assumes infectOut is true)
-			double farmInf = getFarmInf(f1.second);	
-			double farmSus = getFarmSus(f2.second);
-
-			// calculate probability between these specific farms
-			double betweenFarmsProb = 1-exp(-farmSus * farmInf * kernelBWfarms); // prob tx between this farm pair
-			// "prob3" in MT's Fortran code
-			double random3 = unif_rand();
-			if (random3 < betweenFarmsProb){
-				// success... infect
-				totalinfections++;
-				}
-		}
-	}
-	std::cout << "Total infections (1 by 1): " << totalinfections << std::endl 
-			<< "Total comparisons (1 by 1): " << totalcomparisons << std::endl << std::endl;
-	}
-	std::clock_t slow_end = std::clock();
 	
 	std::cout << std::endl << "CPU time for loading data: "
 			  << 1000.0 * (loading_end - loading_start) / CLOCKS_PER_SEC
@@ -108,11 +67,50 @@ int main(int argc, char* argv[])
 			  << 1000.0 * (gridcheck_end - gridcheck_start) / CLOCKS_PER_SEC
 			  << "ms." << std::endl;
 			  
+	bool pairwise = 0;
+	std::clock_t slow_start = std::clock();
 	if (pairwise){
+	// run this farm by farm (no gridding) for comparison
+		int totalinfections = 0;
+		int totalcomparisons = 0;
+		std::unordered_map<int, Farm*> allFarms = G.get_allFarms();
+	
+		for (auto f1:allFarms)
+		{
+			for (auto f2:allFarms)
+			{
+				totalcomparisons++;
+				double f1x = f1.second -> get_x(); // get farm 1 x coordinate
+				double f1y = f1.second -> get_y(); // get farm 1 y coordinate
+				double f2x = f2.second -> get_x(); // get farm 2 x coordinate
+				double f2y = f2.second -> get_y(); // get farm 2 y coordinate
+				double xdiff = (f1x - f2x);
+				double ydiff = (f1y - f2y);
+				double distBWfarms = sqrt(xdiff*xdiff + ydiff*ydiff);
+				double kernelBWfarms = linearDist(distBWfarms);
+				// get farm infectiousness/susceptibility values (assumes infectOut is true)
+				double farmInf = getFarmInf(f1.second);	
+				double farmSus = getFarmSus(f2.second);
 
-	std::cout << "CPU time for checking one by one: "
-			  << 1000.0 * (slow_end - slow_start) / CLOCKS_PER_SEC
-			  << "ms." << std::endl << std::endl;
+				// calculate probability between these specific farms
+				double betweenFarmsProb = 1-exp(-farmSus * farmInf * kernelBWfarms); // prob tx between this farm pair
+				// "prob3" in MT's Fortran code
+				double random3 = unif_rand();
+				if (random3 < betweenFarmsProb){
+					// success... infect
+					totalinfections++;
+					}
+			}
+		}
+		std::cout << "Total infections (pairwise): " << totalinfections << std::endl 
+				<< "Total comparisons (pairwise): " << totalcomparisons << std::endl << std::endl;
+	}
+	std::clock_t slow_end = std::clock();
+	
+	if (pairwise){
+	std::cout << "CPU time for checking pairwise: "
+				  << 1000.0 * (slow_end - slow_start) / CLOCKS_PER_SEC
+				  << "ms." << std::endl << std::endl;
 	}
 return 0;
 }
