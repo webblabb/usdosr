@@ -46,19 +46,27 @@ int main(int argc, char* argv[])
 		<< 1000.0 * (loading_end - loading_start) / CLOCKS_PER_SEC
 		<< "ms." << std::endl;
 		
-	std::string allLinesToPrint;
 	std::vector <unsigned int> maxFarms;
-		maxFarms.emplace_back(100);
+		maxFarms.emplace_back(500);
+		maxFarms.emplace_back(400);
+		maxFarms.emplace_back(300);
 		maxFarms.emplace_back(200);
+		maxFarms.emplace_back(100);
+		maxFarms.emplace_back(50);
+		maxFarms.emplace_back(25);
+		maxFarms.emplace_back(15);
+		maxFarms.emplace_back(10);
+		maxFarms.emplace_back(5);
 		
  for (auto j:maxFarms)
  {
+ 	std::string allLinesToPrint;
 	// for each value of maxFarms to run
-	for (auto i=0; i!=3; i++) // replicates per value
+	for (auto i=0; i!=100; i++) // replicates per value
 	{
 		// allocate farms to grid cells by density		  
 		std::clock_t grid_start = std::clock();	  
-		G.initiateGrid((*j),50); // max farms in cell, kernel radius
+		G.initiateGrid(j,50); // max farms in cell, kernel radius
 		std::cout << "Grid created." << std::endl;
 		std::clock_t grid_end = std::clock();
 		double gridGenTimeMS = 1000.0 * (grid_end - grid_start) / CLOCKS_PER_SEC;
@@ -99,7 +107,7 @@ int main(int argc, char* argv[])
 	
 	std::string ofilename = "gridResults";
 	char temp[10];
-	sprintf(temp, "%f\t", (*j));
+	sprintf(temp, "%d", j);
 	ofilename += temp;
 	ofilename += "farms.txt";
 	std::ofstream f(ofilename);
