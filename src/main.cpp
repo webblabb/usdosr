@@ -37,35 +37,35 @@ int main(int argc, char* argv[])
 		exit(EXIT_FAILURE);
 	}
 	
-	// generate map of farms and xylimits
-	std::clock_t loading_start = std::clock();
-	Grid_Creator G(pfile,0); // 1 turns on verbose option
-	std::clock_t loading_end = std::clock();
-	
-	std::cout << std::endl << "CPU time for loading data: "
-		<< 1000.0 * (loading_end - loading_start) / CLOCKS_PER_SEC
-		<< "ms." << std::endl;
-		
 	std::vector <unsigned int> maxFarms;
-		maxFarms.emplace_back(500);
-		maxFarms.emplace_back(400);
-		maxFarms.emplace_back(300);
-		maxFarms.emplace_back(200);
-		maxFarms.emplace_back(100);
-		maxFarms.emplace_back(50);
-		maxFarms.emplace_back(25);
-		maxFarms.emplace_back(15);
-		maxFarms.emplace_back(10);
-		maxFarms.emplace_back(5);
+	maxFarms.emplace_back(500);
+	maxFarms.emplace_back(400);
+	maxFarms.emplace_back(300);
+	maxFarms.emplace_back(200);
+	maxFarms.emplace_back(100);
+	maxFarms.emplace_back(50);
+	maxFarms.emplace_back(25);
+	maxFarms.emplace_back(15);
+	maxFarms.emplace_back(10);
+	maxFarms.emplace_back(5);
 		
- for (auto j:maxFarms)
+ for (auto j:maxFarms)	// for each value of maxFarms to run
  {
  	std::string allLinesToPrint;
-	// for each value of maxFarms to run
-	for (auto i=0; i!=100; i++) // replicates per value
+	for (auto i=0; i!=1; i++) // replicates per value
 	{
+		// generate map of farms and xylimits
+		std::clock_t grid_start = std::clock();	 // moved up from line 68
+//		std::clock_t loading_start = std::clock();
+		Grid_Creator G(pfile,0); // 1 turns on verbose option
+//		std::clock_t loading_end = std::clock();
+	
+// 		std::cout << std::endl << "CPU time for loading data: "
+// 			<< 1000.0 * (loading_end - loading_start) / CLOCKS_PER_SEC
+// 			<< "ms." << std::endl;
+		
 		// allocate farms to grid cells by density		  
-		std::clock_t grid_start = std::clock();	  
+// 		std::clock_t grid_start = std::clock();	  
 		G.initiateGrid(j,50); // max farms in cell, kernel radius
 		std::cout << "Grid created." << std::endl;
 		std::clock_t grid_end = std::clock();

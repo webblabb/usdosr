@@ -227,6 +227,7 @@ void Grid_Creator::initiateGrid(const unsigned int maxFarms, const int kernelRad
 // maxFarms: If cell contains at least this many farms, subdivision will continue
 // kernelRadius: maximum diffusion kernel radius (minimum cell size)
 {
+	std::cout << "Max farms set to " << maxFarms << std::endl;
     if(verbose){std::cout << "Splitting into grid cells..." << std::endl;}
  	double cellCount = 0;
     std::stack<std::vector <double>> queue;// temporary list of cells to check for meeting criteria for commitment
