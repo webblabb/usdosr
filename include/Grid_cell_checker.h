@@ -23,7 +23,6 @@ class Grid_cell_checker
 		std::vector<grid_cell*> allCells;
 		std::unordered_map<double, std::unordered_map<double, double>> gridCellKernel;
 		// counter variables to keep track of infection/efficiency
-// 		int celltocellskips = 0; 
 		int farmtocellskips = 0;
 		int farmsinskippedcells = 0;
 		int totalinfections = 0;
@@ -31,6 +30,7 @@ class Grid_cell_checker
 		// functions for calculating reference distance/kernel matrices from grid
 		void setVerbose(bool); // inlined
 		void setInfectOut(bool); //inlined
+
 		
 		// functions for main gridding algorithm
 		void setFocalCell(std::vector<grid_cell*> cellsToCheck);
@@ -43,8 +43,7 @@ class Grid_cell_checker
 			std::unordered_map<double, std::unordered_map<double, double>> gridCellKernel, 
 			bool v, bool io);
 		~Grid_cell_checker();
-		
-
+		int getTotalInfections() const; //inlined
 };
 
 inline void Grid_cell_checker::setVerbose(bool v)
@@ -56,5 +55,11 @@ inline void Grid_cell_checker::setInfectOut(bool io)
 {
 	infectOut = io;
 }
+
+inline int Grid_cell_checker::getTotalInfections() const
+{
+	return totalinfections;
+}
+
 
 #endif

@@ -332,8 +332,9 @@ void Grid_Creator::printCells() const
 		tabdelim += (*it)->to_string();
 	}
 	
+	char temp[5];
 	std::string ofilename = "cellList_";
-//	ofilename += std::to_string(allCells.size());
+	ofilename += sprintf(temp, "%d\t", allCells.size());
 	ofilename += "cells.txt";
 	
 	std::ofstream f(ofilename); // will look something like "cellList_932cells.txt"
