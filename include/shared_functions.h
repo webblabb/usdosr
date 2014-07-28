@@ -7,6 +7,7 @@
 #include <string>
 #include <sstream>
 #include <iostream> // just for troubleshooting output
+#include <chrono>
 
 #include "farm.h" // for Farm* for farm sus/inf
 

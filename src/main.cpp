@@ -12,6 +12,7 @@
 #include <string>
 #include <ctime>
 #include <stdlib.h>
+#include <fstream>
 
 // for slow calc
 #include <cmath> // std::sqrt
@@ -36,15 +37,17 @@ int main(int argc, char* argv[])
 	}
 	
 	// generate map of farms and xylimits
-	std::clock_t loading_start = std::clock();
+//	std::clock_t loading_start = std::clock();
 	Grid_Creator G(pfile,0); // 1 turns on verbose option
-	std::clock_t loading_end = std::clock();
+//	std::clock_t loading_end = std::clock();
 	
 	// allocate farms to grid cells by density		  
-	std::clock_t grid_start = std::clock();	  
- 	G.initiateGrid(15,50); // max farms in cell, kernel radius
-	std::clock_t grid_end = std::clock();
+//	std::clock_t grid_start = std::clock();	  
+ 	G.initiateGrid(1000,50); // max farms in cell, kernel radius
+	std::cout << "Grid created." << std::endl;
+//	std::clock_t grid_end = std::clock();
 	
+	/*
 	// step through as if all farms are infectious and susceptible
 	std::clock_t gridcheck_start = std::clock();	  
 	// copy cell list and kernel values for generated grid G
@@ -67,7 +70,15 @@ int main(int argc, char* argv[])
 			  << 1000.0 * (gridcheck_end - gridcheck_start) / CLOCKS_PER_SEC
 			  << "ms." << std::endl;
 			  
-	bool pairwise = 0;
+	*/
+	
+	bool pairwise = 1;
+	std::string toPrint;
+	toPrint.reserve(1000*10);
+	std::vector<int> inf;
+	
+for (auto i=0; i!=1000; i++){
+	std::cout << "Test #" << i << ": ";
 	std::clock_t slow_start = std::clock();
 	if (pairwise){
 	// run this farm by farm (no gridding) for comparison
@@ -102,8 +113,10 @@ int main(int argc, char* argv[])
 					}
 			}
 		}
-		std::cout << "Total infections (pairwise): " << totalinfections << std::endl 
-				<< "Total comparisons (pairwise): " << totalcomparisons << std::endl << std::endl;
+			inf.emplace_back(totalinfections);
+			
+		std::cout << "Total infections (pairwise): " << totalinfections << std::endl;
+//		 "  Total comparisons (pairwise): " << totalcomparisons << std::endl;
 	}
 	std::clock_t slow_end = std::clock();
 	
@@ -111,6 +124,22 @@ int main(int argc, char* argv[])
 	std::cout << "CPU time for checking pairwise: "
 				  << 1000.0 * (slow_end - slow_start) / CLOCKS_PER_SEC
 				  << "ms." << std::endl << std::endl;
+	}
+}
+char temp[10];
+for(auto it = inf.begin(); it != inf.end(); it++)
+	{
+		sprintf(temp, "%d\t", *it);
+		toPrint += temp;
+	}
+	toPrint.replace(toPrint.end()-1, toPrint.end(), "\n");
+	
+	std::string ofilename = "numPairwiseInf.txt";
+	std::ofstream f(ofilename);
+	if(f.is_open())
+	{
+		f << toPrint;
+		f.close();
 	}
 return 0;
 }

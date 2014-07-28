@@ -333,7 +333,7 @@ void Grid_Creator::printCells() const
 	}
 	
 	std::string ofilename = "cellList_";
-	ofilename += std::to_string(allCells.size());
+//	ofilename += std::to_string(allCells.size());
 	ofilename += "cells.txt";
 	
 	std::ofstream f(ofilename); // will look something like "cellList_932cells.txt"
