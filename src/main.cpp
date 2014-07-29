@@ -52,7 +52,7 @@ int main(int argc, char* argv[])
  for (auto j:maxFarms)	// for each value of maxFarms to run
  {
  	std::string allLinesToPrint;
-	for (auto i=0; i!=1; i++) // replicates per value
+	for (auto i=0; i!=100; i++) // replicates per value
 	{
 		// generate map of farms and xylimits
 		std::clock_t grid_start = std::clock();	 // moved up from line 68
