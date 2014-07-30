@@ -38,13 +38,13 @@ int main(int argc, char* argv[])
 	}
 	
 	std::vector <unsigned int> maxFarms;
-	maxFarms.emplace_back(500);
-	maxFarms.emplace_back(400);
-	maxFarms.emplace_back(300);
-	maxFarms.emplace_back(200);
-	maxFarms.emplace_back(100);
-	maxFarms.emplace_back(50);
-	maxFarms.emplace_back(25);
+// 	maxFarms.emplace_back(500);
+// 	maxFarms.emplace_back(400);
+// 	maxFarms.emplace_back(300);
+// 	maxFarms.emplace_back(200);
+// 	maxFarms.emplace_back(100);
+// 	maxFarms.emplace_back(50);
+//	maxFarms.emplace_back(25);
 	maxFarms.emplace_back(15);
 	maxFarms.emplace_back(10);
 	maxFarms.emplace_back(5);
