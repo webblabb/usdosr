@@ -10,61 +10,143 @@
 // else move on to next cell
 
 #include <iostream>
-#include <vector>
 #include <string>
 #include <cmath> // std::sqrt
+#include <queue>
 #include "Grid_cell_checker.h"
 		
-// Constructor: reads in file of cells
-Grid_cell_checker::Grid_cell_checker(std::vector<grid_cell*> in_allCells, 
-			std::unordered_map<double, std::unordered_map<double, double>> in_gridCellKernel,
-			bool v, bool io): 
-			allCells(in_allCells), gridCellKernel(in_gridCellKernel) // initialize with these values
+// Constructor: uses list of cells, grid kernel values, and each cell's immediate neighbors
+Grid_cell_checker::Grid_cell_checker(const std::unordered_map<double, grid_cell*>& in_allCells, 
+			const std::unordered_map<double, std::unordered_map<double, double>>& in_gridCellKernel,
+			const std::unordered_map<double, std::vector<double>>& in_neighbors,
+			const bool v, const bool io): 
+			allCells(in_allCells), gridCellKernel(in_gridCellKernel), neighbors(in_neighbors) // initialize with these values
 {
 	setVerbose(v);
 	setInfectOut(io);
-	std::cout << "Grid cell checker initialized." << std::endl;
-	setFocalCell(allCells);
-}
+	std::cout << "Grid cell checker initialized.";
+ 	setFocalCell(allCells);
+ }
 
 Grid_cell_checker::~Grid_cell_checker()
 {
 }
 
-// main functions for gridding algorithm
+// functions for gridding algorithm
+
+// gets immediate neighbors of a cell by id
+std::vector<grid_cell*> Grid_cell_checker::neighborsOf(double& cellID)
+{
+	std::vector<double> neighborIDs = neighbors.at(cellID);
+	std::vector<grid_cell*> neighborCells= IDsToCells(neighborIDs);
+	return neighborCells;
+}
+
+// convert vector of IDs to cell pointers
+std::vector<grid_cell*> Grid_cell_checker::IDsToCells(std::vector<double>& cellIDs) const
+{
+	std::vector<grid_cell*> neighborCells;
+	for (auto i:cellIDs)
+	{
+		neighborCells.emplace_back(allCells.at(i));
+	}
+	return neighborCells;
+}
+
+//overloaded to accept single ID also
+grid_cell* Grid_cell_checker::IDsToCells(double& cellID) const
+{
+	return allCells.at(cellID);
+}
+
+std::vector<double> Grid_cell_checker::orderIDs(double cellID1, double cellID2)
+{
+	std::vector<double> ordered;
+	ordered.emplace_back(cellID1);
+	if (cellID2 < cellID1){
+		ordered.insert(ordered.begin(),cellID2);
+	} else {
+		ordered.emplace_back(cellID2); // if cellID2 is larger or equal to cellID1
+	}
+	return ordered;
+}
+
+std::vector<grid_cell*> Grid_cell_checker::posKernelNeighborsOf(double cellID)
+// recursively retrieve neighboring cells until all shortest distances give kernel=0
+{
+	std::vector<double> posKernelNeighbors;
+	std::vector<grid_cell*> pkn;
+	std::queue<double> cellIDsToCheck;
+	bool finished = 0;
+	
+	cellIDsToCheck.emplace(cellID); // initialize with first cell
+	while (!finished)
+	{
+		double id = cellIDsToCheck.front();
+		std::vector<double> ids = orderIDs(cellID,id); // first smaller then larger id
+		
+		double gridValue = (gridCellKernel.at(ids[0])).at(ids[1]);
+		if (gridValue > 0) // continue if this cell's grid kernel value>0
+		{
+		if (std::none_of(posKernelNeighbors.begin(), posKernelNeighbors.end(), [=](double i){return i==id;}))
+		// continue if this id is not already in the list of neighbors
+			{
+				posKernelNeighbors.emplace_back(id); // add to list of neighbors to keep
+				std::vector<grid_cell*> newNeighbors = neighborsOf(id);
+				
+				for (auto n:newNeighbors)
+					{ // add each neighbor of this cell to the queue to check
+					cellIDsToCheck.emplace(n->get_id());
+					}
+			} // end if not already in neighbor list
+		} // end if kernel value > 0 
+		
+		cellIDsToCheck.pop(); // remove cell that was just checked
+		if (cellIDsToCheck.size() == 0){finished=1;}
+	} // end while loop
+	
+	for (auto nID:posKernelNeighbors)
+	{
+		pkn.emplace_back(allCells.at(nID)); // add the cell referenced by ID
+	}
+	return (pkn);
+}
 
 // outer nested loop: determine first of cell pairs, send to inner nested loop (stepThroughCells)
 
-void Grid_cell_checker::setFocalCell(std::vector<grid_cell*> cellsToCheck)
+void Grid_cell_checker::setFocalCell(std::unordered_map<double, grid_cell*>& cellsToCheck)
 {
-	std::vector<grid_cell*> fullList = cellsToCheck;
-	for (auto c1=cellsToCheck.begin(); c1!=cellsToCheck.end(); c1++)
+	if (verbose){std::cout << "Setting focal cell... ";}
+	for (auto c1:cellsToCheck)
 	{ // loop through each cell (c1 as in "cell 1")
-		grid_cell* currentCell = *c1; // set current cell
-		if (verbose){std::cout << std::endl << "Focal cell set to " << (*c1)->get_id();}
-		stepThroughCells(currentCell, cellsToCheck); // send to next loop for comparison
-		// include comparison to self to include closest neighbors
+		grid_cell* currentCell = c1.second; // set current cell
+		if (verbose){std::cout << std::endl << "Focal cell set to " << c1.first;}
+		std::vector<grid_cell*> neighborsOfFocal = posKernelNeighborsOf(c1.first);
+		if (verbose){std::cout << ", with " << neighborsOfFocal.size() << " neighbor cells. " ;}
+		stepThroughCells(currentCell, neighborsOfFocal); // send to next loop for comparison
+		// include comparison to self to include other farms in same cell
 	}
-	std::cout << std::endl << std::endl //<< "Cell to cell skips: " << celltocellskips << std::endl
+	std::cout << std::endl
 		<< "Farm to cell skips: " << farmtocellskips << " (avoided " << farmsinskippedcells << " comparisons)" << std::endl
 		<< "Total infections (gridding): " << totalinfections << std::endl;
 }
 
 // focalCell is the grid_cell to which all others are compared
-void Grid_cell_checker::stepThroughCells(grid_cell* focalCell, std::vector<grid_cell*> cellsToCheck)
+void Grid_cell_checker::stepThroughCells(grid_cell* focalCell, std::vector<grid_cell*>& cellsToCheck)
 {
 	double focalNumFarms = focalCell->get_num_farms(); // how many farms in focal cell
-if (verbose){std::cout << ": " << focalNumFarms << " farms. ";}
+	if (verbose){std::cout << "Focal cell: " << focalNumFarms << " farms. ";}
 
 	for (auto c2:cellsToCheck){	// loop through each cell (c2 as in "cell 2")
-	
-		double gridKernValue = gridCellKernel[focalCell->get_id()][c2->get_id()];
+		// identify which cell ID is smaller/larger for grid value lookup, min comes first
+		std::vector<double> ids = orderIDs(focalCell->get_id(),c2->get_id());
+		double gridKernValue = gridCellKernel.at(ids[0]).at(ids[1]);
 		if (gridKernValue > 0){ // only proceed if kernel > 0
 		
-		if (verbose){std::cout << " Kernel: " << gridKernValue;}
+		if (verbose){std::cout << std::endl << "Kernel: " << gridKernValue;}
 
 		double compNumFarms = c2->get_num_farms(); // how many farms in comparison cell
-		if (verbose){std::cout << std::endl << "Comparison cell " << c2->get_id() <<": " << compNumFarms << " farms. ";}
+		if (verbose){std::cout << " Comparison cell " << c2->get_id() <<": " << compNumFarms << " farms.";}
 
 		// maximum transmission to/from, depends on farm sizes
 		// initialized assuming infectOut is true
@@ -128,7 +210,7 @@ if (verbose){std::cout << ": " << focalNumFarms << " farms. ";}
 					//if(verbose){std::cout << random2 << " < " << indivFarmMaxProb/remainingFarmsMaxProb;}
 
 					// if (one max susceptible)/(number of farms using specific sus-inf values) succeeds
-						s = 0; // remainingFarmProb would recalculate to 1, but isn't used
+						s = 0; // remainingFarmProb recalculates to 1 for remainder of loop
 						// get actual distances between farms
 						f1x = f1 -> get_x();
 						f1y = f1 -> get_y();
@@ -158,10 +240,9 @@ if (verbose){std::cout << ": " << focalNumFarms << " farms. ";}
 					} // end for each comparison cell farm
 			  		f2count = 0;
 					} // end if indivMaxProb > 0
-				} else { // end if p(farm->cell) succeeds
+				} else { // otherwise if p(farm->cell) fails
 					farmtocellskips++;
 					farmsinskippedcells += compNumFarms;
-					if (verbose){std::cout << "Cell skipped." << std::endl;}
 				} // end if p(farm->cell) fails
 			} // end for each focal cell farm			
 			} // end "if gridkernel value > 0"

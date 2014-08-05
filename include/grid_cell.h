@@ -40,8 +40,6 @@ class grid_cell
         std::vector<grid_cell::Point*> get_corners() const; // inlined
         double get_maxSus() const; //inlined
         double get_maxInf() const; //inlined
-        
-        std::string to_string() const;
 
 };
 
@@ -70,7 +68,7 @@ inline std::vector<Farm*> grid_cell::get_farms() const
     return farms;
 }
 
-inline double  grid_cell::get_num_farms() const
+inline double grid_cell::get_num_farms() const
 {
 	return double(farms.size());
 }

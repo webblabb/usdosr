@@ -21,6 +21,7 @@
 #include <cmath> // std::sqrt
 #include <stack> // for queue
 #include <algorithm> // std::sort
+#include <map> // just for printing in order
 
 #include "Grid_Creator.h"
 
@@ -116,10 +117,6 @@ Grid_Creator::Grid_Creator(std::string &fname, bool v)
 
 Grid_Creator::~Grid_Creator()
 {
-	for(auto f:farm_map)
-	{
-		delete f.second; // delete mapped value
-	}
 }
 
 void Grid_Creator::updateFarmList(std::vector<Farm*>& farmsInCell)
@@ -145,7 +142,7 @@ void Grid_Creator::updateFarmList(std::vector<Farm*>& farmsInCell)
 	}
 }
 
-std::vector<Farm*> Grid_Creator::getFarms(std::vector<double> cellSpecs, const unsigned int maxFarms)
+std::vector<Farm*> Grid_Creator::getFarms(std::vector<double> cellSpecs, const unsigned int maxFarms=0)
 // based on cell specs, finds farms in cell and saves pointers to farmsInCell
 {
 	if(verbose){std::cout << "Getting farms in cell..." << std::endl;}
@@ -160,11 +157,11 @@ std::vector<Farm*> Grid_Creator::getFarms(std::vector<double> cellSpecs, const u
     
     for (auto i:farmList)
     {
-    	if ((i->get_x() >= x) && (i->get_x() <= x+s)
-    		&& (i->get_y() >= y) && (i->get_y() <= y+s))
+    	if ((i->get_x() >= x) && (i->get_x() <= x+s) // if within x bounds of cell
+    		&& (i->get_y() >= y) && (i->get_y() <= y+s)) // and within y bounds of cell
     		{ // farm is within the cell
     		inCell.emplace_back(i);
-    		if (inCell.size() > maxFarms){break;} 
+    		if (maxFarms!=0 && inCell.size() > maxFarms){break;} 
     		// saves time on retrieving farms if cell will be split & re-checked anyway
     		}
     }
@@ -214,10 +211,10 @@ void Grid_Creator::commitCell(std::vector<double> cellSpecs, std::vector<Farm*>&
     
     grid_cell* cellToAdd = new grid_cell(id, x, y, s, farms);
     
-    allCells.emplace_back(cellToAdd); // add to vector of all committed cells
+    allCells.emplace(id,cellToAdd); // add to map of all committed cells, with id as key
 }
 
-void Grid_Creator::splitCell(std::vector<double> cellSpecs, std::stack< std::vector<double> >& queue)
+void Grid_Creator::splitCell(std::vector<double>& cellSpecs, std::stack< std::vector<double> >& queue)
 {
     removeParent(queue);
     addOffspring(cellSpecs,queue);
@@ -290,7 +287,7 @@ void Grid_Creator::initiateGrid(const unsigned int maxFarms, const int kernelRad
                 commitCell(cellSpecs,farmsInCell);
                 cellCount = cellCount+1;
                 if (verbose){std::cout << "Cell committed: #" << cellCount;}
-                 updateFarmList(farmsInCell);
+                updateFarmList(farmsInCell);
                 removeParent(queue);
             }
         else if (farmsInCell.empty())
@@ -324,24 +321,111 @@ void Grid_Creator::initiateGrid(const unsigned int maxFarms, const int kernelRad
 	makeCellRefs();
 }
 
-void Grid_Creator::printCells() const
+void Grid_Creator::initiateGrid(std::string& cname)
+// overloaded (alternate) constructor that reads in external file of cells
 {
-	std::string tabdelim;
-	tabdelim.reserve(allCells.size() * 50);
-	for(auto it = allCells.begin(); it != allCells.end(); it++)
+	// read in file of premises
+	std::vector<Farm*> farmsInCell;
+
+	std::ifstream f(cname);
+	if(!f){std::cout << "Input file not found." << std::endl;}
+	if(f.is_open())
 	{
-		tabdelim += (*it)->to_string();
+	if (verbose){std::cout << "File open" << std::endl;}
+		while(! f.eof())
+		{
+			std::vector<double> cellLocs;
+			std::string line;
+			getline(f, line); // get line from file "f", save as "line"
+			std::vector<std::string> line_vector = split(line, '\t'); // separate by tabs
+			
+			if(! line_vector.empty()) // if line_vector has something in it
+			{ // convert each string piece to double
+				if (verbose){std::cout << "New line: ";}
+				cellLocs.emplace_back(stod(line_vector[0])); //id
+				if (verbose){std::cout << stod(line_vector[0]) << ", ";}
+				cellLocs.emplace_back(stod(line_vector[1])); //x
+				if (verbose){std::cout << stod(line_vector[1]) << ", ";}
+				cellLocs.emplace_back(stod(line_vector[2])); //y
+				if (verbose){std::cout << stod(line_vector[2]) << ", ";}
+				cellLocs.emplace_back(stod(line_vector[3])); //s
+				if (verbose){std::cout << stod(line_vector[3]) << ". ";}
+				// line_vector[4] is num farms-ignored (gets reassigned)
+				farmsInCell = getFarms(cellLocs);
+				if (verbose){std::cout << farmsInCell.size() << " farms retrieved." << 			
+					std::endl;}
+				if(farmsInCell.empty()){
+					std::cout << "Cell " << cellLocs[0] << " has no farms - ignoring." << 				
+						std::endl;
+					// cell will not be added to list
+					}
+				else if (!farmsInCell.empty()){			
+				// save cell with farms within
+					allCells[cellLocs[0]] = new grid_cell(cellLocs[0], cellLocs[1], 									
+						cellLocs[2], cellLocs[3], farmsInCell); 
+					updateFarmList(farmsInCell);
+					}
+			} // close "if line_vector not empty"
+		} // close "while not end of file"
+	} // close "if file is open"
+	f.close();
+	if (verbose){std::cout << "File closed" << std::endl;}
+	std::cout << allCells.size() << " cells loaded from file." << std::endl;
+	if (!farmList.empty()){
+		std::cout << "Unassigned farms: ";
+		for (auto f:farmList){
+			std::cout << f->get_id() << ", ";
+			} std::cout << std::endl;
+		}
+	makeCellRefs();
+}
+
+std::string Grid_Creator::to_string(grid_cell& gc) const // overloaded to_string function, makes tab-delim string (one line) specifically for cell
+{
+	std::string toPrint;
+	char temp[20];
+	std::vector<double> vars;
+		vars.resize(5);
+		vars[0] = gc.get_id();
+		vars[1] = gc.get_x();
+		vars[2] = gc.get_y();
+		vars[3] = gc.get_s();
+		vars[4] = gc.get_num_farms();
+
+	for(auto it = vars.begin(); it != vars.end(); it++)
+	{
+		sprintf(temp, "%f\t", *it);
+		toPrint += temp;
 	}
 	
-	char temp[5];
+	toPrint.replace(toPrint.end()-1, toPrint.end(), "\n");
+	
+	return toPrint;
+}
+
+void Grid_Creator::printCells() const
+{
+	// sort cells by ID (ensures farm reassignment will be in same order as when created)
+	std::map<double, grid_cell*> orderedCells(allCells.begin(),allCells.end());
+	double firstcell = orderedCells.begin()->first;
+	if(verbose){std::cout << "First cell: " << firstcell << std::endl;}
+
+	std::string tabdelim;
+	tabdelim.reserve(orderedCells.size() * 50);
+	for(auto it:orderedCells){
+		tabdelim += to_string(*(it.second));
+	}
+	
+	int numCells = orderedCells.size();
 	std::string ofilename = "cellList_";
-	int numCells = allCells.size();
-	ofilename += sprintf(temp, "%d\t", numCells);
+	//char temp[5] = itoa(numCells);
+	std::string snum = std::to_string(numCells);
+	//ofilename += sprintf(temp, "%d", numCells);
+	ofilename += snum;
 	ofilename += "cells.txt";
 	
 	std::ofstream f(ofilename); // will look something like "cellList_932cells.txt"
-	if(f.is_open())
-	{
+	if(f.is_open()){
 		f << tabdelim;
 		f.close();
 	}
@@ -350,10 +434,13 @@ void Grid_Creator::printCells() const
 double Grid_Creator::shortestCellDist(grid_cell* cell1, grid_cell* cell2) const
 // returns shortest distance between cell1 and cell2
 {
+	double cellDist;
+ 	double cell1_id = cell1->get_id();
+ 	double cell2_id = cell2->get_id();
+  if (cell1_id == cell2_id){cellDist=0; // if comparing to self, set distance to 0
+  } else {
+ 	
 	double cell1_x, cell1_y, cell2_x, cell2_y; // will use these points to calc distance
-
-// 	double cell1_id = cell1->get_id();
-// 	double cell2_id = cell2->get_id();
 
 	double cell1_South = cell1->get_y(); // lower boundary of cell1
 	double cell1_North = cell1->get_y()+cell1->get_s(); // upper boundary of cell1
@@ -419,8 +506,8 @@ double Grid_Creator::shortestCellDist(grid_cell* cell1, grid_cell* cell2) const
 	
 	double xDiff = cell1_x-cell2_x;
 	double yDiff = cell1_y-cell2_y;
-	double cellDist = sqrt(xDiff*xDiff + yDiff*yDiff);
-	
+	cellDist = sqrt(xDiff*xDiff + yDiff*yDiff);
+  }
 // 	if (verbose){std::cout << cellDist << " between cells " << cell1->get_id() 
 // 					  << " and " << cell2->get_id() << std::endl;}
 
@@ -428,27 +515,33 @@ return cellDist;
 }
 
 void Grid_Creator::makeCellRefs()
-// fill maps (think vector of vectors) of distances between all pairs of cells
-// and kernel values for those distances
+// fill maps (think vector of vectors)
+// kernel values between all pairs of cells,
+// and immediate neighbors for each cell (where distance==0)
 {
-	for (auto c1:allCells)
-		{		
-		double whichCell1 = c1->get_id();
-		for (auto c2:allCells)
-			{
-			double whichCell2 = c2->get_id();
-			double shortestDist = shortestCellDist(c1, c2);
-			cellDists[whichCell1][whichCell2] = shortestDist;
-			// distance between c1, c2
-			gridCellKernel[whichCell1][whichCell2] = linearDist(shortestDist);
-			// kernel value between c1, c2
+	double whichCell1, shortestDist, gridValue;
+	
+	for (auto c1:allCells){		
+		whichCell1 = c1.first; // get ID number of first cell
+		for (auto whichCell2 = whichCell1; whichCell2 != allCells.size(); whichCell2++){
+			// get distance between grid cells 1 and 2...
+			// if comparing to self, set distance=0
+			if (whichCell2 == whichCell1){shortestDist = 0; 
+			} else {
+			shortestDist = shortestCellDist(c1.second, allCells.at(whichCell2)); 
 			}
+			// if distance is 0, record pair as neighbors
+			if (shortestDist == 0){
+				neighbors[whichCell1].emplace_back(whichCell2);
+				neighbors[whichCell2].emplace_back(whichCell1);
+				}
+			// kernel value between c1, c2
+			gridValue = linearDist(shortestDist);
+			gridCellKernel[whichCell1][whichCell2] = gridValue;
 		}
-	if (verbose)
-	{
-		std::cout << "Dist b/w first and last:" << cellDists[0][255] 
-	<< std::endl;
-		std::cout << "Kernel b/w first and last:" << gridCellKernel[0][255] 
-	<< std::endl;
-	 }
+	}
+// 	if (verbose){
+ 		std::cout << "Kernel distances and neighbors recorded." << std::endl;
+// 	}
 }
+

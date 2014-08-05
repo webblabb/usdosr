@@ -51,25 +51,3 @@ grid_cell::~grid_cell()
 	}
 }
 
-std::string grid_cell::to_string() const // overloaded to_string function, makes tab-delim string (one line) specifically for cell
-{
-	std::string toPrint;
-	char temp[20];
-	std::vector<double> vars;
-		vars.resize(5);
-		vars[0] = id;
-		vars[1] = x;
-		vars[2] = y;
-		vars[3] = s;
-		vars[4] = farms.size();
-
-	for(auto it = vars.begin(); it != vars.end(); it++)
-	{
-		sprintf(temp, "%f\t", *it);
-		toPrint += temp;
-	}
-	
-	toPrint.replace(toPrint.end()-1, toPrint.end(), "\n");
-	
-	return toPrint;
-}

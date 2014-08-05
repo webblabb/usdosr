@@ -37,7 +37,7 @@ int main(int argc, char* argv[])
 		exit(EXIT_FAILURE);
 	}
 	
-	std::vector <unsigned int> maxFarms;
+// 	std::vector <unsigned int> maxFarms;
 // 	maxFarms.emplace_back(500);
 // 	maxFarms.emplace_back(400);
 // 	maxFarms.emplace_back(300);
@@ -45,78 +45,85 @@ int main(int argc, char* argv[])
 // 	maxFarms.emplace_back(100);
 // 	maxFarms.emplace_back(50);
 //	maxFarms.emplace_back(25);
-	maxFarms.emplace_back(15);
-	maxFarms.emplace_back(10);
-	maxFarms.emplace_back(5);
-		
- for (auto j:maxFarms)	// for each value of maxFarms to run
- {
- 	std::string allLinesToPrint;
-	for (auto i=0; i!=100; i++) // replicates per value
-	{
+// 	maxFarms.emplace_back(15);
+// 	maxFarms.emplace_back(10);
+// 	maxFarms.emplace_back(5);
+// 		
+//  for (auto j:maxFarms)	// for each value of maxFarms to run
+//  {
+//  	std::string allLinesToPrint;
+// 	for (auto i=0; i!=100; i++) // replicates per value
+// 	{
 		// generate map of farms and xylimits
-		std::clock_t grid_start = std::clock();	 // moved up from line 68
-//		std::clock_t loading_start = std::clock();
+	 	std::clock_t loading_start = std::clock();
 		Grid_Creator G(pfile,0); // 1 turns on verbose option
-//		std::clock_t loading_end = std::clock();
+		std::clock_t loading_end = std::clock();
 	
-// 		std::cout << std::endl << "CPU time for loading data: "
-// 			<< 1000.0 * (loading_end - loading_start) / CLOCKS_PER_SEC
-// 			<< "ms." << std::endl;
+ 		std::cout << std::endl << "CPU time for loading premises: "
+ 			<< 1000.0 * (loading_end - loading_start) / CLOCKS_PER_SEC
+ 			<< "ms." << std::endl;
 		
 		// allocate farms to grid cells by density		  
-// 		std::clock_t grid_start = std::clock();	  
-		G.initiateGrid(j,50); // max farms in cell, kernel radius
-		std::cout << "Grid created." << std::endl;
-		std::clock_t grid_end = std::clock();
-		double gridGenTimeMS = 1000.0 * (grid_end - grid_start) / CLOCKS_PER_SEC;
+ 		std::clock_t grid_start = std::clock();	
+// 		G.initiateGrid(15,50);
+		std::string cellfile = "cellList_7772cells.txt";
+		G.initiateGrid(cellfile); // max farms in cell, kernel radius OR filename with cells
+ 		std::cout << "Grid created." << std::endl;
+ 		
+ 		std::clock_t grid_end = std::clock();
+// 		double gridGenTimeMS = 1000.0 * (grid_end - grid_start) / CLOCKS_PER_SEC;
 		
-		// step through as if all farms are infectious and susceptible
-		std::clock_t gridcheck_start = std::clock();	  
-		// copy cell list and kernel values for generated grid G
-		std::vector<grid_cell*> allCells = G.get_allCells();
-		std::unordered_map<double, std::unordered_map<double, double>> gridCellKernel = G.get_gridCellKernel();
-		// feed into cell checker
-		Grid_cell_checker gridder(allCells, gridCellKernel, 0,// verbose
-			 1);  // infectOut
-		std::clock_t gridcheck_end = std::clock();
-		double gridCheckTimeMS = 1000.0 * (gridcheck_end - gridcheck_start) / CLOCKS_PER_SEC;
+ 		// step through as if all farms are infectious and susceptible
+ 		std::clock_t gridcheck_start = std::clock();	  
+ 		// copy cell list and kernel values for generated grid G
+//  		std::unordered_map<double, grid_cell*> allCells = G.get_allCells();
+//  		std::unordered_map<double, std::unordered_map<double, double>> gridCellKernel = G.get_gridCellKernel();
+//  		std::unordered_map<double, std::vector<double>> neighbors = G.get_neighbors();
+ 		// feed into cell checker
+  		Grid_cell_checker gridder(
+  			G.get_allCells(), 
+  			G.get_gridCellKernel(), 
+  			G.get_neighbors(), 
+  			1,// verbose
+ 			1);  // infectOut
+ 		std::clock_t gridcheck_end = std::clock();
+//		double gridCheckTimeMS = 1000.0 * (gridcheck_end - gridcheck_start) / CLOCKS_PER_SEC;
 		
-		// std::cout << "CPU time for generating grid: "
-				  // << 1000.0 * (grid_end - grid_start) / CLOCKS_PER_SEC
-				  // << "ms." << std::endl;
+		std::cout << "CPU time for generating grid: "
+				  << 1000.0 * (grid_end - grid_start) / CLOCKS_PER_SEC
+				  << "ms." << std::endl;
 
-		// std::cout << "CPU time for checking grid: "
-				  // << 1000.0 * (gridcheck_end - gridcheck_start) / CLOCKS_PER_SEC
-				  // << "ms." << std::endl;			  
+		std::cout << "CPU time for checking grid: "
+				  << 1000.0 * (gridcheck_end - gridcheck_start) / CLOCKS_PER_SEC
+				  << "ms." << std::endl;			  
 		
-		std::string oneLine;
-			oneLine.reserve(30);
-		char temp[10];
-		sprintf(temp, "%f\t", gridGenTimeMS); // convert times to characters
-		oneLine += temp;
-		sprintf(temp, "%f\t", gridCheckTimeMS);
-		oneLine += temp;
-		sprintf(temp, "%d\t", gridder.getTotalInfections());
-		oneLine += temp;
-		oneLine.replace(oneLine.end()-1, oneLine.end(), "\n");
-		
-		allLinesToPrint += oneLine;
-		}
-	// end for each value of maxFarms loop
-	
-	std::string ofilename = "gridResults";
-	char temp[10];
-	sprintf(temp, "%d", j);
-	ofilename += temp;
-	ofilename += "farms.txt";
-	std::ofstream f(ofilename);
-	if(f.is_open())
-	{
-		f << allLinesToPrint;
-		f.close();
-	}
- }
+// 		std::string oneLine;
+// 			oneLine.reserve(30);
+// 		char temp[10];
+// 		sprintf(temp, "%f\t", gridGenTimeMS); // convert times to characters
+// 		oneLine += temp;
+// 		sprintf(temp, "%f\t", gridCheckTimeMS);
+// 		oneLine += temp;
+// 		sprintf(temp, "%d\t", gridder.getTotalInfections());
+// 		oneLine += temp;
+// 		oneLine.replace(oneLine.end()-1, oneLine.end(), "\n");
+// 		
+// 		allLinesToPrint += oneLine;
+// 		}
+// 	// end for each value of maxFarms loop
+// 	
+// 	std::string ofilename = "gridResults";
+// 	char temp[10];
+// 	sprintf(temp, "%d", j);
+// 	ofilename += temp;
+// 	ofilename += "farms.txt";
+// 	std::ofstream f(ofilename);
+// 	if(f.is_open())
+// 	{
+// 		f << allLinesToPrint;
+// 		f.close();
+// 	}
+//  }
 /*	// replicating the pairwise comparisons
 	bool pairwise = 0;
 for (auto i=0; i!=1000; i++){
