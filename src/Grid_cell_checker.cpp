@@ -20,7 +20,7 @@ Grid_cell_checker::Grid_cell_checker(const std::unordered_map<double, grid_cell*
 			const std::unordered_map<double, std::unordered_map<double, double>>& in_gridCellKernel,
 			const std::unordered_map<double, std::vector<double>>& in_neighbors,
 			const bool v, const bool io): 
-			allCells(in_allCells), gridCellKernel(in_gridCellKernel), neighbors(in_neighbors) // initialize with these values
+			allCells(in_allCells), gridCellKernel(in_gridCellKernel), kernelNeighbors(in_neighbors) // initialize with these values
 {
 	setVerbose(v);
 	setInfectOut(io);
@@ -33,14 +33,6 @@ Grid_cell_checker::~Grid_cell_checker()
 }
 
 // functions for gridding algorithm
-
-// gets immediate neighbors of a cell by id
-std::vector<grid_cell*> Grid_cell_checker::neighborsOf(double& cellID)
-{
-	std::vector<double> neighborIDs = neighbors.at(cellID);
-	std::vector<grid_cell*> neighborCells= IDsToCells(neighborIDs);
-	return neighborCells;
-}
 
 // convert vector of IDs to cell pointers
 std::vector<grid_cell*> Grid_cell_checker::IDsToCells(std::vector<double>& cellIDs) const
@@ -72,44 +64,8 @@ std::vector<double> Grid_cell_checker::orderIDs(double cellID1, double cellID2)
 }
 
 std::vector<grid_cell*> Grid_cell_checker::posKernelNeighborsOf(double cellID)
-// recursively retrieve neighboring cells until all shortest distances give kernel=0
 {
-	std::vector<double> posKernelNeighbors;
-	std::vector<grid_cell*> pkn;
-	std::queue<double> cellIDsToCheck;
-	bool finished = 0;
-	
-	cellIDsToCheck.emplace(cellID); // initialize with first cell
-	while (!finished)
-	{
-		double id = cellIDsToCheck.front();
-		std::vector<double> ids = orderIDs(cellID,id); // first smaller then larger id
-		
-		double gridValue = (gridCellKernel.at(ids[0])).at(ids[1]);
-		if (gridValue > 0) // continue if this cell's grid kernel value>0
-		{
-		if (std::none_of(posKernelNeighbors.begin(), posKernelNeighbors.end(), [=](double i){return i==id;}))
-		// continue if this id is not already in the list of neighbors
-			{
-				posKernelNeighbors.emplace_back(id); // add to list of neighbors to keep
-				std::vector<grid_cell*> newNeighbors = neighborsOf(id);
-				
-				for (auto n:newNeighbors)
-					{ // add each neighbor of this cell to the queue to check
-					cellIDsToCheck.emplace(n->get_id());
-					}
-			} // end if not already in neighbor list
-		} // end if kernel value > 0 
-		
-		cellIDsToCheck.pop(); // remove cell that was just checked
-		if (cellIDsToCheck.size() == 0){finished=1;}
-	} // end while loop
-	
-	for (auto nID:posKernelNeighbors)
-	{
-		pkn.emplace_back(allCells.at(nID)); // add the cell referenced by ID
-	}
-	return (pkn);
+	return IDsToCells(kernelNeighbors.at(cellID));
 }
 
 // outer nested loop: determine first of cell pairs, send to inner nested loop (stepThroughCells)
@@ -220,7 +176,7 @@ void Grid_cell_checker::stepThroughCells(grid_cell* focalCell, std::vector<grid_
 						ydiff = (f1y - f2y);
 						distBWfarms = sqrt(xdiff*xdiff + ydiff*ydiff);
 						// add kernel choice option
-						kernelBWfarms = linearDist(distBWfarms);
+						kernelBWfarms = kernel(distBWfarms);
 						// get individual infectiousness/susceptibility values
 						if (infectOut){			
 							farmSus = getFarmSus(f2); // susceptible farm in comparison cell (farmInf already defined from focal cell)

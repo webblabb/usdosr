@@ -9,24 +9,26 @@ double unif_rand()
 	return unif_dist(generator);
 }
 
-// double gKernel(double dist)
-// // retrieves kernel value based on distance
-// {
-// 	if (dist==0){dist = 0.00001;}
-// 	double gaussian_a = sqrt(2)*(dist / 2.99); // our old friend the gaussian kernel
-// 	double temp = dist/gaussian_a;
-// 	return 1 * exp(-(temp*temp));
-// }
-
 // Used in gridding (kernel values for fixed grid distances)
-double linearDist(double dist) // kernel radius relative to min/max grid cell distances - made up
-{
+
+double kernel(double& dist)
+{	
+	// made up
 	double y = dist*-(0.8/1000) + 0.8;
 	if (y < 0){y = 0;}
 	return y;
+	
+/*
+	// gaussian, copied from stefan's code
+	if (dist==0){dist = 0.00001;}
+	double gaussian_a = sqrt(2)*(dist / 2.99);
+	double temp = dist/gaussian_a;
+	return 1 * exp(-(temp*temp));
+*/
 }
 
-std::vector<std::string>& split(const std::string &s, char delim, std::vector<std::string> &elems)
+std::vector<std::string> 
+	split(const std::string &s, char delim, std::vector<std::string> &elems)
 {
     std::stringstream ss(s);
     std::string item;
@@ -40,7 +42,8 @@ std::vector<std::string>& split(const std::string &s, char delim, std::vector<st
     return elems;
 }
 
-std::vector<std::string> split(const std::string &s, char delim)
+std::vector<std::string> 
+	split(const std::string &s, char delim)
 {
     std::vector<std::string> elems;
     split(s, delim, elems);

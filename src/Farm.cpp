@@ -47,6 +47,11 @@ Farm::~Farm()
 // 	return s;
 // }
 // 
+
+void Farm::set_cellID(const double in_cellID)
+{
+	cellID = in_cellID;
+}
 // void Farm::set_status(const short in_status)
 // {
 // 	status = in_status;

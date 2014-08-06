@@ -32,7 +32,7 @@ class Grid_Creator
 		std::unordered_map<double, std::unordered_map<double, double>> 
 			gridCellKernel; // kernel values between cell pairs
 		std::unordered_map<double, std::vector<double>> 
-			neighbors; // each cell's immediate neighbors (by ID)
+			kernelNeighbors; // each cell's neighbors with positive kernel values
 		
 		void setVerbose(bool); // inlined
 		// functions for grid creation
@@ -52,6 +52,10 @@ class Grid_Creator
 		void splitCell(
 			std::vector<double>& cellSpecs, 
 			std::stack< std::vector<double> >& queue); // replaces parent cell with subdivided offspring quadrants
+ 		void assignCellIDtoFarms(double cellID, std::vector<Farm*>& farmsInCell);
+ 		std::vector<grid_cell*> 
+ 			posKernelNeighborsOf(double cellID);
+ 		
  		// functions for calculating reference distance/kernel matrices from grid
 		double shortestCellDist(
 			grid_cell* cell1, 
@@ -76,11 +80,15 @@ class Grid_Creator
 			grid_cell&) const;
 			
 		void printCells() const;
-		std::unordered_map<double, grid_cell*> get_allCells() const; //inlined	
-// 		std::unordered_map<double, std::unordered_map<double, double>> get_cellDists() const; //inlined	
-		std::unordered_map<double, std::unordered_map<double, double>> get_gridCellKernel() const; // inlined
-		std::unordered_map<int, Farm*> get_allFarms() const; //inlined
-		std::unordered_map<double, std::vector<double>> get_neighbors() const; //inlined
+		void printGridKernel() const;
+		std::unordered_map<double, grid_cell*> 
+			get_allCells() const; //inlined	
+		std::unordered_map<double, std::unordered_map<double, double>> 
+			get_gridCellKernel() const; // inlined
+		std::unordered_map<int, Farm*> 
+			get_allFarms() const; //inlined
+		std::unordered_map<double, std::vector<double>> 
+			get_kernelNeighbors() const; //inlined
 
 };
 
@@ -90,12 +98,6 @@ inline bool sortByX(const Farm* farm1, const Farm* farm2)
 {
 	return (farm1 -> get_x()) < (farm2 -> get_x());
 }
-
-// inline bool sortByCellID(std::unordered_map<double,grid_cell*> m1, std::unordered_map<double,grid_cell*> m2)
-// // another external "compare" function for sorting grid cells to print
-// {
-// 	return (m1.first < m2.first);
-// }
 
 inline void 
 	Grid_Creator::setVerbose(bool v)
@@ -108,12 +110,6 @@ inline std::unordered_map<double, grid_cell*>
 {
 	return (allCells);
 }
-
-// inline std::unordered_map<double, std::unordered_map<double, double>> 
-// 	Grid_Creator::get_cellDists() const
-// {
-// 	return (cellDists);
-// }
 
 inline std::unordered_map<double, std::unordered_map<double, double>> 
 	Grid_Creator::get_gridCellKernel() const
@@ -128,9 +124,9 @@ inline std::unordered_map<int, Farm*>
 }
 
 inline std::unordered_map<double, std::vector<double>> 
-	Grid_Creator::get_neighbors() const
+	Grid_Creator::get_kernelNeighbors() const
 {
-	return(neighbors);
+	return(kernelNeighbors);
 }
 
 #endif

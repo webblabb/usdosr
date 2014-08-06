@@ -37,24 +37,20 @@ int main(int argc, char* argv[])
 		exit(EXIT_FAILURE);
 	}
 	
-// 	std::vector <unsigned int> maxFarms;
+ 	std::vector <unsigned int> maxFarms;
 // 	maxFarms.emplace_back(500);
 // 	maxFarms.emplace_back(400);
 // 	maxFarms.emplace_back(300);
 // 	maxFarms.emplace_back(200);
 // 	maxFarms.emplace_back(100);
 // 	maxFarms.emplace_back(50);
-//	maxFarms.emplace_back(25);
-// 	maxFarms.emplace_back(15);
-// 	maxFarms.emplace_back(10);
-// 	maxFarms.emplace_back(5);
+// 	maxFarms.emplace_back(25);
+//  maxFarms.emplace_back(15);
+//  maxFarms.emplace_back(10);
 // 		
-//  for (auto j:maxFarms)	// for each value of maxFarms to run
-//  {
-//  	std::string allLinesToPrint;
-// 	for (auto i=0; i!=100; i++) // replicates per value
-// 	{
-		// generate map of farms and xylimits
+//   for (auto j:maxFarms)	// for each value of maxFarms to run
+//   {
+  		// generate map of farms and xylimits
 	 	std::clock_t loading_start = std::clock();
 		Grid_Creator G(pfile,0); // 1 turns on verbose option
 		std::clock_t loading_end = std::clock();
@@ -62,37 +58,37 @@ int main(int argc, char* argv[])
  		std::cout << std::endl << "CPU time for loading premises: "
  			<< 1000.0 * (loading_end - loading_start) / CLOCKS_PER_SEC
  			<< "ms." << std::endl;
-		
-		// allocate farms to grid cells by density		  
- 		std::clock_t grid_start = std::clock();	
-// 		G.initiateGrid(15,50);
-		std::string cellfile = "cellList_7772cells.txt";
-		G.initiateGrid(cellfile); // max farms in cell, kernel radius OR filename with cells
+ 	 	std::clock_t grid_start = std::clock();		
+// 			std::string cellfile = "cellList_"
+// 			cellfile+=std::to_string(
+// 			cellfile+="cells.txt";
+// 			G.initiateGrid(cellfile); // max farms in cell, kernel radius OR filename with cells
+ 		G.initiateGrid(15,50);
  		std::cout << "Grid created." << std::endl;
  		
  		std::clock_t grid_end = std::clock();
-// 		double gridGenTimeMS = 1000.0 * (grid_end - grid_start) / CLOCKS_PER_SEC;
-		
- 		// step through as if all farms are infectious and susceptible
- 		std::clock_t gridcheck_start = std::clock();	  
- 		// copy cell list and kernel values for generated grid G
-//  		std::unordered_map<double, grid_cell*> allCells = G.get_allCells();
-//  		std::unordered_map<double, std::unordered_map<double, double>> gridCellKernel = G.get_gridCellKernel();
-//  		std::unordered_map<double, std::vector<double>> neighbors = G.get_neighbors();
- 		// feed into cell checker
-  		Grid_cell_checker gridder(
-  			G.get_allCells(), 
-  			G.get_gridCellKernel(), 
-  			G.get_neighbors(), 
-  			1,// verbose
- 			1);  // infectOut
- 		std::clock_t gridcheck_end = std::clock();
-//		double gridCheckTimeMS = 1000.0 * (gridcheck_end - gridcheck_start) / CLOCKS_PER_SEC;
-		
+ 		double gridGenTimeMS = 1000.0 * (grid_end - grid_start) / CLOCKS_PER_SEC;
+ 		
 		std::cout << "CPU time for generating grid: "
 				  << 1000.0 * (grid_end - grid_start) / CLOCKS_PER_SEC
 				  << "ms." << std::endl;
 
+ 			
+//   	std::string allLinesToPrint;
+//  	for (auto i=0; i!=10; i++) // replicates per value
+//  	{	
+ 		// allocate farms to grid cells by density		  
+ 		// step through as if all farms are infectious and susceptible
+ 		std::clock_t gridcheck_start = std::clock();	  
+  		Grid_cell_checker gridder(
+  			G.get_allCells(), 
+  			G.get_gridCellKernel(), 
+  			G.get_kernelNeighbors(), 
+  			0,// verbose
+ 			1);  // infectOut
+ 		std::clock_t gridcheck_end = std::clock();
+		double gridCheckTimeMS = 1000.0 * (gridcheck_end - gridcheck_start) / CLOCKS_PER_SEC;
+		
 		std::cout << "CPU time for checking grid: "
 				  << 1000.0 * (gridcheck_end - gridcheck_start) / CLOCKS_PER_SEC
 				  << "ms." << std::endl;			  
@@ -109,9 +105,8 @@ int main(int argc, char* argv[])
 // 		oneLine.replace(oneLine.end()-1, oneLine.end(), "\n");
 // 		
 // 		allLinesToPrint += oneLine;
-// 		}
-// 	// end for each value of maxFarms loop
-// 	
+// 		} // end for each value of maxFarms loop
+	
 // 	std::string ofilename = "gridResults";
 // 	char temp[10];
 // 	sprintf(temp, "%d", j);
@@ -124,6 +119,7 @@ int main(int argc, char* argv[])
 // 		f.close();
 // 	}
 //  }
+
 /*	// replicating the pairwise comparisons
 	bool pairwise = 0;
 for (auto i=0; i!=1000; i++){

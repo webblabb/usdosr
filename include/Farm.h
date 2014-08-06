@@ -45,7 +45,7 @@ transport object and associates it (adds it to Transp_vector[timestep]) with thi
 class Farm
 {
 	private:
-		double id, x_coordinate, y_coordinate, size;
+		double id, x_coordinate, y_coordinate, size, cellID;
 //		int id, x_coordinate, y_coordinate, infected_at_timestep;
 // 		short size, status;
 // 		Time_transp_map timed_transports;
@@ -59,6 +59,7 @@ class Farm
 		double get_x() const; //Inlined
 		double get_y() const; //Inlined
 		double get_size() const; //Inlined
+		double get_cellID() const; //inlined
 
 //  	short get_size() const; //Inlined
 // 		short get_status() const; //Inlined
@@ -67,6 +68,7 @@ class Farm
 // 		Transp_vector* get_transports(const short);	//Inlined
 // 		std::vector<Slaughter_transport*>* get_sl_transports(int const);
 // 		
+		void set_cellID(const double cellID);
 // 		void set_status(const short);
 // 		void set_time_of_infection(const int);
 // 		void add_live_transport(Live_transport*);
@@ -92,6 +94,11 @@ inline double Farm::get_size() const
 //inline short Farm::get_size() const
 {
 	return size;
+}
+
+inline double Farm::get_cellID() const
+{
+	return cellID;
 }
 
 // inline short Farm::get_status() const
