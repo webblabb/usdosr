@@ -19,8 +19,7 @@
 #include <cmath> // std::sqrt
 #include <unordered_map>
 
-#include "Grid_Creator.h"
-#include "Grid_cell_checker.h"
+#include "Grid_manager.h"
 
 int main(int argc, char* argv[])
 {
@@ -37,62 +36,58 @@ int main(int argc, char* argv[])
 		exit(EXIT_FAILURE);
 	}
 	
- 	std::vector <unsigned int> maxFarms;
-// 	maxFarms.emplace_back(500);
-// 	maxFarms.emplace_back(400);
-// 	maxFarms.emplace_back(300);
-// 	maxFarms.emplace_back(200);
-// 	maxFarms.emplace_back(100);
-// 	maxFarms.emplace_back(50);
-// 	maxFarms.emplace_back(25);
-//  maxFarms.emplace_back(15);
-//  maxFarms.emplace_back(10);
-// 		
-//   for (auto j:maxFarms)	// for each value of maxFarms to run
-//   {
+	std::vector <double> sideLengths;
+ 	sideLengths.emplace_back(50000.0);
+	//sideLengths.emplace_back(10000.0);
+
+  for (auto j:sideLengths)	// for each value of j to run
+  {
   		// generate map of farms and xylimits
 	 	std::clock_t loading_start = std::clock();
-		Grid_Creator G(pfile,0); // 1 turns on verbose option
+		Grid_manager G(pfile,0,0); // reverse x/y on/off, verbose on/off
 		std::clock_t loading_end = std::clock();
 	
  		std::cout << std::endl << "CPU time for loading premises: "
  			<< 1000.0 * (loading_end - loading_start) / CLOCKS_PER_SEC
  			<< "ms." << std::endl;
  	 	std::clock_t grid_start = std::clock();		
-// 			std::string cellfile = "cellList_"
-// 			cellfile+=std::to_string(
-// 			cellfile+="cells.txt";
-// 			G.initiateGrid(cellfile); // max farms in cell, kernel radius OR filename with cells
- 		G.initiateGrid(15,50);
- 		std::cout << "Grid created." << std::endl;
+// 		std::string cellfile="max250f_7328c_USprems.txt"; // filename with cells
+// 		G.initiateGrid(cellfile);  // filename with cells
+//		G.initiateGrid(250,50); // max farms in cell, kernel radius
+		G.initiateGrid(j); // length of cell side
+// 		G.printCells(pfile); // option to print cells, based on specified prem file
  		
  		std::clock_t grid_end = std::clock();
- 		double gridGenTimeMS = 1000.0 * (grid_end - grid_start) / CLOCKS_PER_SEC;
- 		
-		std::cout << "CPU time for generating grid: "
-				  << 1000.0 * (grid_end - grid_start) / CLOCKS_PER_SEC
-				  << "ms." << std::endl;
+  		double gridGenTimeMS = 1000.0 * (grid_end - grid_start) / CLOCKS_PER_SEC;
+		std::cout << "CPU time for generating grid: " << gridGenTimeMS << "ms." << std::endl;
 
- 			
-//   	std::string allLinesToPrint;
-//  	for (auto i=0; i!=10; i++) // replicates per value
-//  	{	
- 		// allocate farms to grid cells by density		  
- 		// step through as if all farms are infectious and susceptible
- 		std::clock_t gridcheck_start = std::clock();	  
-  		Grid_cell_checker gridder(
-  			G.get_allCells(), 
-  			G.get_gridCellKernel(), 
-  			G.get_kernelNeighbors(), 
-  			0,// verbose
- 			1);  // infectOut
- 		std::clock_t gridcheck_end = std::clock();
-		double gridCheckTimeMS = 1000.0 * (gridcheck_end - gridcheck_start) / CLOCKS_PER_SEC;
+		// generate random focal and comparison farms (same list for all reps)
+		std::vector <std::vector<Farm*>> f_c_farms = G.fakeFarmStatuses(45000,45000);
+		std::vector<Farm*> focalFarms = f_c_farms[0];
+		std::vector<Farm*> compFarms = f_c_farms[1];
 		
-		std::cout << "CPU time for checking grid: "
-				  << 1000.0 * (gridcheck_end - gridcheck_start) / CLOCKS_PER_SEC
-				  << "ms." << std::endl;			  
-		
+/*
+		// to compare all farms to all farms
+		std::unordered_map<int, Farm*> farmmap = G.get_allFarms();
+		std::vector<Farm*> allFarms;
+		// convert map to vector
+		for (auto f:farmmap)
+			{allFarms.emplace_back(f.second);}
+		std::vector<Farm*> focalFarms = allFarms;
+		std::vector<Farm*> compFarms = allFarms;
+*/
+
+//  	std::string allLinesToPrint;
+  	for (auto i=0; i!=10; i++) // replicates per value
+  	{	
+		// at one timestep:
+  		std::clock_t gridcheck_start = std::clock();	  
+	   	G.stepThroughCells(focalFarms,compFarms);
+  		std::clock_t gridcheck_end = std::clock();
+  		
+ 		double gridCheckTimeMS = 1000.0 * (gridcheck_end - gridcheck_start) / CLOCKS_PER_SEC;
+		std::cout << "CPU time for checking grid: " << gridCheckTimeMS << "ms." << std::endl;			  
+// 		
 // 		std::string oneLine;
 // 			oneLine.reserve(30);
 // 		char temp[10];
@@ -100,53 +95,52 @@ int main(int argc, char* argv[])
 // 		oneLine += temp;
 // 		sprintf(temp, "%f\t", gridCheckTimeMS);
 // 		oneLine += temp;
-// 		sprintf(temp, "%d\t", gridder.getTotalInfections());
+// 		sprintf(temp, "%d\t", G.getTotalInfections());
 // 		oneLine += temp;
 // 		oneLine.replace(oneLine.end()-1, oneLine.end(), "\n");
 // 		
 // 		allLinesToPrint += oneLine;
-// 		} // end for each value of maxFarms loop
+// 		} // end for each value of j
 	
 // 	std::string ofilename = "gridResults";
 // 	char temp[10];
-// 	sprintf(temp, "%d", j);
+// 	sprintf(temp, "%f", j);
 // 	ofilename += temp;
-// 	ofilename += "farms.txt";
+// 	ofilename += "sidelength.txt";
 // 	std::ofstream f(ofilename);
 // 	if(f.is_open())
 // 	{
 // 		f << allLinesToPrint;
 // 		f.close();
 // 	}
-//  }
+//	} //end for each rep
 
-/*	// replicating the pairwise comparisons
-	bool pairwise = 0;
-for (auto i=0; i!=1000; i++){
-	std::cout << "Test #" << i << ": ";
+
+	// replicating the pairwise comparisons
+//for (auto i=0; i!=1000; i++){
+//	std::cout << "Test #" << i << ": ";
 	std::clock_t slow_start = std::clock();
-	if (pairwise){
 	// run this farm by farm (no gridding) for comparison
 		int totalinfections = 0;
 		int totalcomparisons = 0;
-		std::unordered_map<int, Farm*> allFarms = G.get_allFarms();
+//		std::unordered_map<int, Farm*> allFarms = G.get_allFarms();
 	
-		for (auto f1:allFarms)
+		for (auto f1:focalFarms)
 		{
-			for (auto f2:allFarms)
+			for (auto f2:compFarms)
 			{
 				totalcomparisons++;
-				double f1x = f1.second -> get_x(); // get farm 1 x coordinate
-				double f1y = f1.second -> get_y(); // get farm 1 y coordinate
-				double f2x = f2.second -> get_x(); // get farm 2 x coordinate
-				double f2y = f2.second -> get_y(); // get farm 2 y coordinate
+				double f1x = f1 -> get_x(); // get farm 1 x coordinate
+				double f1y = f1 -> get_y(); // get farm 1 y coordinate
+				double f2x = f2 -> get_x(); // get farm 2 x coordinate
+				double f2y = f2 -> get_y(); // get farm 2 y coordinate
 				double xdiff = (f1x - f2x);
 				double ydiff = (f1y - f2y);
 				double distBWfarms = sqrt(xdiff*xdiff + ydiff*ydiff);
-				double kernelBWfarms = linearDist(distBWfarms);
+				double kernelBWfarms = kernel(distBWfarms);
 				// get farm infectiousness/susceptibility values (assumes infectOut is true)
-				double farmInf = getFarmInf(f1.second);	
-				double farmSus = getFarmSus(f2.second);
+				double farmInf = getFarmInf(f1);	
+				double farmSus = getFarmSus(f2);
 
 				// calculate probability between these specific farms
 				double betweenFarmsProb = 1-exp(-farmSus * farmInf * kernelBWfarms); // prob tx between this farm pair
@@ -158,20 +152,21 @@ for (auto i=0; i!=1000; i++){
 					}
 			}
 		}
-			inf.emplace_back(totalinfections);
+//			inf.emplace_back(totalinfections);
 			
-		std::cout << "Total infections (pairwise): " << totalinfections << std::endl;
-//		 "  Total comparisons (pairwise): " << totalcomparisons << std::endl;
-	}
+		std::cout << "Total infections (pairwise): " << totalinfections << std::endl <<
+		 "  Total comparisons (pairwise): " << totalcomparisons << std::endl;
+//	}
 	std::clock_t slow_end = std::clock();
 	
-	if (pairwise){
+//	if (pairwise){
 	std::cout << "CPU time for checking pairwise: "
 				  << 1000.0 * (slow_end - slow_start) / CLOCKS_PER_SEC
 				  << "ms." << std::endl << std::endl;
-	}
-}
+//	}
+//}
 
+/*
 char temp[10];
 for(auto it = inf.begin(); it != inf.end(); it++)
 	{
@@ -188,6 +183,6 @@ for(auto it = inf.begin(); it != inf.end(); it++)
 		f.close();
 	}
 */
-	
+	} // end for each j value
 return 0;
 }

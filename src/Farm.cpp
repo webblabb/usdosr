@@ -11,6 +11,7 @@ Farm::Farm(double in_id, double in_x, double in_y, double in_size)
 	x_coordinate = in_x;
 	y_coordinate = in_y;
 	size = in_size;
+	
 // 	status = 0;
 // 	infected_at_timestep = -1;
 }
