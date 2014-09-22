@@ -653,9 +653,9 @@ void Grid_manager::makeCellRefs()
 			}
 			// kernel value between c1, c2
 			gridValue = kernel(shortestDist);
-			gridCellKernel[whichCell1][whichCell2] = gridValue;
-			// if grid Value is > 0, record as kernel neighbors
+			// if grid Value is > 0, record in gridCellKernel and as kernel neighbors
 			if (gridValue > 0){
+				gridCellKernel[whichCell1][whichCell2] = gridValue;
 				kernelNeighbors[whichCell1].emplace_back(whichCell2);
 				kernelNeighbors[whichCell2].emplace_back(whichCell1);
 			} // end if gridValue > 0
@@ -794,7 +794,11 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 				// identify which cell ID is smaller/larger for grid value lookup, min comes first
 				std::vector<double> ids = orderIDs(currentCell->get_id(),c2->get_id());
 				// look up grid value
-				double gridKernValue = gridCellKernel.at(ids[0]).at(ids[1]);
+				double gridKernValue = 0; // default kernel value is 0
+				if ((gridCellKernel.count(ids[0]) == 1) && // something exists for first cell
+				   (gridCellKernel.at(ids[0]).count(ids[1]) == 1)){ // something exists for first and second cell
+						gridKernValue = gridCellKernel.at(ids[0]).at(ids[1]);}
+				
 				if (verbose){std::cout << std::endl << "Kernel: " << gridKernValue;}
 
 				// maximum transmission of cells, initialized assuming infectOut is true

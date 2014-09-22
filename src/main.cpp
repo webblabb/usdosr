@@ -52,7 +52,7 @@ int main(int argc, char* argv[])
  			<< "ms." << std::endl;
  	 	std::clock_t grid_start = std::clock();		
 // 		std::string cellfile="max250f_7328c_USprems.txt"; G.initiateGrid(cellfile);  // filename with cells
-		G.initiateGrid(20,50); // max farms in cell, kernel radius
+		G.initiateGrid(25,50); // max farms in cell, kernel radius
 //		G.initiateGrid(50000); // length of cell side
 // 		G.printCells(pfile); // option to print cells, based on specified prem file
  		
