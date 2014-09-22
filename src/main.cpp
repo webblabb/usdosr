@@ -36,12 +36,12 @@ int main(int argc, char* argv[])
 		exit(EXIT_FAILURE);
 	}
 	
-	std::vector <double> sideLengths;
- 	sideLengths.emplace_back(50000.0);
+// 	std::vector <double> sideLengths;
+//  	sideLengths.emplace_back(30000.0);
 	//sideLengths.emplace_back(10000.0);
 
-  for (auto j:sideLengths)	// for each value of j to run
-  {
+//   for (auto j:sideLengths)	// for each value of j to run
+//   {
   		// generate map of farms and xylimits
 	 	std::clock_t loading_start = std::clock();
 		Grid_manager G(pfile,0,0); // reverse x/y on/off, verbose on/off
@@ -51,31 +51,19 @@ int main(int argc, char* argv[])
  			<< 1000.0 * (loading_end - loading_start) / CLOCKS_PER_SEC
  			<< "ms." << std::endl;
  	 	std::clock_t grid_start = std::clock();		
-// 		std::string cellfile="max250f_7328c_USprems.txt"; // filename with cells
-// 		G.initiateGrid(cellfile);  // filename with cells
-//		G.initiateGrid(250,50); // max farms in cell, kernel radius
-		G.initiateGrid(j); // length of cell side
+// 		std::string cellfile="max250f_7328c_USprems.txt"; G.initiateGrid(cellfile);  // filename with cells
+		G.initiateGrid(20,50); // max farms in cell, kernel radius
+//		G.initiateGrid(50000); // length of cell side
 // 		G.printCells(pfile); // option to print cells, based on specified prem file
  		
  		std::clock_t grid_end = std::clock();
   		double gridGenTimeMS = 1000.0 * (grid_end - grid_start) / CLOCKS_PER_SEC;
 		std::cout << "CPU time for generating grid: " << gridGenTimeMS << "ms." << std::endl;
 
-		// generate random focal and comparison farms (same list for all reps)
-		std::vector <std::vector<Farm*>> f_c_farms = G.fakeFarmStatuses(45000,45000);
+		// use first x focal and comparison farms (same list for all reps)
+		std::vector <std::vector<Farm*>> f_c_farms = G.fakeFarmStatuses(0.05);
 		std::vector<Farm*> focalFarms = f_c_farms[0];
 		std::vector<Farm*> compFarms = f_c_farms[1];
-		
-/*
-		// to compare all farms to all farms
-		std::unordered_map<int, Farm*> farmmap = G.get_allFarms();
-		std::vector<Farm*> allFarms;
-		// convert map to vector
-		for (auto f:farmmap)
-			{allFarms.emplace_back(f.second);}
-		std::vector<Farm*> focalFarms = allFarms;
-		std::vector<Farm*> compFarms = allFarms;
-*/
 
 //  	std::string allLinesToPrint;
   	for (auto i=0; i!=10; i++) // replicates per value
@@ -119,70 +107,71 @@ int main(int argc, char* argv[])
 	// replicating the pairwise comparisons
 //for (auto i=0; i!=1000; i++){
 //	std::cout << "Test #" << i << ": ";
-	std::clock_t slow_start = std::clock();
-	// run this farm by farm (no gridding) for comparison
-		int totalinfections = 0;
-		int totalcomparisons = 0;
-//		std::unordered_map<int, Farm*> allFarms = G.get_allFarms();
-	
-		for (auto f1:focalFarms)
-		{
-			for (auto f2:compFarms)
-			{
-				totalcomparisons++;
-				double f1x = f1 -> get_x(); // get farm 1 x coordinate
-				double f1y = f1 -> get_y(); // get farm 1 y coordinate
-				double f2x = f2 -> get_x(); // get farm 2 x coordinate
-				double f2y = f2 -> get_y(); // get farm 2 y coordinate
-				double xdiff = (f1x - f2x);
-				double ydiff = (f1y - f2y);
-				double distBWfarms = sqrt(xdiff*xdiff + ydiff*ydiff);
-				double kernelBWfarms = kernel(distBWfarms);
-				// get farm infectiousness/susceptibility values (assumes infectOut is true)
-				double farmInf = getFarmInf(f1);	
-				double farmSus = getFarmSus(f2);
+// 	std::clock_t slow_start = std::clock();
+// 	// run this farm by farm (no gridding) for comparison
+// 		int totalinfections = 0;
+// 		int totalcomparisons = 0;
+// //		std::unordered_map<int, Farm*> allFarms = G.get_allFarms();
+// 	
+// 		for (auto f1:focalFarms)
+// 		{
+// 			for (auto f2:compFarms)
+// 			{
+// 				totalcomparisons++;
+// 				double f1x = f1 -> get_x(); // get farm 1 x coordinate
+// 				double f1y = f1 -> get_y(); // get farm 1 y coordinate
+// 				double f2x = f2 -> get_x(); // get farm 2 x coordinate
+// 				double f2y = f2 -> get_y(); // get farm 2 y coordinate
+// 				double xdiff = (f1x - f2x);
+// 				double ydiff = (f1y - f2y);
+// 				double distBWfarms = sqrt(xdiff*xdiff + ydiff*ydiff);
+// 				double kernelBWfarms = kernel(distBWfarms);
+// 				// get farm infectiousness/susceptibility values (assumes infectOut is true)
+// 				double farmInf = getFarmInf(f1);	
+// 				double farmSus = getFarmSus(f2);
+// 
+// 				// calculate probability between these specific farms
+// 				double betweenFarmsProb = 1-exp(-farmSus * farmInf * kernelBWfarms); // prob tx between this farm pair
+// 				// "prob3" in MT's Fortran code
+// 
+// 				double random3 = unif_rand();
+// 				if (random3 < betweenFarmsProb){
+// 					// success... infect
+// 					totalinfections++;
+// 					}
+// 			}
+// 		}
+// //			inf.emplace_back(totalinfections);
+// 			
+// 		std::cout << "Total infections (pairwise): " << totalinfections << std::endl <<
+// 		 "  Total comparisons (pairwise): " << totalcomparisons << std::endl;
+// //	}
+// 	std::clock_t slow_end = std::clock();
+// 	
+// 	std::cout << "CPU time for checking pairwise: "
+// 				  << 1000.0 * (slow_end - slow_start) / CLOCKS_PER_SEC
+// 				  << "ms." << std::endl << std::endl;
+	} // end for each i value
 
-				// calculate probability between these specific farms
-				double betweenFarmsProb = 1-exp(-farmSus * farmInf * kernelBWfarms); // prob tx between this farm pair
-				// "prob3" in MT's Fortran code
-				double random3 = unif_rand();
-				if (random3 < betweenFarmsProb){
-					// success... infect
-					totalinfections++;
-					}
-			}
-		}
-//			inf.emplace_back(totalinfections);
-			
-		std::cout << "Total infections (pairwise): " << totalinfections << std::endl <<
-		 "  Total comparisons (pairwise): " << totalcomparisons << std::endl;
-//	}
-	std::clock_t slow_end = std::clock();
-	
-//	if (pairwise){
-	std::cout << "CPU time for checking pairwise: "
-				  << 1000.0 * (slow_end - slow_start) / CLOCKS_PER_SEC
-				  << "ms." << std::endl << std::endl;
-//	}
-//}
 
-/*
-char temp[10];
-for(auto it = inf.begin(); it != inf.end(); it++)
-	{
-		sprintf(temp, "%d\t", *it);
-		toPrint += temp;
-	}
-	toPrint.replace(toPrint.end()-1, toPrint.end(), "\n");
-	
-	std::string ofilename = "numPairwiseInf.txt";
-	std::ofstream f(ofilename);
-	if(f.is_open())
-	{
-		f << toPrint;
-		f.close();
-	}
-*/
-	} // end for each j value
+// char temp[10];
+// for(auto it = inf.begin(); it != inf.end(); it++)
+// 	{
+// 		sprintf(temp, "%d\t", *it);
+// 		toPrint += temp;
+// 	}
+// 	toPrint.replace(toPrint.end()-1, toPrint.end(), "\n");
+// 	
+// 	std::string ofilename = "numPairwiseInf.txt";
+// 	std::ofstream f(ofilename);
+// 	if(f.is_open())
+// 	{
+// 		f << toPrint;
+// 		f.close();
+// 	}
+
+
+
+//	} // end for each j value
 return 0;
 }

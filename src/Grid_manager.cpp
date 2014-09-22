@@ -23,6 +23,7 @@ Grid_manager::Grid_manager(std::string &fname, bool xyswitch, bool v)
 	// modified from Stefan's Farm Manager
 	// read in file of premises
 	double id, size, x, y;
+	int fcount = 0;
 
 	std::ifstream f(fname);
 	if(!f){std::cout << "Input file not found." << std::endl;}
@@ -47,8 +48,9 @@ Grid_manager::Grid_manager(std::string &fname, bool xyswitch, bool v)
 				}
 				str_cast(line_vector[3], size);
 
-				farm_map[id] = new Farm(id, x, y, size); 
+				farm_map[fcount] = new Farm(id, x, y, size); 
 				// write pointer to private var farm_map
+				fcount++;
 				
 				// compare/replace limits of xy plane
 				if (!xylimits.empty())// if there are values to compare
@@ -326,7 +328,9 @@ void Grid_manager::initiateGrid(const unsigned int in_maxFarms, const int kernel
 
 void Grid_manager::initiateGrid(std::string& cname)
 // overloaded (alternate) constructor that reads in external file of cells
+// temporarily disabled due to incompatible std::to_string use
 {
+/*
 	// read in file of premises
 	std::vector<Farm*> farmsInCell;
 
@@ -384,6 +388,7 @@ void Grid_manager::initiateGrid(std::string& cname)
 		}
 	std::cout << "Grid loaded. Pre-calculating distances..." << std::endl;		
 	makeCellRefs();
+*/
 }
 
 void Grid_manager::initiateGrid(double cellSide)
@@ -399,10 +404,11 @@ void Grid_manager::initiateGrid(double cellSide)
 		uniquex.emplace_back(0); // include first value (element 0)
 	int cellCount = 0;
     // all x points will be from min_x to max_x by cellSide
-    for (auto x = min_x; x <= max_x; x+=cellSide)
+    // let max be max + cellside for extra wiggle room, cells w/o farms will be excluded later
+    for (auto x = min_x; x <= (max_x+cellSide); x+=cellSide) 
     {
     	// all y points will be from min_y to max_y by cellSide
-    	for (auto y = min_y; y <= max_y; y+=cellSide)
+    	for (auto y = min_y; y <= (max_y+cellSide); y+=cellSide)
     	{
     		xlist.emplace_back(x);
     		ylist.emplace_back(y);
@@ -456,6 +462,8 @@ void Grid_manager::initiateGrid(double cellSide)
     std::cout << "Done placing farms." << std::endl;
    
    // write all cells with farms
+   bool printNumFarms = 1;
+   std::string allLinesToPrint;
    int actualCellCount = 0;
    for (auto c=0; c!=cellCount; c++)
    {
@@ -463,8 +471,22 @@ void Grid_manager::initiateGrid(double cellSide)
 	   		allCells[actualCellCount] = new grid_cell(actualCellCount, xlist[c], ylist[c], cellSide, cellFarmMap[c]);
 	   		assignCellIDtoFarms(actualCellCount,cellFarmMap[c]);
 	   		actualCellCount++;
+	   		if (printNumFarms){
+	   			char temp[5];
+	   			sprintf(temp, "%d\n", cellFarmMap[c].size());
+	   			allLinesToPrint += temp;
+	   		}
 	   }
    }
+   if (printNumFarms){
+   		std::string ofilename = "farmsPerUnifCell.txt";
+   		std::ofstream f(ofilename);
+	if(f.is_open())
+	{
+		f << allLinesToPrint;
+		f.close();
+	}
+	}
 
 	std::cout << "Grid loaded with " << actualCellCount << " uniform cells. Pre-calculating distances..." << std::endl;		
 	makeCellRefs();
@@ -645,7 +667,9 @@ void Grid_manager::makeCellRefs()
 }
 
 void Grid_manager::printGridKernel() const // only prints values > 0
+// temporarily disabled due to incompatible std::to_string use
 {
+/*
 	// sort cell pairs by ID
 	std::map<double, std::unordered_map<double, double>> orderedGKs(gridCellKernel.begin(),gridCellKernel.end());
 	double firstcell = orderedGKs.begin()->first;
@@ -687,6 +711,7 @@ void Grid_manager::printGridKernel() const // only prints values > 0
 		f << tabdelim;
 		f.close();
 	}
+	*/
 }
 
 std::vector<grid_cell*> Grid_manager::IDsToCells(std::vector<double> cellIDs)
@@ -876,11 +901,39 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 		<< "Total infections (gridding): " << totalinfections << std::endl;
 }
 
+// input is proportion of focal farms (random), all remaining farms are comparison
+std::vector <std::vector<Farm*>> Grid_manager::fakeFarmStatuses(double propFocal)
+{ 
+ 	std::vector <Farm*> focal, comp; // two vectors of focal/comp farms
+
+	for (auto i=0; i!=farm_map.size(); i++){
+		double randomnum = unif_rand();
+		if (randomnum <= propFocal){
+			focal.emplace_back(farm_map.at(i));
+		} else {
+			comp.emplace_back(farm_map.at(i));
+		}
+	}
+	std::vector <std::vector <Farm*>> farmsToReturn;
+ 		farmsToReturn.emplace_back(focal);
+ 		farmsToReturn.emplace_back(comp);
+ 	std::cout << "Returning " << focal.size() << " focal farms and " << comp.size() << " comparison farms." << std::endl;
+ 	return farmsToReturn;
+ }
+ 
+// input is both focal and comp farms (essentially random)
 std::vector <std::vector<Farm*>> Grid_manager::fakeFarmStatuses(double numFocal, double numComp)
 { 
+ 	std::vector <Farm*> focal, comp; // two vectors of focal/comp farms
+
+	for (auto i=0; i!=numFocal; i++)
+		{focal.emplace_back(farm_map.at(i));}
+	for (auto j=numFocal; j!=numFocal+numComp; j++)
+		{comp.emplace_back(farm_map.at(j));}
+	
+/*	
 	std::unordered_map<double, Farm*> focalAndComp; // map of all farms to be used
 		focalAndComp.reserve(numFocal+numComp);
-	
 	// while finished size not reached
 	while (focalAndComp.size() < (numFocal+numComp)){
 		int tempFarmID = rand() % farm_map.size(); // pick random ID
@@ -897,9 +950,9 @@ std::vector <std::vector<Farm*>> Grid_manager::fakeFarmStatuses(double numFocal,
  		if (count <= numFocal){focal.emplace_back(farm.second);} // add Farm* to focal
  		else if (count > numFocal){comp.emplace_back(farm.second);} // add Farm* to comp
  	}
- 	
+*/	
  	std::vector <std::vector <Farm*>> farmsToReturn;
  		farmsToReturn.emplace_back(focal);
  		farmsToReturn.emplace_back(comp);
  	return farmsToReturn;
-}
+ }

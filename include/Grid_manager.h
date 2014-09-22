@@ -117,6 +117,7 @@ class Grid_manager
 		/////////// for infection evaluation ///////////
 		// per timestep functions
 		//void setFocalCells(std::vector<Farm*>& focalFarms); // gets cells of focal farms and sends them to stepThroughCells
+		std::vector <std::vector<Farm*>> fakeFarmStatuses(double);
 		std::vector <std::vector<Farm*>> fakeFarmStatuses(double, double);
 		void stepThroughCells(std::vector<Farm*>&, std::vector<Farm*>&);
 		void setInfectOut(bool); //inlined
