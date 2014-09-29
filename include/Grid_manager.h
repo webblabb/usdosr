@@ -81,8 +81,6 @@ class Grid_manager
 			IDsToCells(std::vector<double>); // convert vector of IDs to cell pointers
 		grid_cell* 				
 			IDsToCells(double);  // overloaded to accept single ID also
-		std::vector<double> 
-			orderIDs(double cellID1, double cellID2); // orders smaller before larger
 		
 	public:
 		/////////// for grid creation ///////////

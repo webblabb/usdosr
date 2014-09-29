@@ -269,57 +269,49 @@ void Grid_manager::initiateGrid(const unsigned int in_maxFarms, const int kernel
     if(verbose){std::cout << std::endl << "Queue length = " << queue.size() << std::endl;}
     
     cellSpecs = queue.top(); // set first in queue as working cell
-    farmsInCell = getFarms(cellSpecs, maxFarms); // get/write farms in cell (to farmsInCell)
-    if(verbose)
-    {
-    	std::cout << "Farms in cell = " << farmsInCell.size() 
-    		<< std::endl;
-    	std::cout << "Side length = " << cellSpecs[3] <<
-    	", Diameter = " << kernelRadius*2 << ". ";
+
+	if(verbose){
+    	std::cout << "Cell side length = " << cellSpecs[3] << ". ";
     }
 
-    if (cellSpecs[3] >= kernelRadius*2) // side >= kernel diameter
-    {
-    if(verbose){std::cout << "Side bigger than kernel, stepping in..." << std::endl;}
-        if (farmsInCell.size() >= maxFarms)
-        // if farm density too high
-        {
+	// Case A: side length of cell is smaller than kernel - immediate commit
+	if (cellSpecs[3] < kernelRadius*2){ // if side < kernel diameter
+		farmsInCell = getFarms(cellSpecs); // want ALL farms, so don't include maxFarms as argument
+		if (farmsInCell.size() > 0){ // if there are farms in cell, commit
+        	cellSpecs[0] = cellCount;
+        	commitCell(cellSpecs,farmsInCell);
+        	cellCount = cellCount+1;
+        	if (verbose){std::cout << "Side smaller than kernel diameter. Cell committed: #" << cellCount;}
+        	removeParent(queue);
+        } else { // no farms in cell, remove from queue w/o committing
+        	removeParent(queue);
+            if(verbose){std::cout << "No farms, removed cell, queue length = " << queue.size() << std::endl;}
+        }
+    // Case B: side length of cell >= kernel diameter, check farm density and split if needed
+    } else if (cellSpecs[3] >= kernelRadius*2){ // side >= kernel diameter
+    	if(verbose){std::cout << "Side bigger than kernel, stepping in..." << std::endl;}
+    	farmsInCell = getFarms(cellSpecs, maxFarms); // copy up to maxFarms farms in cell to farmsInCell)
+    	if(verbose){std::cout << "Farms in cell = " << farmsInCell.size() << std::endl;}
+        if (farmsInCell.size() >= maxFarms){
+        // if farm density too high, split
 			if(verbose){std::cout << "Too many farms, splitting cell..." << std::endl;}
 			splitCell(cellSpecs,queue);
         }
-        else if (farmsInCell.size() > 0 && farmsInCell.size() < maxFarms)
-        // farm density is below maximum
-            {
+        else if (farmsInCell.size() > 0 && farmsInCell.size() < maxFarms){
+        // farm density is below maximum, commit
             	cellSpecs[0] = cellCount;
                 commitCell(cellSpecs,farmsInCell);
                 cellCount = cellCount+1;
                 if (verbose){std::cout << "Cell committed: #" << cellCount;}
                 removeParent(queue);
             }
-        else if (farmsInCell.empty())
+        else if (farmsInCell.empty()){
         // cell has no farms at all - remove from queue w/o committing
-        {
             removeParent(queue);
             if(verbose){std::cout << "No farms, removed cell, queue length = " 
             	<< queue.size() << std::endl;}
         }
     }
-    else if ((cellSpecs[3] < kernelRadius*2) // side < kernel diameter
-             && (farmsInCell.size() > 0)) // and there are farms in cell
-        {
-        cellSpecs[0] = cellCount;
-        commitCell(cellSpecs,farmsInCell);
-        cellCount = cellCount+1;
-        if (verbose){std::cout << "Side smaller than kernel. Cell committed: #" << cellCount;}
-        removeParent(queue);
-        }
-    else if (cellSpecs[3] < kernelRadius*2 // side < kernel diameter
-             && farmsInCell.empty()) // and no farms in cell
-        {
-        removeParent(queue);
-        if(verbose){std::cout << "No farms, removed cell, queue length = " 
-            	<< queue.size() << std::endl;}
-        }
     } // end "while anything in queue"
 
 	std::cout << "Grid created. Pre-calculating distances..." << std::endl;
@@ -473,7 +465,8 @@ void Grid_manager::initiateGrid(double cellSide)
 	   		actualCellCount++;
 	   		if (printNumFarms){
 	   			char temp[5];
-	   			sprintf(temp, "%u\n", cellFarmMap[c].size());
+	   			//sprintf(temp, "%u\n", cellFarmMap[c].size()); // use this on sweatshop computers
+	   			sprintf(temp, "%lu\n", cellFarmMap[c].size());
 	   			allLinesToPrint += temp;
 	   		}
 	   }
@@ -730,19 +723,6 @@ grid_cell* Grid_manager::IDsToCells(double cellID)
 	return allCells.at(cellID);
 }
 
-std::vector<double> Grid_manager::orderIDs(double cellID1, double cellID2)
-// order cellID1 and cellID2 from lowest to highest
-{
-	std::vector<double> ordered;
-	ordered.emplace_back(cellID1);
-	if (cellID2 < cellID1){
-		ordered.insert(ordered.begin(),cellID2);
-	} else {
-		ordered.emplace_back(cellID2); // if cellID2 is larger or equal to cellID1
-	}
-	return ordered;
-}
-
 std::vector<grid_cell*> Grid_manager::posKernelNeighborsOf(double cellID)
 // get neighboring cells that have kernel values > 0
 {
@@ -792,7 +772,7 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 				double compNumFarms = (compCellMap.at( c2->get_id() )).size(); // how many farms in comparison cell	
 				if (verbose){std::cout << " Comparison cell " << c2->get_id() <<": " << compNumFarms << " farms.";}
 				// identify which cell ID is smaller/larger for grid value lookup, min comes first
-				std::vector<double> ids = orderIDs(currentCell->get_id(),c2->get_id());
+				std::vector<double> ids = orderNumbers(currentCell->get_id(),c2->get_id());
 				// look up grid value
 				double gridKernValue = 0; // default kernel value is 0
 				if ((gridCellKernel.count(ids[0]) == 1) && // something exists for first cell
