@@ -52,9 +52,10 @@ int main(int argc, char* argv[])
  			<< "ms." << std::endl;
  	 	std::clock_t grid_start = std::clock();		
 // 		std::string cellfile="max250f_7328c_USprems.txt"; G.initiateGrid(cellfile);  // filename with cells
-		G.initiateGrid(25,50); // max farms in cell, kernel radius
-//		G.initiateGrid(50000); // length of cell side
+		G.initiateGrid(1000,50000); // max farms in cell, kernel radius
+//		G.initiateGrid(10000); // length of cell side
 // 		G.printCells(pfile); // option to print cells, based on specified prem file
+//		G.printGridValues();
  		
  		std::clock_t grid_end = std::clock();
   		double gridGenTimeMS = 1000.0 * (grid_end - grid_start) / CLOCKS_PER_SEC;
@@ -64,11 +65,16 @@ int main(int argc, char* argv[])
 		std::vector <std::vector<Farm*>> f_c_farms = G.fakeFarmStatuses(0.05);
 		std::vector<Farm*> focalFarms = f_c_farms[0];
 		std::vector<Farm*> compFarms = f_c_farms[1];
+		// std::unordered_map<int, Farm*> af = G.get_allFarms();
+// 		std::vector<Farm*> focalFarms;
+// 		for (auto f:af){focalFarms.emplace_back(f.second);}
+// 		std::vector<Farm*> compFarms = focalFarms;
 
 //  	std::string allLinesToPrint;
-  	for (auto i=0; i!=10; i++) // replicates per value
-  	{	
-		// at one timestep:
+   	for (auto i=0; i!=1; i++) // replicates per value
+   	{	
+// 		// at one timestep:
+		std::cout << "Starting grid check: " << std::endl;
   		std::clock_t gridcheck_start = std::clock();	  
 	   	G.stepThroughCells(focalFarms,compFarms);
   		std::clock_t gridcheck_end = std::clock();
@@ -108,11 +114,11 @@ int main(int argc, char* argv[])
 //for (auto i=0; i!=1000; i++){
 //	std::cout << "Test #" << i << ": ";
 // 	std::clock_t slow_start = std::clock();
-// 	// run this farm by farm (no gridding) for comparison
+// // 	// run this farm by farm (no gridding) for comparison
 // 		int totalinfections = 0;
 // 		int totalcomparisons = 0;
-// //		std::unordered_map<int, Farm*> allFarms = G.get_allFarms();
-// 	
+// // //		std::unordered_map<int, Farm*> allFarms = G.get_allFarms();
+// // 	
 // 		for (auto f1:focalFarms)
 // 		{
 // 			for (auto f2:compFarms)
@@ -141,7 +147,7 @@ int main(int argc, char* argv[])
 // 					}
 // 			}
 // 		}
-// //			inf.emplace_back(totalinfections);
+// // //			inf.emplace_back(totalinfections);
 // 			
 // 		std::cout << "Total infections (pairwise): " << totalinfections << std::endl <<
 // 		 "  Total comparisons (pairwise): " << totalcomparisons << std::endl;
@@ -151,7 +157,7 @@ int main(int argc, char* argv[])
 // 	std::cout << "CPU time for checking pairwise: "
 // 				  << 1000.0 * (slow_end - slow_start) / CLOCKS_PER_SEC
 // 				  << "ms." << std::endl << std::endl;
-	} // end for each i value
+ 	} // end for each i value
 
 
 // char temp[10];

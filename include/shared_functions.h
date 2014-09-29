@@ -19,6 +19,7 @@
 		split(const std::string&, char);
 	double getFarmSus(Farm*);
 	double getFarmInf(Farm*);
+	std::vector<double> orderNumbers(double, double);
 	
 	template<typename T> void str_cast(const std::string &s, T &ref)
 {

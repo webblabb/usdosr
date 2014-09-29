@@ -13,18 +13,8 @@ double unif_rand()
 
 double kernel(double& dist)
 {	
-	// made up
-	double y = dist*-(0.8/1000) + 0.8;
-	if (y < 0){y = 0;}
-	return y;
-	
-/*
-	// gaussian, copied from stefan's code
-	if (dist==0){dist = 0.00001;}
-	double gaussian_a = sqrt(2)*(dist / 2.99);
-	double temp = dist/gaussian_a;
-	return 1 * exp(-(temp*temp));
-*/
+	if (dist==0){dist = 0.000000001;}
+	return std::min(1.0, 0.12 / (1 + pow((dist/1000), 3)));
 }
 
 std::vector<std::string> 
@@ -78,4 +68,17 @@ double getFarmInf(Farm* f)
 	double farmInf = farmSize * speciesInf[0];
 
 	return farmInf;
+}
+
+std::vector<double> orderNumbers(double number1, double number2)
+// order number1 and number2 from lowest to highest
+{
+	std::vector<double> ordered;
+	ordered.emplace_back(number1);
+	if (number2 < number1){
+		ordered.insert(ordered.begin(),number2);
+	} else {
+		ordered.emplace_back(number2); // if number2 is larger or equal to number1
+	}
+	return ordered;
 }

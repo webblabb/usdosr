@@ -473,7 +473,7 @@ void Grid_manager::initiateGrid(double cellSide)
 	   		actualCellCount++;
 	   		if (printNumFarms){
 	   			char temp[5];
-	   			sprintf(temp, "%d\n", cellFarmMap[c].size());
+	   			sprintf(temp, "%lu\n", cellFarmMap[c].size());
 	   			allLinesToPrint += temp;
 	   		}
 	   }
