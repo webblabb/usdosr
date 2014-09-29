@@ -393,7 +393,7 @@ void Grid_manager::initiateGrid(double cellSide)
     std::unordered_map<double, std::vector<Farm*>> cellFarmMap;
     std::vector<double> xlist, ylist; // list of each x corner, y corner
 	std::vector<int> uniquex; // list of elements of first unique x values
-		uniquex.emplace_back(0); // include first value (element 0)
+		uniquex.emplace_back(0); // include first value (element/index 0)
 	int cellCount = 0;
     // all x points will be from min_x to max_x by cellSide
     // let max be max + cellside for extra wiggle room, cells w/o farms will be excluded later
@@ -523,11 +523,11 @@ void Grid_manager::printCells(std::string& pfile) const
 		tabdelim += to_string(*(it.second));
 	}
 	
-	std::string ofilename ="max";
-	char temp[5]; // make temporary storage
-	sprintf(temp, "%i", maxFarms); // assign max # of farms as string
-	ofilename += temp; // add to end of filename
-	ofilename += "f_"; // add to end of filename
+	std::string ofilename ="unif";
+ 	char temp[5]; // make temporary storage
+// 	sprintf(temp, "%i", maxFarms); // assign max # of farms as string
+// 	ofilename += temp; // add to end of filename
+// 	ofilename += "f_"; // add to end of filename
 	int numCells = orderedCells.size(); // get number of cells
 		sprintf(temp, "%i", numCells); // assign # of cells as string
 	ofilename += temp;
@@ -544,15 +544,13 @@ void Grid_manager::printCells(std::string& pfile) const
 
 }
 
-double Grid_manager::shortestCellDist(grid_cell* cell1, grid_cell* cell2) const
+double Grid_manager::shortestCellDist(grid_cell* cell1, grid_cell* cell2)
 // returns shortest distance between cell1 and cell2
 {
-	double cellDist;
+	double cellDist = 0;
  	double cell1_id = cell1->get_id();
  	double cell2_id = cell2->get_id();
-  if (cell1_id == cell2_id){cellDist=0; // if comparing to self, set distance to 0
-  } else {
- 	
+  if (cell1_id != cell2_id){ // else if comparing to self, distance is already 0 	
 	double cell1_x, cell1_y, cell2_x, cell2_y; // will use these points to calc distance
 
 	double cell1_South = cell1->get_y(); // lower boundary of cell1
@@ -617,9 +615,18 @@ double Grid_manager::shortestCellDist(grid_cell* cell1, grid_cell* cell2) const
 		// only use distance between x values
 		}	
 	
-	double xDiff = cell1_x-cell2_x;
-	double yDiff = cell1_y-cell2_y;
-	cellDist = sqrt(xDiff*xDiff + yDiff*yDiff);
+	double xDiff = abs(cell1_x-cell2_x);
+	double yDiff = abs(cell1_y-cell2_y);
+	std::vector<double> orderedDiffs = orderNumbers(xDiff,yDiff);
+	if (storedDists.count(orderedDiffs[0])==1 && 
+		storedDists.at(orderedDiffs[0]).count(orderedDiffs[1])==1){
+		cellDist = storedDists.at(orderedDiffs[0]).at(orderedDiffs[1]);
+		std::cout << ".";
+	} else {
+		cellDist = sqrt(xDiff*xDiff + yDiff*yDiff);
+ 		storedDists[orderedDiffs[0]][orderedDiffs[1]] = cellDist;
+ 		std::cout << "Adding dist " << cellDist << ". ";
+   	}
   }
 // 	if (verbose){std::cout << cellDist << " between cells " << cell1->get_id() 
 // 					  << " and " << cell2->get_id() << std::endl;}

@@ -44,7 +44,7 @@ int main(int argc, char* argv[])
 //   {
   		// generate map of farms and xylimits
 	 	std::clock_t loading_start = std::clock();
-		Grid_manager G(pfile,0,1); // reverse x/y on/off, verbose on/off
+		Grid_manager G(pfile,0,0); // reverse x/y on/off, verbose on/off
 		std::clock_t loading_end = std::clock();
 	
  		std::cout << std::endl << "CPU time for loading premises: "
@@ -52,35 +52,35 @@ int main(int argc, char* argv[])
  			<< "ms." << std::endl;
 	 	std::clock_t grid_start = std::clock();		
 // 		std::string cellfile="max250f_7328c_USprems.txt"; G.initiateGrid(cellfile);  // filename with cells
-		G.initiateGrid(1000,50000); // max farms in cell, kernel radius
-//		G.initiateGrid(10000); // length of cell side
-// 		G.printCells(pfile); // option to print cells, based on specified prem file
+//		G.initiateGrid(400,50000); // max farms in cell, kernel radius
+		G.initiateGrid(1000); // length of cell side
+ //		G.printCells(pfile); // option to print cells, based on specified prem file
 //		G.printGridValues();
  		
-		std::clock_t grid_end = std::clock();
-		double gridGenTimeMS = 1000.0 * (grid_end - grid_start) / CLOCKS_PER_SEC;
-		std::cout << "CPU time for generating grid: " << gridGenTimeMS << "ms." << std::endl;
-
-		// use first x focal and comparison farms (same list for all reps)
-		std::vector <std::vector<Farm*>> f_c_farms = G.fakeFarmStatuses(0.05);
-		std::vector<Farm*> focalFarms = f_c_farms[0];
-		std::vector<Farm*> compFarms = f_c_farms[1];
+// 		std::clock_t grid_end = std::clock();
+// 		double gridGenTimeMS = 1000.0 * (grid_end - grid_start) / CLOCKS_PER_SEC;
+// 		std::cout << "CPU time for generating grid: " << gridGenTimeMS << "ms." << std::endl;
+// 
+// 		// use first x focal and comparison farms (same list for all reps)
+// 		std::vector <std::vector<Farm*>> f_c_farms = G.fakeFarmStatuses(0.05);
+// 		std::vector<Farm*> focalFarms = f_c_farms[0];
+// 		std::vector<Farm*> compFarms = f_c_farms[1];
 		// std::unordered_map<int, Farm*> af = G.get_allFarms();
 // 		std::vector<Farm*> focalFarms;
 // 		for (auto f:af){focalFarms.emplace_back(f.second);}
 // 		std::vector<Farm*> compFarms = focalFarms;
 
 //  	std::string allLinesToPrint;
-   	   for (auto i=0; i!=1; i++) // replicates per value
-   		{	
+//    	   for (auto i=0; i!=1; i++) // replicates per value
+//    		{	
 // 		// at one timestep:
-		 std::cout << "Starting grid check: " << std::endl;
-  		 std::clock_t gridcheck_start = std::clock();	  
-	   	 G.stepThroughCells(focalFarms,compFarms);
-  		 std::clock_t gridcheck_end = std::clock();
-  		
- 		 double gridCheckTimeMS = 1000.0 * (gridcheck_end - gridcheck_start) / CLOCKS_PER_SEC;
-		 std::cout << "CPU time for checking grid: " << gridCheckTimeMS << "ms." << std::endl;			  
+// 		 std::cout << "Starting grid check: " << std::endl;
+//   		 std::clock_t gridcheck_start = std::clock();	  
+// 	   	 G.stepThroughCells(focalFarms,compFarms);
+//   		 std::clock_t gridcheck_end = std::clock();
+//   		
+//  		 double gridCheckTimeMS = 1000.0 * (gridcheck_end - gridcheck_start) / CLOCKS_PER_SEC;
+// 		 std::cout << "CPU time for checking grid: " << gridCheckTimeMS << "ms." << std::endl;			  
 // 		
 // 		std::string oneLine;
 // 			oneLine.reserve(30);
@@ -106,7 +106,7 @@ int main(int argc, char* argv[])
 // 		f << allLinesToPrint;
 // 		f.close();
 // 	}
-	} //end for each rep
+//	} //end for each rep
 
 
 	// replicating the pairwise comparisons

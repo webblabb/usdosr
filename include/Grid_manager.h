@@ -37,8 +37,12 @@ class Grid_manager
 			xylimits; // [0]x min, [1]x max, [2]y min, [3]y max
 		std::unordered_map<double, std::unordered_map<double, double>> 
 			gridCellKernel; // kernel values between cell pairs
+		std::unordered_map<double, std::unordered_map<double, double>> 
+			storedDists; // freq-used distances between cell pairs
 		std::unordered_map<double, std::vector<double>> 
 			kernelNeighbors; // each cell's neighbors with positive kernel values
+			
+			
 		// functions
 		void setVerbose(bool); // inlined
 		
@@ -65,8 +69,9 @@ class Grid_manager
  			posKernelNeighborsOf(double cellID);
 		double shortestCellDist(
 			grid_cell* cell1, 
-			grid_cell* cell2) const; // calculates shortest distance between two cells
+			grid_cell* cell2); // calculates shortest distance between two cells
 		void makeCellRefs(); // make reference matrices for distance and kernel
+
 		
 		/////////// for infection evaluation ///////////
 		// variables
