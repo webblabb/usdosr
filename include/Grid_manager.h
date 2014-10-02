@@ -72,7 +72,6 @@ class Grid_manager
 			grid_cell* cell2); // calculates shortest distance between two cells
 		void makeCellRefs(); // make reference matrices for distance and kernel
 
-		
 		/////////// for infection evaluation ///////////
 		// variables
 		bool infectOut; // if true, looks at transmission TO other cells, otherwise FROM other cells
@@ -80,7 +79,7 @@ class Grid_manager
 		// per timestep variables
 		int farmtocellskips = 0;
 		int farmsinskippedcells = 0;
-		int totalinfections = 0;
+		std::unordered_map<double, std::vector<double>> infectedFarms; // ids & counts of farms infected in a timestep
 		// functions
 		std::vector<grid_cell*> 
 			IDsToCells(std::vector<double>); // convert vector of IDs to cell pointers
@@ -123,8 +122,10 @@ class Grid_manager
 		std::vector <std::vector<Farm*>> fakeFarmStatuses(double);
 		std::vector <std::vector<Farm*>> fakeFarmStatuses(double, double);
 		void stepThroughCells(std::vector<Farm*>&, std::vector<Farm*>&);
+		void stepThroughCellsAlt(std::vector<Farm*>&, std::vector<Farm*>&);
+		// calcs pw prob for each farm for comparison to gridding loops
 		void setInfectOut(bool); //inlined
-		int getTotalInfections() const; //inlined
+		std::unordered_map<double, std::vector<double>> getTotalInfections() const; //inlined
 
 };
 
@@ -176,9 +177,9 @@ inline void Grid_manager::setInfectOut(bool io)
 	infectOut = io;
 }
 
-inline int Grid_manager::getTotalInfections() const
+inline std::unordered_map<double, std::vector<double>> Grid_manager::getTotalInfections() const
 {
-	return totalinfections;
+	return infectedFarms;
 }
 
 #endif

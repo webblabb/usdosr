@@ -621,11 +621,9 @@ double Grid_manager::shortestCellDist(grid_cell* cell1, grid_cell* cell2)
 	if (storedDists.count(orderedDiffs[0])==1 && 
 		storedDists.at(orderedDiffs[0]).count(orderedDiffs[1])==1){
 		cellDist = storedDists.at(orderedDiffs[0]).at(orderedDiffs[1]);
-		std::cout << ".";
 	} else {
 		cellDist = sqrt(xDiff*xDiff + yDiff*yDiff);
  		storedDists[orderedDiffs[0]][orderedDiffs[1]] = cellDist;
- 		std::cout << "Adding dist " << cellDist << ". ";
    	}
   }
 // 	if (verbose){std::cout << cellDist << " between cells " << cell1->get_id() 
@@ -666,7 +664,7 @@ void Grid_manager::makeCellRefs()
  	}
 }
 
-void Grid_manager::printGridKernel() const // only prints values > 0
+void Grid_manager::printGridKernel() const // only values > 0 stored
 // temporarily disabled due to incompatible std::to_string use
 {
 /*
@@ -686,7 +684,6 @@ void Grid_manager::printGridKernel() const // only prints values > 0
 	std::unordered_map<double, double> cell1map = it.second;
 	for(auto it2:cell1map){
 	// it2 is each cell2 in the cell1 map
-	 if (it2.second > 0){ // if kernel value > 0
 		cells_dists[0] = it.first; // cell 1
 		cells_dists[1] = it2.first; // cell 2
 		cells_dists[2] = it2.second; // kernel value
@@ -696,7 +693,6 @@ void Grid_manager::printGridKernel() const // only prints values > 0
 			tabdelim += temp;
 		}
 		tabdelim.replace(tabdelim.end()-1, tabdelim.end(), "\n"); // add line break
-	  } // end if kernel value > 0
 	} // end for each cell2 in cell1 map
 	} // end for each cell1 map
 	
@@ -740,44 +736,46 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 // in_focalFarms is either all infectious (infectOut=1) or all susceptible (infectOut=0) premises
 // in_focalFarms is either all susceptible (infectOut=1) or all infectious (infectOut=0) premises
 {
-	totalinfections = 0; // number of infections in this timestep
-	// get cells of focal farms...
+	// make map of focal farms indexed by cells
 	std::unordered_map<double, std::vector<Farm*>> focalCellMap; // ...create a map to store them in
 	for (auto ff:in_focalFarms){ // ff is Farm*
-		// copy farm ids to key cellID
 		focalCellMap[ff->get_cellID()].emplace_back(ff);
 	}
 	if (verbose){
-		std::cout << std::endl << focalCellMap.size() << " cells contain focal farms. ";
+		std::cout << std::endl << focalCellMap.size() << " cells contain " << in_focalFarms.size() << " focal farms. ";
 	}
-	// get cells of comp farms...
-	std::unordered_map<double, std::vector<Farm*>> compCellMap; // ...create a map to store them in
+	
+	// make map of comp farms indexed by cells
+	std::unordered_map<double, std::vector<Farm*>> compCellMap;
 	for (auto cf:in_compFarms){ // cf is Farm*
-		// copy farm ids to key cellID
 		compCellMap[cf->get_cellID()].emplace_back(cf);
 		if(verbose){std::cout << "compCell " << cf->get_cellID() << " has " 
 			<< compCellMap[cf->get_cellID()].size() << " farms" << std::endl;}
 	}
 	if(verbose){
-		std::cout << std::endl << compCellMap.size() << " cells contain comparison farms: ";
+		std::cout << std::endl << compCellMap.size() << " cells contain " << in_compFarms.size() << " comparison farms: ";
 		for (auto c:compCellMap){std::cout << c.first << " ";}
 	}
-	
+		
 	for (auto c1:focalCellMap)
 	{ // loop through each cell (c1 as in "cell 1")
 		grid_cell* currentCell = IDsToCells(c1.first); // set current cell
 		if (verbose){std::cout << std::endl << "Focal cell set to " << currentCell->get_id();}
+		// get neighbor cells of focal cell (includes self)
 		std::vector<grid_cell*> neighborsOfFocal = posKernelNeighborsOf(currentCell->get_id());		
 		if (verbose){std::cout << ", with " << neighborsOfFocal.size() << " neighbor cells. " ;}
-		// neighbors include comparison to self to include other farms in same cell
-		double focalNumFarms = currentCell->get_num_farms(); // how many farms in focal cell
-		if (verbose){std::cout << "Focal cell: " << focalNumFarms << " farms. ";}
-		
-		// loop through each neighbor cell
-		for (auto c2:neighborsOfFocal){	// loop through each cell (c2 as in "cell 2")
+		// get farms in focal cell
+		std::vector<Farm*> focalFarmList = focalCellMap.at(currentCell->get_id());
+		double focalNumFarms = focalFarmList.size(); // how many farms in focal cell
+		if (verbose){std::cout << "Focal cell: " << focalNumFarms << " farms. ";}		
+
+		for (auto f1:focalFarmList){ // for each farm in focal cell		
+		for (auto c2:neighborsOfFocal){	// loop through each neighbor cell (c2 as in "cell 2")
 			if(compCellMap.count( c2->get_id() )>0){ // if this cell exists in the comp cell map (has eligible farms)
-				double compNumFarms = (compCellMap.at( c2->get_id() )).size(); // how many farms in comparison cell	
+				std::vector<Farm*> compFarmList = c2 -> get_farms(); // list of farms in comp cell
+				double compNumFarms = compFarmList.size(); // how many farms in comparison cell	
 				if (verbose){std::cout << " Comparison cell " << c2->get_id() <<": " << compNumFarms << " farms.";}
+				
 				// identify which cell ID is smaller/larger for grid value lookup, min comes first
 				std::vector<double> ids = orderNumbers(currentCell->get_id(),c2->get_id());
 				// look up grid value
@@ -796,10 +794,7 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 					maxInf = c2->get_maxInf();
 				}
 	
-				double s = 1; // on/off switch, 1 = on
-				// get farms in each cell
-				std::vector<Farm*> focalFarmList = focalCellMap.at(currentCell->get_id());
-				std::vector<Farm*> compFarmList = c2 -> get_farms();
+				double s = 1; // on/off switch, 1 = on (single infection hasn't happened yet)
 		
 				int f2count = 0; // how many farms in comparison cell have been checked
 				double farmSus = 0;
@@ -810,8 +805,6 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 
 				double f1x, f1y, f2x, f2y, xdiff, ydiff, distBWfarms, kernelBWfarms; // vars for farm pairs if evaluated
 				double betweenFarmsProb = 0; // "prob3" in MT's Fortran code
-
-				for (auto f1:focalFarmList){ // for each farm in focal cell
 		
 					if (infectOut){
 						farmInf = getFarmInf(f1); // infectiousness value for farm in focal cell
@@ -831,7 +824,6 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 							// susceptibility of focal farm * max infectiousness in comp cell * grid kernel
 						}
 			
-					if (indivFarmMaxProb > 0){ // only continue if indivMax > 0 
 						for (auto f2:compFarmList){
 							f2count++;
 							if (infectOut){			
@@ -841,13 +833,9 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 							}
 							// # farms left in cell * farm(a) infectiousness * farm(b) susceptibility * grid kernel
 
-							//if(verbose && f2count==1){std::cout << " remMaxProb: " << remainingFarmsMaxProb << " ";}
 							double random2 = unif_rand(); // "prob4" in MT's Fortran code
 							if (random2 < indivFarmMaxProb/remainingFarmsMaxProb){	
-							//if(verbose){std::cout << random2 << " < " << indivFarmMaxProb/remainingFarmsMaxProb;}
-
-							// if (one max susceptible)/(number of farms using specific sus-inf values) succeeds
-								s = 0; // remainingFarmProb recalculates to 1 for remainder of loop
+							// if (one max susceptible)/(entrance prob accounting for # of farms checked) succeeds
 								// get actual distances between farms
 								f1x = f1 -> get_x();
 								f1y = f1 -> get_y();
@@ -856,7 +844,6 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 								xdiff = (f1x - f2x);
 								ydiff = (f1y - f2y);
 								distBWfarms = sqrt(xdiff*xdiff + ydiff*ydiff);
-								// add kernel choice option
 								kernelBWfarms = kernel(distBWfarms);
 								// get individual infectiousness/susceptibility values
 								if (infectOut){			
@@ -868,29 +855,169 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 								betweenFarmsProb = 1-exp(-farmSus * farmInf * kernelBWfarms); // prob tx between this farm pair
 								// "prob3" in MT's Fortran code
 								if (random2 < betweenFarmsProb/remainingFarmsMaxProb){
-								// why don't we account for the indivFarmMaxProb? b/c we use the same random number?
 									// infect
-									totalinfections++;
-									if (verbose){std::cout << " Farm infected. ";}
-									}
-								} // end "if trans between indiv farms at max"
-							} // end for each comparison cell farm
-							f2count = 0;
-					} // end if indivMaxProb > 0
-							
+									if (infectedFarms.count(f2->get_id())==0){ // if this farm hasn't been infected
+										if (verbose){std::cout << " Farm infected. ";}
+										s = 0; // remainingFarmProb recalculates to 1 for remainder of loop
+										infectedFarms[f2->get_id()].emplace_back(1);
+										infectedFarms[f2->get_id()].emplace_back(f2x);
+										infectedFarms[f2->get_id()].emplace_back(f2y);
+									} else {
+										infectedFarms.at(f2->get_id())[0]++; // would be infected again - keep count
+									} // end if farm is already on infected list
+									
+								}
+							} // end "if trans between indiv farms at max"
+						} // end for each comparison cell farm
+						f2count = 0;							
 					} else { // otherwise if p(farm->cell) fails
 						farmtocellskips++;
 						farmsinskippedcells += compNumFarms;
-						} // end if p(farm->cell) fails
-						
-				} // end for each focal cell farm			
-			} // end if comp cell has eligible farms
+					} // end if p(farm->cell) fails
+			} // end if neighbor cell has eligible farms
 		} // end for loop through comparison cells
+		} // end for each focal cell farm
 	} // end loop through focal cells
 	std::cout << std::endl
 		<< "Farm to cell skips: " << farmtocellskips << " (avoided " << farmsinskippedcells << " comparisons)" << std::endl
-		<< "Total infections (gridding): " << totalinfections << std::endl;
+		<< "Total infections (gridding): " << infectedFarms.size() << std::endl;
+	
 }
+
+void Grid_manager::stepThroughCellsAlt(std::vector<Farm*>& in_focalFarms, std::vector<Farm*>& in_compFarms)
+// draw random numbers for all comp farms in neighbor cells
+// first compare number to stored values (max sus at nearest point, one farm) before calc'ing individual probs
+
+// in_focalFarms is either all infectious (infectOut=1) or all susceptible (infectOut=0) premises
+// in_focalFarms is either all susceptible (infectOut=1) or all infectious (infectOut=0) premises
+{
+	int ginf=0;
+	
+	// make map of focal farms indexed by cells
+	std::unordered_map<double, std::vector<Farm*>> focalCellMap;
+	for (auto ff:in_focalFarms){ // ff is Farm*
+		focalCellMap[ff->get_cellID()].emplace_back(ff);
+	}
+	if (verbose){
+		std::cout << std::endl << focalCellMap.size() << " cells contain focal farms. ";
+	}
+	// make map of comp farms indexed by cells
+	std::unordered_map<double, std::vector<Farm*>> compCellMap; // ...create a map to store them in
+	for (auto cf:in_compFarms){ // cf is Farm*
+		compCellMap[cf->get_cellID()].emplace_back(cf);
+		if(verbose){std::cout << "compCell " << cf->get_cellID() << " has " 
+			<< compCellMap[cf->get_cellID()].size() << " farms" << std::endl;}
+	}
+	if(verbose){
+		std::cout << std::endl << compCellMap.size() << " cells contain comparison farms: ";
+		for (auto c:compCellMap){std::cout << c.first << " ";}
+	}
+	
+	
+	for (auto c1:focalCellMap)
+	{ // loop through each cell (c1 as in "cell 1")
+		grid_cell* currentCell = IDsToCells(c1.first); // set current cell
+		if (verbose){std::cout << std::endl << "Focal cell set to " << currentCell->get_id();}
+		std::vector<grid_cell*> neighborsOfFocal = posKernelNeighborsOf(currentCell->get_id());		
+		if (verbose){std::cout << ", with " << neighborsOfFocal.size() << " neighbor cells. " ;}
+		// neighbors include comparison to self to include other farms in same cell
+		double focalNumFarms = currentCell->get_num_farms(); // how many farms in focal cell
+		if (verbose){std::cout << "Focal cell: " << focalNumFarms << " farms. ";}
+		
+		// get farms in focal cell
+		std::vector<Farm*> focalFarmList = focalCellMap.at(currentCell->get_id());
+		
+		for (auto f1:focalFarmList){ // for each farm in focal cell
+		// loop through each neighbor cell
+		for (auto c2:neighborsOfFocal){	// loop through each cell (c2 as in "cell 2")
+			if(compCellMap.count( c2->get_id() )>0){ // if this cell exists in the comp cell map (has eligible farms), evaluate
+				// get farms in comp cell
+				std::vector<Farm*> compFarmList = c2 -> get_farms();
+				double compNumFarms = (compCellMap.at( c2->get_id() )).size(); // how many farms in comparison cell	
+				if(verbose){std::cout << " Comparison cell " << c2->get_id() <<": " << compNumFarms << " farms.";}
+				
+				// cell-cell kernel: identify which cell ID is smaller/larger for grid value lookup, min comes first
+				std::vector<double> ids = orderNumbers(currentCell->get_id(),c2->get_id());
+				// look up grid value
+				double gridKernValue = 0; // default kernel value is 0
+				if ((gridCellKernel.count(ids[0]) == 1) && // something exists for first cell
+				   (gridCellKernel.at(ids[0]).count(ids[1]) == 1)){ // something exists for first and second cell
+						gridKernValue = gridCellKernel.at(ids[0]).at(ids[1]);}
+				
+				if (verbose){std::cout << std::endl << "Kernel: " << gridKernValue;}
+
+				// cell max inf/sus: maximum transmission of cells, initialized assuming infectOut is true
+				double maxInf = currentCell->get_maxInf(); // max infectiousness of any farm in currentCell
+				double maxSus = c2->get_maxSus(); // max susceptibility of any farm in comparison cell
+				if (!infectOut){// if calculating spread TO focal cell, reassign values
+					maxSus = currentCell->get_maxSus();
+					maxInf = c2->get_maxInf();
+				}
+				
+				double cellCellMaxProb = 1-exp(-maxSus * maxInf * gridKernValue);
+
+				double farmSus = 0;
+				double farmInf = 0;
+				double indivFarmMaxProb = 0; // "prob6" in MT's Fortran code
+
+				double f1x, f1y, f2x, f2y, xdiff, ydiff, distBWfarms, kernelBWfarms; // vars for farm pairs if evaluated
+				double betweenFarmsProb = 0; // "prob3" in MT's Fortran code
+
+				
+				// get focal infectiousness/susceptibility values
+				if (infectOut){			
+					farmInf = getFarmInf(f1);
+				} else if (!infectOut){	
+					farmSus = getFarmSus(f1);
+				}		
+				if (infectOut){
+					indivFarmMaxProb = 1 - exp(-farmInf * maxSus * gridKernValue); 
+					// infectiousness of focal farm * max susceptibility in comp cell * grid kernel
+				} else if (!infectOut){
+					indivFarmMaxProb = 1 - exp(-farmSus * maxInf * gridKernValue); 		
+					// susceptibility of focal farm * max infectiousness in comp cell * grid kernel
+				}
+			
+				for (auto f2:compFarmList){
+					double randomN = unif_rand();
+
+					if(randomN <= cellCellMaxProb){
+					if(randomN <= indivFarmMaxProb){					
+						f1x = f1 -> get_x();
+						f1y = f1 -> get_y();
+						f2x = f2 -> get_x();
+						f2y = f2 -> get_y();
+						xdiff = (f1x - f2x);
+						ydiff = (f1y - f2y);
+						distBWfarms = sqrt(xdiff*xdiff + ydiff*ydiff);
+						kernelBWfarms = kernel(distBWfarms);
+						// get individual infectiousness/susceptibility values
+						if (infectOut){			
+							farmSus = getFarmSus(f2); // susceptible farm in comparison cell (farmInf already defined from focal cell)
+						} else if (!infectOut){	
+							farmInf = getFarmInf(f2); // infectious farm in comparison cell (farmSus already defined from focal cell)
+						}
+						// calculate probability between these specific farms
+						betweenFarmsProb = 1-exp(-farmSus * farmInf * kernelBWfarms); // prob tx between this farm pair
+						if(randomN <= betweenFarmsProb){
+								ginf++;
+								std::cout << ginf << ": " << distBWfarms <<", ";
+						}					
+					}} // end if random passes max checks
+
+				} // end for each comparison cell farm
+					
+			} // end if comp cell has eligible farms
+		} // end for loop through comparison cells
+		} // end for each focal cell farm
+	} // end loop through focal cells
+	std::cout << std::endl
+		//<< "Farm to cell skips: " << farmtocellskips << " (avoided " << farmsinskippedcells << " comparisons)" << std::endl
+		<< "Total infections (gridding): " << ginf << std::endl;
+		//<< "Total infections (pairwise): " << pwinf << std::endl;
+	
+}
+
 
 // input is proportion of focal farms (random), all remaining farms are comparison
 std::vector <std::vector<Farm*>> Grid_manager::fakeFarmStatuses(double propFocal)
