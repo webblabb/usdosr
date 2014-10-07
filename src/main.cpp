@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
  			<< 1000.0 * (loading_end - loading_start) / CLOCKS_PER_SEC
  			<< "ms." << std::endl;
  			
-		// set some proportion to be focal farms (same list for all reps)
+		// set a proportion to be focal farms (same list for all reps)
 		std::vector <std::vector<Farm*>> f_c_farms = G.fakeFarmStatuses(0.05);
 		std::vector<Farm*> focalFarms = f_c_farms[0];
 		std::vector<Farm*> compFarms = f_c_farms[1];
@@ -59,20 +59,20 @@ if(griddingOn){
 //    for (auto j:parList)	// for each value of j to run
 //    {
 	 	std::clock_t grid_start = std::clock();		
-		G.initiateGrid(800,50000); // max farms in cell, kernel radius
-//		G.initiateGrid(300000); // length of cell side
+//		G.initiateGrid(300,50000); // max farms in cell, kernel radius
+		G.initiateGrid(50000); // length of cell side
 //		G.printCells(pfile); // option to print cells, based on specified prem file
  		
 		std::clock_t grid_end = std::clock();
 		double gridGenTimeMS = 1000.0 * (grid_end - grid_start) / CLOCKS_PER_SEC;
 		std::cout << "CPU time for generating grid: " << gridGenTimeMS << "ms." << std::endl;
 
-   	   for (auto i=0; i!=1; i++) // replicates per value
+   	   for (auto i=0; i!=10; i++) // replicates per value
    		{	
  		// at one timestep:
 		 std::cout << "Starting grid check: " << std::endl;
   		 std::clock_t gridcheck_start = std::clock();	  
-	   	 G.stepThroughCellsAlt(focalFarms,compFarms);
+	   	 G.stepThroughCells(focalFarms,compFarms);
   		 std::clock_t gridcheck_end = std::clock();
 //  		 std::unordered_map<double, std::vector<double>> inf = G.getTotalInfections();
   		
@@ -124,6 +124,7 @@ if(griddingOn){
 } // end "if griddingOn"
 
 bool pairwiseOn = 0;
+// 1,949,147,792 comparisons
 if(pairwiseOn){
 	std::cout << "Conducting pairwise comparisons - go get a snack." << std::endl;
 	std::unordered_map<double, int> infectedFarms;

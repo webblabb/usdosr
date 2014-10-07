@@ -12,7 +12,7 @@
 #include "farm.h" // for Farm* for farm sus/inf
 
 	double unif_rand();
- 	double kernel(double& dist);
+ 	double kernel(double dist);
 	std::vector<std::string>
 		split(const std::string&, char, std::vector<std::string>&);
 	std::vector<std::string> 

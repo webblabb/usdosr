@@ -11,10 +11,11 @@ double unif_rand()
 
 // Used in gridding (kernel values for fixed grid distances)
 
-double kernel(double& dist)
+double kernel(double dist)
 {	
-	if (dist==0){dist = 0.000000001;}
-	return std::min(1.0, 0.12 / (1 + pow((dist/1000), 3)));
+	double usedist = dist;
+	if (usedist==0){usedist = 1;}
+	return std::min(1.0, 0.12 / (1 + pow((usedist/1000), 3)));
 }
 
 std::vector<std::string> 
