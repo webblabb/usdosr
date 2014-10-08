@@ -66,20 +66,32 @@ if(griddingOn){
 		std::clock_t grid_end = std::clock();
 		double gridGenTimeMS = 1000.0 * (grid_end - grid_start) / CLOCKS_PER_SEC;
 		std::cout << "CPU time for generating grid: " << gridGenTimeMS << "ms." << std::endl;
+		int runningTotal = 0;
 
-   	   for (auto i=0; i!=10; i++) // replicates per value
+  	   std::clock_t gridcheck_start = std::clock();	  
+
+		int t=0;
+   	   while (t!=10 && focalFarms.size()!=0) // timesteps, stop early if dies out
    		{	
- 		// at one timestep:
-		 std::cout << "Starting grid check: " << std::endl;
-  		 std::clock_t gridcheck_start = std::clock();	  
+   		 std::cout << focalFarms.size() << " focal farms and " << compFarms.size() << " comparison farms." << std::endl;
+// 		 std::cout << "Starting grid check: " << std::endl;
+//   		 std::clock_t gridcheck_start = std::clock();	  
 	   	 G.stepThroughCells(focalFarms,compFarms);
-  		 std::clock_t gridcheck_end = std::clock();
-//  		 std::unordered_map<double, std::vector<double>> inf = G.getTotalInfections();
+//   		 std::clock_t gridcheck_end = std::clock();
   		
- 		 double gridCheckTimeMS = 1000.0 * (gridcheck_end - gridcheck_start) / CLOCKS_PER_SEC;
-		 std::cout << "CPU time for checking grid: " << gridCheckTimeMS << "ms." << std::endl;			  
- 		
-// 		std::unordered_map<double, std::vector<double>> grid_inf = G.getTotalInfections();
+ // 		 double gridCheckTimeMS = 1000.0 * (gridcheck_end - gridcheck_start) / CLOCKS_PER_SEC;
+// 		 std::cout << "CPU time for checking grid: " << gridCheckTimeMS << "ms." << std::endl;	
+		 
+		 focalFarms = G.getInfVec(); // compFarms was auto updated at end of stepThroughCells
+		 runningTotal += focalFarms.size();
+		 std::cout << "Cumulative infections: " << runningTotal <<std::endl;
+		 t++;
+		}  		
+  		 std::clock_t gridcheck_end = std::clock();
+		 double gridCheckTimeMS = 1000.0 * (gridcheck_end - gridcheck_start) / CLOCKS_PER_SEC;
+		 std::cout << "CPU time for checking grid: " << gridCheckTimeMS << "ms." << std::endl;	
+
+
 // 	  	std::string allLinesToPrint, oneLine;
 // 		char temp[10];
 // 		for (auto l:focalFarms){ // for each focal Farm
@@ -119,7 +131,7 @@ if(griddingOn){
 // 			f << allLinesToPrint;
 // 			f.close();
 // 		}
-		} // end for each rep i
+
 // 	} // end for each parameter j
 } // end "if griddingOn"
 

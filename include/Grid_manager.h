@@ -49,7 +49,7 @@ class Grid_manager
 		void set_maxFarms(unsigned int in_maxFarms); //inlined
 		std::string to_string(grid_cell&) const;
 		void updateFarmList(
-			std::vector<Farm*>& farmsInCell); // removes farms from recently committed cell from main list
+			std::vector<Farm*>&, std::vector<Farm*>&); // removes farms in 1st vector from 2nd (ie recently committed cell from main list)
 		std::vector<Farm*> getFarms(
 			std::vector<double> cellSpecs,
 			const unsigned int maxFarms); // makes list of farms in a cell (quits early if over max)
@@ -125,16 +125,26 @@ class Grid_manager
 		// calcs pw prob for each farm for comparison to gridding loops
 		void setInfectOut(bool); //inlined
 		std::unordered_map<double, std::vector<double>> getTotalInfections() const; //inlined
+		std::vector<Farm*> getInfVec() const;
+
 
 };
 
 /////////// for grid creation ///////////
 inline bool sortByX(const Farm* farm1, const Farm* farm2)
 // "compare" function to sort farms by x-coordinate
+// used when assigning farms to uniform cell grid
 // must be defined outside of class, or else sort doesn't work
 {
 	return (farm1 -> get_x()) < (farm2 -> get_x());
 }
+inline bool sortByID(const Farm* farm1, const Farm* farm2)
+// "compare" function to sort farms by ID
+// must be defined outside of class, or else sort doesn't work
+{
+	return (farm1 -> get_id()) < (farm2 -> get_id());
+}
+
 
 inline void Grid_manager::setVerbose(bool v)
 {

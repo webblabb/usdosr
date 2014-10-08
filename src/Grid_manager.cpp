@@ -23,7 +23,7 @@ Grid_manager::Grid_manager(std::string &fname, bool xyswitch, bool v)
 	// modified from Stefan's Farm Manager
 	// read in file of premises
 	double id, size, x, y;
-	int fcount = 0;
+//	int fcount = 0;
 
 	std::ifstream f(fname);
 	if(!f){std::cout << "Input file not found." << std::endl;}
@@ -48,9 +48,9 @@ Grid_manager::Grid_manager(std::string &fname, bool xyswitch, bool v)
 				}
 				str_cast(line_vector[3], size);
 
-				farm_map[fcount] = new Farm(id, x, y, size); 
+				farm_map[id] = new Farm(id, x, y, size); 
 				// write pointer to private var farm_map
-				fcount++;
+				//fcount++;
 				
 				// compare/replace limits of xy plane
 				if (!xylimits.empty())// if there are values to compare
@@ -89,26 +89,26 @@ Grid_manager::Grid_manager(std::string &fname, bool xyswitch, bool v)
 		farmList.push_back(prem.second); // "second" value from map is Farm pointer
 	}
 	
-	double firstx = farmList.front()->get_x();
-	double lastx = farmList.back()->get_x();
-	if (verbose)
-	{
-		std::cout << "farmList length: " << farmList.size() << std::endl;
-
-		std::cout << "First farm x: " << firstx << std::endl;
-		std::cout << "Last farm x: " << lastx << std::endl;
-		std::cout << "Sorting..." << std::endl;
-	}
-
-	// sort farmList by x
-	std::sort(farmList.begin(),farmList.end(),sortByX); // sorted farms by x-coordinates
-	firstx = farmList.front()->get_x();
-	lastx = farmList.back()->get_x();
-	if (verbose)
-	{
-		std::cout << "First farm x: " << firstx << std::endl;
-		std::cout << "Last farm x: " << lastx << std::endl;
-	}
+// 	double firstx = farmList.front()->get_x();
+// 	double lastx = farmList.back()->get_x();
+// 	if (verbose)
+// 	{
+// 		std::cout << "farmList length: " << farmList.size() << std::endl;
+// 
+// 		std::cout << "First farm x: " << firstx << std::endl;
+// 		std::cout << "Last farm x: " << lastx << std::endl;
+// 		std::cout << "Sorting..." << std::endl;
+// 	}
+// 
+	// sort farmList by ID
+	std::sort(farmList.begin(),farmList.end(),sortByID); // sorted farms by x-coordinates
+// 	firstx = farmList.front()->get_x();
+// 	lastx = farmList.back()->get_x();
+// 	if (verbose)
+// 	{
+// 		std::cout << "First farm x: " << firstx << std::endl;
+// 		std::cout << "Last farm x: " << lastx << std::endl;
+// 	}
 
 }
 
@@ -116,27 +116,30 @@ Grid_manager::~Grid_manager()
 {
 }
 
-void Grid_manager::updateFarmList(std::vector<Farm*>& farmsInCell)
-// remove farmsInCell from farmList, assumes matches are sorted in same order
+void Grid_manager::updateFarmList(std::vector<Farm*>& farmsToRemove, std::vector<Farm*>& masterFarmList)
+// remove farms in first vector from second vector
 {
-	// farmsInCell should already be sorted (subsetted from sorted farmList)
-	if(verbose){std::cout << " Farms in cell: " << farmsInCell.size() 
-		<< std::endl;}
-		
-	auto it2 = farmList.begin();
-	for(auto it = farmsInCell.begin(); it != farmsInCell.end(); it++)
+	double expectedSize = masterFarmList.size()-farmsToRemove.size();
+	
+	std::sort(farmsToRemove.begin(),farmsToRemove.end(),sortByID);
+	std::sort(masterFarmList.begin(),masterFarmList.end(),sortByID);
+
+	auto it2 = masterFarmList.begin();
+	for(auto it = farmsToRemove.begin(); it != farmsToRemove.end(); it++)
 	// loop through each farm in cell
 	{		
-		while (it2 != farmList.end()) // while end of farmList not reached
+		while (it2 != masterFarmList.end()) // while end of farmList not reached
 		{
-			if(*it2 == *it) // finds first match in farmList to farmInCell
+			if(*it2 == *it) // finds match in farmList to farmInCell
 			{
-				farmList.erase(it2); // remove from farmList
-				break;
+				masterFarmList.erase(it2); // remove from farmList
+				break; // start at next farm instead of looping over again
 			}
 			it2++; // 
 		}
 	}
+	if(masterFarmList.size()!= expectedSize){
+		std::cout<<"Error in updating farm list. "<<std::endl;}
 }
 
 std::vector<Farm*> Grid_manager::getFarms(std::vector<double> cellSpecs, const unsigned int maxFarms=0)
@@ -210,7 +213,7 @@ void Grid_manager::commitCell(std::vector<double> cellSpecs, std::vector<Farm*>&
     
     allCells.emplace(id,cellToAdd); // add to map of all committed cells, with id as key
     assignCellIDtoFarms(id,farmsInCell);
-    updateFarmList(farmsInCell);
+    updateFarmList(farmsInCell, farmList);
 }
 
 void Grid_manager::splitCell(std::vector<double>& cellSpecs, std::stack< std::vector<double> >& queue)
@@ -364,7 +367,7 @@ void Grid_manager::initiateGrid(std::string& cname)
 					allCells[cellSpecs[0]] = new grid_cell(cellSpecs[0], cellSpecs[1], 									
 						cellSpecs[2], cellSpecs[3], farmsInCell); 
 					assignCellIDtoFarms(cellSpecs[0],farmsInCell);
-					updateFarmList(farmsInCell);
+					updateFarmList(farmsInCell, farmList);
 					}
 			} // close "if line_vector not empty"
 		} // close "while not end of file"
@@ -416,12 +419,14 @@ void Grid_manager::initiateGrid(double cellSide)
     // unique cell x values (increment according to xChanges)
     // y values once x value is found
     
+    std::vector<Farm*> farmListByX = farmList;
+    std::sort(farmListByX.begin(), farmListByX.end(), sortByX);
     // indices for moving around the cell list
     int xi = 0; 
     int i = 0;
     int fcount = 0;
         
-    for (auto f:farmList)
+    for (auto f:farmListByX)
     {
 		double farmx = f->get_x();
 		double farmy = f->get_y();
@@ -455,7 +460,7 @@ void Grid_manager::initiateGrid(double cellSide)
     std::cout << "Done placing farms." << std::endl;
    
    // write all cells with farms
-   bool printNumFarms = 1;
+   bool printNumFarms = 0;
    std::string allLinesToPrint;
    int actualCellCount = 0;
    for (auto c=0; c!=cellCount; c++)
@@ -898,8 +903,19 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 	  } // end for each focal cell farm
 	std::cout << std::endl
 //		<< "Farm to cell skips: " << farmtocellskips << " (avoided " << farmsinskippedcells << " comparisons)" << std::endl
-		<< "Total infections (gridding): " << infectedFarms.size() << std::endl;
+		<< "Infections this time step (gridding): " << infectedFarms.size() << std::endl;
 	
+	std::vector<Farm*> infFarmVec = getInfVec();
+	updateFarmList(infFarmVec,in_compFarms);
+}
+
+std::vector<Farm*> Grid_manager::getInfVec() const
+{
+	std::vector<Farm*> infFarmVec;
+	for (auto z:infectedFarms){
+		infFarmVec.emplace_back(farm_map.at(z.first));
+	}
+	return infFarmVec;
 }
 
 // input is proportion of focal farms (random), all remaining farms are comparison
@@ -907,12 +923,12 @@ std::vector <std::vector<Farm*>> Grid_manager::fakeFarmStatuses(double propFocal
 { 
  	std::vector <Farm*> focal, comp; // two vectors of focal/comp farms
 
-	for (auto i=0; i!=farm_map.size(); i++){
+	for (auto i:farm_map){
 		double randomnum = unif_rand();
 		if (randomnum <= propFocal){
-			focal.emplace_back(farm_map.at(i));
+			focal.emplace_back(i.second);
 		} else {
-			comp.emplace_back(farm_map.at(i));
+			comp.emplace_back(i.second);
 		}
 	}
 	std::vector <std::vector <Farm*>> farmsToReturn;
