@@ -325,7 +325,7 @@ void Grid_manager::initiateGrid(const unsigned int in_maxFarms, const int kernel
 void Grid_manager::initiateGrid(std::string& cname)
 // overloaded (alternate) constructor that reads in external file of cells
 // temporarily disabled due to incompatible std::to_string use
-{
+{/*
 
 	// read in file of premises
 	std::vector<Farm*> farmsInCell;
@@ -384,7 +384,7 @@ void Grid_manager::initiateGrid(std::string& cname)
 		}
 	std::cout << "Grid loaded. Pre-calculating distances..." << std::endl;		
 	makeCellRefs();
-
+*/
 }
 
 void Grid_manager::initiateGrid(double cellSide)
@@ -492,8 +492,8 @@ void Grid_manager::initiateGrid(double cellSide)
 	   		actualCellCount++;
 	   		if (printNumFarms){
 	   			char temp[5];
-	   			//sprintf(temp, "%u\n", cellFarmMap[c].size()); // use this on sweatshop computers
-	   			sprintf(temp, "%lu\n", cellFarmMap[c].size());
+	   			sprintf(temp, "%u\n", cellFarmMap[c].size()); // use this on sweatshop computers
+	   			//sprintf(temp, "%lu\n", cellFarmMap[c].size());
 	   			allLinesToPrint += temp;
 	   		}
 	   }
@@ -784,8 +784,9 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 	// initialize variables 
 	// relating to focal cell
 	double currentCellID = -1;
-	grid_cell* currentCell;
-	double maxInf, maxSus; // max infectiousness/susceptibility of any farm in a cell
+	grid_cell* currentCell = allCells.at(0);
+	double maxInf=0;
+	double maxSus=0; // max infectiousness/susceptibility of any farm in a cell
 	std::vector<grid_cell*> neighborsOfFocal, neighborsToCheck;	
 	// relating to comparison cell
 	int f2count = 0; // how many farms in comparison cell have been checked
@@ -803,7 +804,7 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 		double fcID = f1->get_cellID();
 		if(currentCellID != fcID){ // reset only if focal cell has changed since last farm
 			currentCellID = fcID;
-			currentCell = IDsToCells(fcID);
+			grid_cell* currentCell = IDsToCells(fcID);
 			maxInf = currentCell->get_maxInf(); // maxSus will be set while cycling through comp cells
 				if (!infectOut){maxSus = currentCell->get_maxSus();} // maxInf will be set while cycling through comp cells
 			// get neighbor cells of focal cell (includes self)

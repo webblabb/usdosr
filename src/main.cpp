@@ -166,7 +166,8 @@ if(griddingOn){
 // 	} // end for each parameter j
 } // end "if griddingOn"
 
-bool pairwiseOn = 0;
+std::unordered_map<int, Farm*> farm_map = G.get_allFarms();
+bool pairwiseOn = 1;
 // 1,949,147,792 comparisons
 if(pairwiseOn){
 	std::cout << "Conducting pairwise comparisons - go get a snack." << std::endl;
@@ -174,13 +175,13 @@ if(pairwiseOn){
 	std::vector<Farm*> compFarms = f_c_farms[1];
 	std::unordered_map<double, int> infectedFarms;
 // replicating the pairwise comparisons
-
+int t=0;
   while (t!=timesteps && focalFarms.size()!=0 && compFarms.size()!=0){
 	std::cout << "Timestep " << t << ": ";
 	std::clock_t slow_start = std::clock();
 	// run this farm by farm (no gridding) for comparison
 //		int totalcomparisons = 0;
- 		runningTotal = 0;
+ 		int runningTotal = 0;
 		for (auto f1:focalFarms)
 		{
 		double f1x = f1 -> get_x(); // get farm 1 x coordinate
@@ -226,10 +227,10 @@ if(pairwiseOn){
 				  << 1000.0 * (slow_end - slow_start) / CLOCKS_PER_SEC
 				  << "ms." << std::endl << std::endl;
 				  
-		std::vector<Farm*> newInf;
+		std::vector<double> newInf;
  		 for (auto y:infectedFarms){
- 		 	newInf.emplace_back(y); // to be sent to print
- 		 	focalFarms.emplace_back(y); // add to list of infectious farms
+ 		 	newInf.emplace_back(y.first); // to be sent to print
+ 		 	focalFarms.emplace_back(farm_map.at(y.first)); // add to list of infectious farms
  		 	}
  		 
  		 runningTotal += newInf.size();
