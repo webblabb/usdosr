@@ -36,6 +36,8 @@ int main(int argc, char* argv[])
 		exit(EXIT_FAILURE);
 	}
 	
+		int timesteps = 10;
+	
   		// generate map of farms and xylimits
 	 	std::clock_t loading_start = std::clock();
 		Grid_manager G(pfile,0,0); // reverse x/y on/off, verbose on/off
@@ -45,8 +47,33 @@ int main(int argc, char* argv[])
  			<< 1000.0 * (loading_end - loading_start) / CLOCKS_PER_SEC
  			<< "ms." << std::endl;
  			
+ 		// load initial farms from file
+//  	std::vector<Farm*> focalFarms;
+//  	int fID;
+//  	std::unordered_map<int, Farm*> allFarms = G.get_allFarms();
+//  	std::ifstream f("dense_seed.txt");
+// 	if(!f){std::cout << "Input file not found." << std::endl;}
+// 	if(f.is_open())
+// 	{
+// 	std::cout << "File open" << std::endl;
+// 		while(! f.eof())
+// 		{
+// 			std::string line;
+// 			getline(f, line); // get line from file "f", save as "line"
+// 			//std::vector<std::string> line_vector = split(line, '\t'); // separate by tabs
+// 			
+// 			if(! line.empty()) // if line has something in it
+// 			{
+// 				str_cast(line, fID);
+// 				focalFarms.emplace_back(allFarms.at(fID));
+// 			} // close "if line_vector not empty"
+// 		} // close "while not end of file"
+// 	} // close "if file is open"	
+//  			
+//  		std::vector<Farm*> compFarms = G.farmsOtherThan(focalFarms);
+//  		std::cout << focalFarms.size() <<" focal farms, "<< compFarms.size()<<" comp farms."<<std::endl;
 		// set a proportion to be focal farms (same list for all reps)
-		std::vector <std::vector<Farm*>> f_c_farms = G.fakeFarmStatuses(0.05);
+		std::vector <std::vector<Farm*>> f_c_farms = G.fakeFarmStatuses(0.005);
 		std::vector<Farm*> focalFarms = f_c_farms[0];
 		std::vector<Farm*> compFarms = f_c_farms[1];
  			
@@ -68,28 +95,32 @@ if(griddingOn){
 		std::cout << "CPU time for generating grid: " << gridGenTimeMS << "ms." << std::endl;
 		int runningTotal = 0;
 
-  	   std::clock_t gridcheck_start = std::clock();	  
+   	   std::clock_t gridcheck_start = std::clock();	  
 
-		int t=0;
-   	   while (t!=10 && focalFarms.size()!=0) // timesteps, stop early if dies out
+ 		int t=0;
+   	   while (t!=timesteps && focalFarms.size()!=0 && compFarms.size()!=0) // timesteps, stop early if dies out
    		{	
    		 std::cout << focalFarms.size() << " focal farms and " << compFarms.size() << " comparison farms." << std::endl;
-// 		 std::cout << "Starting grid check: " << std::endl;
-//   		 std::clock_t gridcheck_start = std::clock();	  
-	   	 G.stepThroughCells(focalFarms,compFarms);
-//   		 std::clock_t gridcheck_end = std::clock();
-  		
- // 		 double gridCheckTimeMS = 1000.0 * (gridcheck_end - gridcheck_start) / CLOCKS_PER_SEC;
-// 		 std::cout << "CPU time for checking grid: " << gridCheckTimeMS << "ms." << std::endl;	
-		 
-		 focalFarms = G.getInfVec(); // compFarms was auto updated at end of stepThroughCells
-		 runningTotal += focalFarms.size();
-		 std::cout << "Cumulative infections: " << runningTotal <<std::endl;
-		 t++;
-		}  		
+		 std::cout << "Starting grid check: " << std::endl;
+  		 std::clock_t gridcheck_start = std::clock();	  
+		 G.stepThroughCells(focalFarms,compFarms);
   		 std::clock_t gridcheck_end = std::clock();
-		 double gridCheckTimeMS = 1000.0 * (gridcheck_end - gridcheck_start) / CLOCKS_PER_SEC;
-		 std::cout << "CPU time for checking grid: " << gridCheckTimeMS << "ms." << std::endl;	
+  		
+  		 double gridCheckTimeMS = 1000.0 * (gridcheck_end - gridcheck_start) / CLOCKS_PER_SEC;
+ 		 std::cout << "CPU time for checking grid: " << gridCheckTimeMS << "ms." << std::endl;	
+		 
+		 
+		 //focalFarms=G.getInfVec(); // compFarms was auto updated at end of stepThroughCells
+ 		 std::vector<Farm*> newInf = G.getInfVec();
+ 		 for (auto y:newInf){focalFarms.emplace_back(y);}
+ 		 
+ 		 runningTotal += newInf.size();
+ 		 std::cout << "Cumulative infections: " << runningTotal <<std::endl;
+ 		 t++;
+ 		}  		
+   		 std::clock_t gridcheck_end = std::clock();
+ 		 double gridCheckTimeMS = 1000.0 * (gridcheck_end - gridcheck_start) / CLOCKS_PER_SEC;
+ 		 std::cout << "CPU time for checking grid: " << gridCheckTimeMS << "ms." << std::endl;	
 
 
 // 	  	std::string allLinesToPrint, oneLine;
@@ -139,15 +170,17 @@ bool pairwiseOn = 0;
 // 1,949,147,792 comparisons
 if(pairwiseOn){
 	std::cout << "Conducting pairwise comparisons - go get a snack." << std::endl;
+	std::vector<Farm*> focalFarms = f_c_farms[0];
+	std::vector<Farm*> compFarms = f_c_farms[1];
 	std::unordered_map<double, int> infectedFarms;
 // replicating the pairwise comparisons
-	std::vector<double> inf;
-for (auto i=0; i!=1; i++){
-	std::cout << "Test #" << i << ": ";
+
+  while (t!=timesteps && focalFarms.size()!=0 && compFarms.size()!=0){
+	std::cout << "Timestep " << t << ": ";
 	std::clock_t slow_start = std::clock();
 	// run this farm by farm (no gridding) for comparison
-		int totalcomparisons = 0;
- 	
+//		int totalcomparisons = 0;
+ 		runningTotal = 0;
 		for (auto f1:focalFarms)
 		{
 		double f1x = f1 -> get_x(); // get farm 1 x coordinate
@@ -155,7 +188,7 @@ for (auto i=0; i!=1; i++){
 
 			for (auto f2:compFarms)
 			{
-				totalcomparisons++;
+//				totalcomparisons++;
 				double f2x = f2 -> get_x(); // get farm 2 x coordinate
 				double f2y = f2 -> get_y(); // get farm 2 y coordinate
 				
@@ -180,19 +213,29 @@ for (auto i=0; i!=1; i++){
 					} else {
 						infectedFarms.at(f2->get_id())=infectedFarms.at(f2->get_id())+1;
 					}
-					std::cout << "Infection: dist bw farms = " << distBWfarms << std::endl;
 				}
 			}
-		}
+		} // end for all farm comparisons
 			
-		std::cout << "Total infections (pairwise): " << infectedFarms.size() << std::endl <<
-		 "  Total comparisons (pairwise): " << totalcomparisons << std::endl;
+		std::cout << "New infections (pairwise): " << infectedFarms.size() << std::endl;
+//		<< "  Total comparisons (pairwise): " << totalcomparisons << std::endl;
 
 		std::clock_t slow_end = std::clock();
 	
 		std::cout << "CPU time for checking pairwise: "
 				  << 1000.0 * (slow_end - slow_start) / CLOCKS_PER_SEC
 				  << "ms." << std::endl << std::endl;
+				  
+		std::vector<Farm*> newInf;
+ 		 for (auto y:infectedFarms){
+ 		 	newInf.emplace_back(y); // to be sent to print
+ 		 	focalFarms.emplace_back(y); // add to list of infectious farms
+ 		 	}
+ 		 
+ 		 runningTotal += newInf.size();
+ 		 std::cout << "Cumulative infections: " << runningTotal <<std::endl;
+ 		 t++;
+ 		}  		
 				  
 // 		std::string toPrint;
 // 		char temp[10];
@@ -221,7 +264,6 @@ for (auto i=0; i!=1; i++){
 //			f << toPrint;
 //			f.close();
 //		}
-	} // end for each i value
 } // end if pairwiseOn
 
 return 0;

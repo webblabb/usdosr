@@ -115,6 +115,8 @@ class Grid_manager
 			get_allFarms() const; //inlined
 		std::unordered_map<double, std::vector<double>> 
 			get_kernelNeighbors() const; //inlined
+		std::vector<Farm*> 
+			farmsOtherThan(std::vector<Farm*>&);
 			
 		/////////// for infection evaluation ///////////
 		// per timestep functions

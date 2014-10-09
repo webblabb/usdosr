@@ -425,6 +425,9 @@ void Grid_manager::initiateGrid(double cellSide)
     int xi = 0; 
     int i = 0;
     int fcount = 0;
+//    int farmsfound = 0;//
+    
+    std::vector<int> seedFarms;
         
     for (auto f:farmListByX)
     {
@@ -432,6 +435,13 @@ void Grid_manager::initiateGrid(double cellSide)
 		double farmy = f->get_y();
     	bool cellFound = 0;
     	fcount++;
+    	
+//     	if(farmsfound < 1000){
+//     	if(farmx > 787754 && farmx < 1224618 && farmy >1364003 && farmy <1678531){
+//     		seedFarms.emplace_back( f->get_id() );
+//     		farmsfound++;
+//     		std::cout <<"Farms found: " <<farmsfound<<". ";}
+//     	}
     	
     	while(!cellFound){
     		// if farm x is...
@@ -458,6 +468,17 @@ void Grid_manager::initiateGrid(double cellSide)
 		} // end 1st while cell not found
     } // end for each farm
     std::cout << "Done placing farms." << std::endl;
+   
+//    std::string lines;
+// 		for(auto itseed:seedFarms){
+// 		lines += std::to_string(itseed);
+// 		lines+="\n";
+// 		}
+//     	std::ofstream fout("dense_seed.txt"); 
+// 		if(fout.is_open()){
+// 			fout << lines;
+// 		fout.close();
+// 		}
    
    // write all cells with farms
    bool printNumFarms = 0;
@@ -658,8 +679,9 @@ void Grid_manager::makeCellRefs()
 			}
 			// kernel value between c1, c2
 			gridValue = kernel(shortestDist);
+			
 			// if grid Value is > 0, record in gridCellKernel and as kernel neighbors
-			if (gridValue > 0){
+			if (gridValue > 0.00000000001){
 				gridCellKernel[whichCell1][whichCell2] = gridValue;
 				kernelNeighbors[whichCell1].emplace_back(whichCell2);
 				if (whichCell1 != whichCell2){
@@ -938,3 +960,10 @@ std::vector <std::vector<Farm*>> Grid_manager::fakeFarmStatuses(double propFocal
  	return farmsToReturn;
  }
  
+std::vector<Farm*> Grid_manager::farmsOtherThan(std::vector<Farm*>& in_farms)
+{
+	std::vector<Farm*> allOtherFarms;
+	for (auto a:farm_map){allOtherFarms.emplace_back(a.second);}
+	updateFarmList(in_farms,allOtherFarms);
+return allOtherFarms;
+}
