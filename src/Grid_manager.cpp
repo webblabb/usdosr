@@ -557,20 +557,23 @@ double Grid_manager::shortestCellDist(grid_cell* cell1, grid_cell* cell2)
 // returns shortest distance between cell1 and cell2
 {
 	double cellDist = 0;
- 	double cell1_id = cell1->get_id();
- 	double cell2_id = cell2->get_id();
+ 	double cell1_id = cell1->grid_cell::get_id();
+ 	double cell2_id = cell2->grid_cell::get_id();
   if (cell1_id != cell2_id){ // else if comparing to self, distance is already 0 	
-	double cell1_x, cell1_y, cell2_x, cell2_y; // will use these points to calc distance
+	double cell1_x = 0;
+	double cell1_y = 0;
+	double cell2_x = 0;
+	double cell2_y = 0; // will use these points to calc distance
 
-	double cell1_South = cell1->get_y(); // lower boundary of cell1
-	double cell1_North = cell1->get_y()+cell1->get_s(); // upper boundary of cell1
-	double cell1_West = cell1->get_x(); // leftmost boundary of cell1
-	double cell1_East = cell1->get_x()+cell1->get_s(); // rightmost boundary of cell1
+	double cell1_South = cell1->grid_cell::get_y(); // lower boundary of cell1
+	double cell1_North = cell1->grid_cell::get_y()+cell1->grid_cell::get_s(); // upper boundary of cell1
+	double cell1_West = cell1->grid_cell::get_x(); // leftmost boundary of cell1
+	double cell1_East = cell1->grid_cell::get_x()+cell1->grid_cell::get_s(); // rightmost boundary of cell1
 	
-	double cell2_South = cell2->get_y(); // lower boundary of cell2
-	double cell2_North = cell2->get_y()+cell2->get_s(); // upper boundary of cell2
-	double cell2_West = cell2->get_x(); // leftmost boundary of cell2
-	double cell2_East = cell2->get_x()+cell2->get_s(); // rightmost boundary of cell2
+	double cell2_South = cell2->grid_cell::get_y(); // lower boundary of cell2
+	double cell2_North = cell2->grid_cell::get_y()+cell2->grid_cell::get_s(); // upper boundary of cell2
+	double cell2_West = cell2->grid_cell::get_x(); // leftmost boundary of cell2
+	double cell2_East = cell2->grid_cell::get_x()+cell2->grid_cell::get_s(); // rightmost boundary of cell2
 	
 	// In comparing cell positions, due to nestedness of sub-cells, cell 1 could be:
 	// Horizontally: W of, E of, or directly above/below all or part of cell2.
@@ -593,13 +596,13 @@ double Grid_manager::shortestCellDist(grid_cell* cell1, grid_cell* cell2)
 		cell2_x = cell1_East;
 		}
 	// or cell1 is directly atop all or part of cell2
-	else // if ((cell1_East > cell2_West) && (cell1_West < cell2_East))
-		{
+//	else // if ((cell1_East > cell2_West) && (cell1_West < cell2_East))
+//		{
 // 		if(verbose){std::cout << "vertically aligned with and ";}
-		cell1_x = 0;
-		cell2_x = 0;
+		//cell1_x = 0; // already initialized as 0
+		//cell2_x = 0; // already initialized as 0
 		// only use distance between y values
-		}
+//		}
 	
 	// Determine vertical relationship and set y values accordingly:
 	if (cell1_South >= cell2_North) // cell1 north of cell2
@@ -616,13 +619,13 @@ double Grid_manager::shortestCellDist(grid_cell* cell1, grid_cell* cell2)
 		cell2_y = cell2_South;
 		}
 	// or cell1 is directly beside cell2
-	else // if ((cell1_South < cell2_North) && (cell1_North > cell2_South))
-		{
+// 	else // if ((cell1_South < cell2_North) && (cell1_North > cell2_South))
+// 		{
 // 		if(verbose){std::cout << "horizontally aligned with cell "<< cell2_id << std::endl;}
-		cell1_y = 0;
-		cell2_y = 0;
+		//cell1_y = 0; // already initialized as 0
+		//cell2_y = 0; // already initialized as 0
 		// only use distance between x values
-		}	
+//		}	
 	
 	double xDiff = abs(cell1_x-cell2_x);
 	double yDiff = abs(cell1_y-cell2_y);
@@ -634,9 +637,7 @@ double Grid_manager::shortestCellDist(grid_cell* cell1, grid_cell* cell2)
 		cellDist = sqrt(xDiff*xDiff + yDiff*yDiff);
  		storedDists[orderedDiffs[0]][orderedDiffs[1]] = cellDist;
    	}
-  }
-// 	if (verbose){std::cout << cellDist << " between cells " << cell1->get_id() 
-// 					  << " and " << cell2->get_id() << std::endl;}
+  } // end if cells 1 and 2 are different
 
 return cellDist;	
 }
@@ -645,38 +646,34 @@ void Grid_manager::makeCellRefs()
 // Fills maps (think vector of vectors) of calculations:
 // gridCellKernel: kernel values between cell 1 (lower number) and cell 2 (higher number),
 // kernelNeighbors: cells for which kernel value > 0 for cell 1.
-{
-	double shortestDist, gridValue;
-	
+{	
 	for (auto whichCell1=0; whichCell1 != allCells.size(); whichCell1++){		
 		for (auto whichCell2 = whichCell1; whichCell2 != allCells.size(); whichCell2++){
 			// get distance between grid cells 1 and 2...
 			// if comparing to self, set distance=0
-			if (whichCell2 == whichCell1){shortestDist = 0; 
-			} else {
+			double shortestDist = 0; 
+			if (whichCell2 != whichCell1) {
 			shortestDist = shortestCellDist(allCells.at(whichCell1), allCells.at(whichCell2)); 
 			}
 			// kernel value between c1, c2
-			gridValue = kernel(shortestDist);
+			double gridValue = kernel(shortestDist);
 			
 			// if grid Value is > 0, record in gridCellKernel and as kernel neighbors
 			if (gridValue > 0){
+				gridCellKernel[whichCell1][whichCell2] = gridValue;
 				// is max cell-cell prob>0?
 				double maxI = IDsToCells(whichCell1)->get_maxInf();
 				double maxS = IDsToCells(whichCell2)->get_maxSus();
 				int n1 = IDsToCells(whichCell1)->get_num_farms();
 				int n2 = IDsToCells(whichCell2)->get_num_farms();
-				if (n1 < n2){n1 = n2;}
-				
+				if(n1>n2){n2=n1;}
+								
 				double pcellcell = 1-exp(-maxI * n2 * maxS * gridValue);
-	
 				if (pcellcell > 0){
-					gridCellKernel[whichCell1][whichCell2] = gridValue;
-					kernelNeighbors[whichCell1].emplace_back(whichCell2);
+					kernelNeighbors[whichCell1].emplace_back(IDsToCells(whichCell2));
 					if (whichCell1 != whichCell2){
-					kernelNeighbors[whichCell2].emplace_back(whichCell1);}
+					kernelNeighbors[whichCell2].emplace_back(IDsToCells(whichCell1));}
 				} // end if prob cell-cell >0
-				else { std::cout << "Excluded neighbor based on cell-cell "<<pcellcell<<"." << std::endl;}
 			} // end if gridValue > 0
 		} // end for each cell2
 	} // end for each cell1
@@ -747,11 +744,11 @@ grid_cell* Grid_manager::IDsToCells(double cellID)
 	return allCells.at(cellID);
 }
 
-std::vector<grid_cell*> Grid_manager::posKernelNeighborsOf(double cellID)
-// get neighboring cells that have kernel values > 0
-{
-	return IDsToCells(kernelNeighbors.at(cellID));
-}
+// std::vector<grid_cell*> Grid_manager::posKernelNeighborsOf(double cellID)
+// // get neighboring cells that have kernel values > 0
+// {
+// 	return IDsToCells(kernelNeighbors.at(cellID));
+// }
 
 void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vector<Farm*>& in_compFarms)
 // in_focalFarms is either all infectious (infectOut=1) or all susceptible (infectOut=0) premises
@@ -771,47 +768,31 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 	}
 		
 	// initialize variables 
-	// relating to focal cell
 	double currentCellID = -1;
-	grid_cell* currentCell = allCells.at(0);
-	double maxInf=0;
-	double maxSus=0; // max infectiousness/susceptibility of any farm in a cell
-	std::vector<grid_cell*> neighborsOfFocal, neighborsToCheck;	
-	// relating to comparison cell
-	int f2count = 0; // how many farms in comparison cell have been checked
-	double farmSus = 0;
-	double farmInf = 0;
-	double farmToCellProb = 0; // 1st "prob5" in MT's Fortran code
-	double indivFarmMaxProb = 0; // "prob6" in MT's Fortran code
-	double remainingFarmsMaxProb = 0; // 2nd "prob5" in MT's Fortran code - replaces farmToCell while stepping through
-	// relating to farm-farm comparisons
-	double f1x, f1y, f2x, f2y, xdiff, ydiff, distBWfarms, kernelBWfarms; // vars for farm pairs if evaluated
-	double betweenFarmsProb = 0; // "prob3" in MT's Fortran code
+	double farmFoc = 0;
+ 	std::vector<grid_cell*> neighborsToCheck;	
 
 	for (auto f1:in_focalFarms){ // for each focal farm
 		// get cell & parameters
-		double fcID = f1->get_cellID();
+		double fcID = f1->Farm::get_cellID(); // specified non-virtual function call (Farm::)
  		if(currentCellID != fcID){ // reset only if focal cell has changed since last farm
- 			if(verbose){std::cout << std::endl << "Entering if loop, farm " << f1->get_id();}
 			currentCellID = fcID;
-			if(verbose){std::cout << ". Focal cell set to " << currentCellID << " (";}
-			currentCell = IDsToCells(currentCellID);
-			if(verbose){std::cout << currentCell->get_id() << "). " << std::endl;}
-			maxInf = currentCell->get_maxInf(); // maxSus will be set while cycling through comp cells
-				if (!infectOut){maxSus = currentCell->get_maxSus();} // maxInf will be set while cycling through comp cells
+			if(verbose){std::cout << "Focal cell set to " << currentCellID << std::endl;}
+			farmFoc = getFarmInf(f1); // infectiousness value for focal farm
+				if (!infectOut){farmFoc = getFarmSus(f1);} // susceptibility value for focal farm
 			// get neighbor cells of focal cell (includes self)
-			neighborsOfFocal = posKernelNeighborsOf(currentCellID); // std::vector<grid cell*>
-			if(verbose){std::cout << std::endl << neighborsOfFocal.size() << " neighboring cells. ";}
+			std::vector<grid_cell*>& neighborsOfFocal = kernelNeighbors.at(currentCellID);
+			// if (!infectOut)...
 			neighborsToCheck.clear();
 			for (auto n: neighborsOfFocal){
-				if (compCellMap.count( n->get_id() )>0){ // if this neighbor cell has comparison farms
+				if (compCellMap.count( n->grid_cell::get_id() )>0){ // if this neighbor cell has comparison farms
 				neighborsToCheck.emplace_back(n);}
 			} // end for each neighbor
 			if(verbose){std::cout << neighborsToCheck.size() << " neighbor cells to check." << std::endl;}
 		} // end "if focal cell is different this time"
-		else {if(verbose){std::cout << std::endl << "Skipping if loop. "<<std::endl;}}
 			  
 		for (auto c2:neighborsToCheck){	// loop through each neighbor cell (c2 as in "cell 2")
+			double compCellID = c2->grid_cell::get_id();
 		
 // 			if (cellCompsMade.count(f1->get_id())>0){
 // 				std::vector<double> tempList = cellCompsMade.at(f1->get_id()); // list of cell IDs at farm id key
@@ -821,45 +802,38 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 // 			} else {
 // 				cellCompsMade[f1->get_id()].emplace_back(c2->get_id());
 // 			} 
-					
-			// get eligible farms in comp cell
-			std::vector<Farm*> compFarmList = compCellMap.at(c2->get_id());
+			
+			// get # of eligible farms in comp cell
+			std::vector<Farm*>& compFarmList = compCellMap.at(compCellID); // added &, shaved 100s/rep
 			double compNumFarms = compFarmList.size();
 			
-			// look up cell-cell kernel value
-			// put cell IDs in order for grid value lookup
-			std::vector<double> ids = orderNumbers(currentCellID,c2->get_id());
+			// put cell IDs in order, to look up cell-cell kernel value
+			std::vector<double> ids = orderNumbers(currentCellID,compCellID);
 			double gridKernValue = 0; // default kernel value is 0
-			if ((gridCellKernel.count(ids[0]) == 1) && // something exists for first cell
-			   (gridCellKernel.at(ids[0]).count(ids[1]) == 1)){ // something exists for first and second cell
-					gridKernValue = gridCellKernel.at(ids[0]).at(ids[1]);}
+			if (gridCellKernel.at(ids[0]).count(ids[1]) == 1){ // something exists for this cell pair
+				gridKernValue = gridCellKernel.at(ids[0]).at(ids[1]);}
 			else {
-				if(verbose){std::cout << std::endl << "Neighbor " << c2->get_id() << " of farm "<< f1->get_id()
-				<<" has no stored kernel value>0. ";}}
+				if(verbose){std::cout << std::endl << "Neighbor " << compCellID << " of farm "<< fcID
+				<<" has no stored kernel value. ";}}
 
-			// maximum transmission values of cells, initialized assuming infectOut is true
-			maxSus = c2->get_maxSus(); // max susceptibility of any farm in comparison cell
+			// maximum transmission values of cells
+			double maxComp = c2->grid_cell::get_maxSus(); // max susceptibility of any farm in comparison cell
 			// if calculating spread TO focal cell, reassign values
-			if (!infectOut){maxInf = c2->get_maxInf();}
+			if (!infectOut){maxComp = c2->grid_cell::get_maxInf();}
 
 			double s = 1; // on/off switch, 1 = on (single infection hasn't happened yet)
-	
-		if (infectOut){
-			farmInf = getFarmInf(f1); // infectiousness value for farm in focal cell
-			farmToCellProb = 1 - exp(-farmInf * compNumFarms*maxSus * gridKernValue);
-		} else if (!infectOut){
-			farmSus = getFarmSus(f1); // susceptibility value for farm in focal cell
-			farmToCellProb = 1 - exp(-farmSus * compNumFarms*maxInf * gridKernValue);		
-		}
+			 // 1st "prob5" in MT's Fortran code:
+			double farmToCellProb = 1 - exp(-farmFoc * compNumFarms*maxComp * gridKernValue);
+
 			double random1 = unif_rand();
 // Grid checkpoint A
 			if (random1 < farmToCellProb){ // if farm to cell succeeds
-				indivFarmMaxProb = 1 - exp(-farmInf * maxSus * gridKernValue); 
-				// infectiousness of focal farm * max susceptibility in comp cell * grid kernel
-				if (!infectOut){indivFarmMaxProb = 1 - exp(-farmSus * maxInf * gridKernValue);}		
-				// susceptibility of focal farm * max infectiousness in comp cell * grid kernel
+				int f2count = 0; // how many farms in comparison cell have been checked
+				// "prob6" in MT's Fortran code:
+				// focal farm inf/sus * max sus/inf in comp cell * grid kernel
+				double indivFarmMaxProb = 1 - exp(-farmFoc * maxComp * gridKernValue); 
 		
-				for (auto f2:compFarmList){
+			 for (auto f2:compFarmList){
 				
 // 					if (f1->get_id()==f2->get_id()){std::cout<< "Self comparison. ";}
 // 					if (compsMade.count(f1->get_id())>0){
@@ -871,51 +845,49 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 // 						compsMade[f1->get_id()].emplace_back(f2->get_id());
 // 					}
  
-					f2count++;
-				remainingFarmsMaxProb =1-(s*exp(-farmInf * (compNumFarms+1-f2count)*maxSus * gridKernValue));
-				if (!infectOut){	
-					remainingFarmsMaxProb =1-(s*exp(-farmSus * (compNumFarms+1-f2count)*maxInf * gridKernValue));}
+				f2count++;
+				// 2nd "prob5" in MT's Fortran code: - replaces farmToCell while stepping through
 				// # farms left in cell * farm(a) infectiousness * farm(b) susceptibility * grid kernel
+				double remainingFarmsMaxProb =1-(s*exp(-farmFoc * (compNumFarms+1-f2count)*maxComp * gridKernValue));
 
 				double random2 = unif_rand(); // "prob4" in MT's Fortran code
 // Grid checkpoint B
 				if (random2 < indivFarmMaxProb/remainingFarmsMaxProb){	
 					// if (one max susceptible)/(entrance prob accounting for # of farms checked) succeeds
 					// get actual distances between farms
-					f1x = f1 -> get_x();
-					f1y = f1 -> get_y();
-					f2x = f2 -> get_x();
-					f2y = f2 -> get_y();
-					xdiff = (f1x - f2x);
-					ydiff = (f1y - f2y);
-					distBWfarms = sqrt(xdiff*xdiff + ydiff*ydiff);
-					kernelBWfarms = kernel(distBWfarms);
+					double f1x = f1 -> Farm::get_x();
+					double f1y = f1 -> Farm::get_y();
+					double f2x = f2 -> Farm::get_x();
+					double f2y = f2 -> Farm::get_y();
+					double xdiff = (f1x - f2x);
+					double ydiff = (f1y - f2y);
+					double distBWfarms = sqrt(xdiff*xdiff + ydiff*ydiff);
+					double kernelBWfarms = kernel(distBWfarms);
 					// get individual infectiousness/susceptibility values
-				if (infectOut){			
-					farmSus = getFarmSus(f2); // susceptible farm in comparison cell (farmInf already defined from focal cell)
-				} else if (!infectOut){	
-					farmInf = getFarmInf(f2); // infectious farm in comparison cell (farmSus already defined from focal cell)
+					double farmComp = getFarmSus(f2); // susceptible farm in comparison cell (farmInf already defined from focal cell)
+				if (!infectOut){	
+					farmComp = getFarmInf(f2); // infectious farm in comparison cell (farmSus already defined from focal cell)
 				}
 					// calculate probability between these specific farms
-					betweenFarmsProb = 1-exp(-farmSus * farmInf * kernelBWfarms); // prob tx between this farm pair
+					double betweenFarmsProb = 1-exp(-farmFoc * farmComp * kernelBWfarms); // prob tx between this farm pair
 					// "prob3" in MT's Fortran code
 // Grid checkpoint C
 					if (random2 < betweenFarmsProb/remainingFarmsMaxProb){
 						// infect
+						double compFarmID = f2->Farm::get_id();
 						if(verbose){std::cout << "Farm infected. ";}
 						s = 0; // remainingFarmProb recalculates to 1 for remainder of loop
-						if (infectedFarms.count(f2->get_id())==0){ // if this farm hasn't been infected
-							infectedFarms[f2->get_id()].emplace_back(1);
-							infectedFarms[f2->get_id()].emplace_back(f2x);
-							infectedFarms[f2->get_id()].emplace_back(f2y);
+						if (infectedFarms.count(compFarmID)==0){ // if this farm hasn't been infected
+							infectedFarms[compFarmID].emplace_back(1);
+							//infectedFarms[f2->get_id()].emplace_back(f2x);
+							//infectedFarms[f2->get_id()].emplace_back(f2y);
 						} else {
-							infectedFarms.at(f2->get_id())[0]++; // would be infected again - keep count
+							infectedFarms.at(compFarmID)[0]++; // would be infected again - keep count
 						} // end if farm is already on infected list
 							
 					} // end "if actual tx occurs"
 				} // end "if trans between indiv farms at max"
 				} // end for each comparison cell farm
-				f2count = 0;							
 			} else { // otherwise if p(farm->cell) fails
 				farmtocellskips++;
 				farmsinskippedcells += compNumFarms;

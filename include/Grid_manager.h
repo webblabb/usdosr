@@ -38,9 +38,10 @@ class Grid_manager
 		std::unordered_map<double, std::unordered_map<double, double>> 
 			gridCellKernel; // kernel values between cell pairs
 		std::unordered_map<double, std::unordered_map<double, double>> 
-			storedDists; // freq-used distances between cell pairs
-		std::unordered_map<double, std::vector<double>> 
-			kernelNeighbors; // each cell's neighbors with positive kernel values
+			storedDists; // freq-used distances between cell pairs, used in shortestCellDist
+		std::unordered_map<double, std::vector<grid_cell*>> 
+			kernelNeighbors; // each cell's susceptible neighbors with p>0
+
 			
 			
 		// functions
@@ -65,8 +66,8 @@ class Grid_manager
 			std::vector<double>& cellSpecs, 
 			std::stack< std::vector<double> >& queue); // replaces parent cell with subdivided offspring quadrants
  		void assignCellIDtoFarms(double cellID, std::vector<Farm*>& farmsInCell);
- 		std::vector<grid_cell*> 
- 			posKernelNeighborsOf(double cellID);
+//  		std::vector<grid_cell*> 
+//  			posKernelNeighborsOf(double cellID);
 		double shortestCellDist(
 			grid_cell* cell1, 
 			grid_cell* cell2); // calculates shortest distance between two cells
@@ -113,8 +114,8 @@ class Grid_manager
 			get_gridCellKernel() const; // inlined
 		std::unordered_map<int, Farm*> 
 			get_allFarms() const; //inlined
-		std::unordered_map<double, std::vector<double>> 
-			get_kernelNeighbors() const; //inlined
+// 		std::unordered_map<double, std::vector<double>> 
+// 			get_kernelNeighbors() const; //inlined
 		std::vector<Farm*> 
 			farmsOtherThan(std::vector<Farm*>&);
 			
@@ -176,11 +177,11 @@ inline std::unordered_map<int, Farm*>
 	return(farm_map);
 }
 
-inline std::unordered_map<double, std::vector<double>> 
-	Grid_manager::get_kernelNeighbors() const
-{
-	return(kernelNeighbors);
-}
+// inline std::unordered_map<double, std::vector<double>> 
+// 	Grid_manager::get_kernelNeighbors() const
+// {
+// 	return(kernelNeighbors);
+// }
 
 /////////// for infection evaluation ///////////
 inline void Grid_manager::setInfectOut(bool io)
