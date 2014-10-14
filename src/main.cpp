@@ -179,16 +179,16 @@ int t=0;
 	// run this farm by farm (no gridding) for comparison
 //		int totalcomparisons = 0;
  		int runningTotal = 0;
-		for (auto f1:focalFarms)
+		for (auto& f1:focalFarms)
 		{
-		double f1x = f1 -> get_x(); // get farm 1 x coordinate
-		double f1y = f1 -> get_y(); // get farm 1 y coordinate
+		double f1x = f1 -> Farm::get_x(); // get farm 1 x coordinate
+		double f1y = f1 -> Farm::get_y(); // get farm 1 y coordinate
 
-			for (auto f2:compFarms)
+			for (auto& f2:compFarms)
 			{
 //				totalcomparisons++;
-				double f2x = f2 -> get_x(); // get farm 2 x coordinate
-				double f2y = f2 -> get_y(); // get farm 2 y coordinate
+				double f2x = f2 -> Farm::get_x(); // get farm 2 x coordinate
+				double f2y = f2 -> Farm::get_y(); // get farm 2 y coordinate
 				
 				double xdiff = (f1x - f2x);
 				double ydiff = (f1y - f2y);
@@ -205,11 +205,12 @@ int t=0;
 
 				double random3 = unif_rand();
 				if (random3 < betweenFarmsProb){
+					double infFarmID = f2->Farm::get_id();
 					// success... infect
-					if (infectedFarms.count(f2->get_id())==0){ // if this farm hasn't been infected
-						infectedFarms[f2->get_id()] = 1;
+					if (infectedFarms.count(infFarmID)==0){ // if this farm hasn't been infected
+						infectedFarms[infFarmID] = 1;
 					} else {
-						infectedFarms.at(f2->get_id())=infectedFarms.at(f2->get_id())+1;
+						infectedFarms.at(infFarmID)=infectedFarms.at(infFarmID)+1;
 					}
 				}
 			}

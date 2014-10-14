@@ -66,8 +66,6 @@ class Grid_manager
 			std::vector<double>& cellSpecs, 
 			std::stack< std::vector<double> >& queue); // replaces parent cell with subdivided offspring quadrants
  		void assignCellIDtoFarms(double cellID, std::vector<Farm*>& farmsInCell);
-//  		std::vector<grid_cell*> 
-//  			posKernelNeighborsOf(double cellID);
 		double shortestCellDist(
 			grid_cell* cell1, 
 			grid_cell* cell2); // calculates shortest distance between two cells

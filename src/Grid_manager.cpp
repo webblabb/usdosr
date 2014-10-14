@@ -84,9 +84,9 @@ Grid_manager::Grid_manager(std::string &fname, bool xyswitch, bool v)
 
 	// copy farmlist from farm_map (will be changed as grid is created)
 	if (verbose){std::cout << "Copying farms from farm_map to farmList..." << std::endl;}
-	for (auto prem: farm_map)
+	for (auto& prem: farm_map)
 	{
-		farmList.push_back(prem.second); // "second" value from map is Farm pointer
+		farmList.emplace_back(prem.second); // "second" value from map is Farm pointer
 	}
 	
 // 	double firstx = farmList.front()->get_x();
@@ -224,7 +224,7 @@ void Grid_manager::splitCell(std::vector<double>& cellSpecs, std::stack< std::ve
 
 void Grid_manager::assignCellIDtoFarms(double cellID, std::vector<Farm*>& farmsInCell)
 {
-	for (auto f:farmsInCell){
+	for (auto& f:farmsInCell){
 		f->set_cellID(cellID);
 	}
 }
@@ -419,7 +419,7 @@ void Grid_manager::initiateGrid(double cellSide)
     // unique cell x values (increment according to xChanges)
     // y values once x value is found
     
-    std::vector<Farm*> farmListByX = farmList;
+    std::vector<Farm*> farmListByX(farmList); // farmListByX is a copy of farmList
     std::sort(farmListByX.begin(), farmListByX.end(), sortByX);
     // indices for moving around the cell list
     int xi = 0; 
@@ -428,10 +428,10 @@ void Grid_manager::initiateGrid(double cellSide)
     
     std::vector<int> seedFarms;
         
-    for (auto f:farmListByX)
+    for (auto& f:farmListByX)
     {
-		double farmx = f->get_x();
-		double farmy = f->get_y();
+		double farmx = f->Farm::get_x();
+		double farmy = f->Farm::get_y();
     	bool cellFound = 0;
     	fcount++;
     	
@@ -662,10 +662,10 @@ void Grid_manager::makeCellRefs()
 			if (gridValue > 0){
 				gridCellKernel[whichCell1][whichCell2] = gridValue;
 				// is max cell-cell prob>0?
-				double maxI = IDsToCells(whichCell1)->get_maxInf();
-				double maxS = IDsToCells(whichCell2)->get_maxSus();
-				int n1 = IDsToCells(whichCell1)->get_num_farms();
-				int n2 = IDsToCells(whichCell2)->get_num_farms();
+				double maxI = IDsToCells(whichCell1)->grid_cell::get_maxInf();
+				double maxS = IDsToCells(whichCell2)->grid_cell::get_maxSus();
+				int n1 = IDsToCells(whichCell1)->grid_cell::get_num_farms();
+				int n2 = IDsToCells(whichCell2)->grid_cell::get_num_farms();
 				if(n1>n2){n2=n1;}
 								
 				double pcellcell = 1-exp(-maxI * n2 * maxS * gridValue);
@@ -731,7 +731,7 @@ void Grid_manager::printGridKernel() const // only values > 0 stored
 std::vector<grid_cell*> Grid_manager::IDsToCells(std::vector<double> cellIDs)
 {
 	std::vector<grid_cell*> neighborCells;
-	for (auto i:cellIDs)
+	for (auto& i:cellIDs)
 	{
 		neighborCells.emplace_back(allCells.at(i));
 	}
@@ -744,12 +744,6 @@ grid_cell* Grid_manager::IDsToCells(double cellID)
 	return allCells.at(cellID);
 }
 
-// std::vector<grid_cell*> Grid_manager::posKernelNeighborsOf(double cellID)
-// // get neighboring cells that have kernel values > 0
-// {
-// 	return IDsToCells(kernelNeighbors.at(cellID));
-// }
-
 void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vector<Farm*>& in_compFarms)
 // in_focalFarms is either all infectious (infectOut=1) or all susceptible (infectOut=0) premises
 // in_focalFarms is either all susceptible (infectOut=1) or all infectious (infectOut=0) premises
@@ -760,8 +754,8 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 	infectedFarms.clear();
 	// make map of comp farms indexed by cells
 	std::unordered_map<double, std::vector<Farm*>> compCellMap;
-	for (auto cf:in_compFarms){ // cf is Farm*
-		compCellMap[cf->get_cellID()].emplace_back(cf);
+	for (auto& cf:in_compFarms){ // cf is Farm*
+		compCellMap[cf->Farm::get_cellID()].emplace_back(cf);
 	}
 	if(verbose){
 		std::cout << std::endl << compCellMap.size() << " cells contain " << in_compFarms.size() << " comparison farms: ";
@@ -772,7 +766,7 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 	double farmFoc = 0;
  	std::vector<grid_cell*> neighborsToCheck;	
 
-	for (auto f1:in_focalFarms){ // for each focal farm
+	for (auto& f1:in_focalFarms){ // for each focal farm
 		// get cell & parameters
 		double fcID = f1->Farm::get_cellID(); // specified non-virtual function call (Farm::)
  		if(currentCellID != fcID){ // reset only if focal cell has changed since last farm
@@ -784,14 +778,14 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 			std::vector<grid_cell*>& neighborsOfFocal = kernelNeighbors.at(currentCellID);
 			// if (!infectOut)...
 			neighborsToCheck.clear();
-			for (auto n: neighborsOfFocal){
+			for (auto& n: neighborsOfFocal){
 				if (compCellMap.count( n->grid_cell::get_id() )>0){ // if this neighbor cell has comparison farms
 				neighborsToCheck.emplace_back(n);}
 			} // end for each neighbor
 			if(verbose){std::cout << neighborsToCheck.size() << " neighbor cells to check." << std::endl;}
 		} // end "if focal cell is different this time"
 			  
-		for (auto c2:neighborsToCheck){	// loop through each neighbor cell (c2 as in "cell 2")
+		for (auto& c2:neighborsToCheck){	// loop through each neighbor cell (c2 as in "cell 2")
 			double compCellID = c2->grid_cell::get_id();
 		
 // 			if (cellCompsMade.count(f1->get_id())>0){
@@ -833,7 +827,7 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 				// focal farm inf/sus * max sus/inf in comp cell * grid kernel
 				double indivFarmMaxProb = 1 - exp(-farmFoc * maxComp * gridKernValue); 
 		
-			 for (auto f2:compFarmList){
+			 for (auto& f2:compFarmList){
 				
 // 					if (f1->get_id()==f2->get_id()){std::cout<< "Self comparison. ";}
 // 					if (compsMade.count(f1->get_id())>0){
