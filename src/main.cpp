@@ -57,24 +57,25 @@ int main(int argc, char* argv[])
 
   		// load initial farms from file
 		std::string fname = "seedFarms.txt";
-	 	std::vector<Farm*> focalFarms;
-	 	std::unordered_map<int, Farm*> allFarms = G.get_allFarms();
+	 	std::vector<Farm*> focalFarms1, compFarms1;
+	 	std::unordered_map<int, Farm*> allFarms = G.get_allFarms(); 
+	 	for (auto x:allFarms){compFarms1.emplace_back(x.second);}
+	 	// compFarms first holds all farms for ID reference, then is pared down and used as comparison farm list
 	 	double fID;
  		std::ifstream f(fname);
 		if(!f){std::cout << "Input file not found." << std::endl;}
 		if(f.is_open()){
-		std::cout << "File open" << std::endl;
+		std::cout << "Loading seed farms." << std::endl;
 			while(! f.eof()){
 				std::string line;
 				getline(f, line); // get line from file "f", save as "line"			
 				if(! line.empty()){ // if line has something in it
 					str_cast(line, fID);
-					focalFarms.emplace_back(allFarms.at(fID));
+					focalFarms1.emplace_back(compFarms1.at(fID)); // using compFarms for reference here
 				} // close "if line_vector not empty"
 			} // close "while not end of file"
 		} // close "if file is open"	
- 		std::vector <std::vector<Farm*>> f_c_farms = G.setFarmStatuses(focalFarms);
- 		std::vector<Farm*> compFarms = f_c_farms[1];
+ 		G.removeFarmSubset(focalFarms1,compFarms1); // removes focalFarms from compFarms, now compFarms only has compFarms
 			
  	bool griddingOn = 1;
 if(griddingOn){
@@ -85,7 +86,7 @@ if(griddingOn){
 //    for (auto j:parList)	// for each value of j to run
 //    {
 	 	std::clock_t grid_start = std::clock();		
-		G.initiateGrid(300,50000); // max farms in cell, kernel radius
+		G.initiateGrid(800,50000); // max farms in cell, kernel radius
 //		G.initiateGrid(80000); // length of cell side
 //		G.printCells(pfile); // option to print cells, based on specified prem file
  		std::clock_t grid_end = std::clock();
@@ -93,8 +94,8 @@ if(griddingOn){
 		std::cout << "CPU time for generating grid: " << gridGenTimeMS << "ms." << std::endl;
 		
 for (auto r=0; r!=10; r++){
-		std::vector<Farm*> focalFarms = f_c_farms[0];
-		std::vector<Farm*> compFarms = f_c_farms[1];
+		std::vector<Farm*> focalFarms = focalFarms1;
+		std::vector<Farm*> compFarms = compFarms1;
 		int runningTotal = 0;
 
  		int t=0;
@@ -168,8 +169,8 @@ for (auto r=0; r!=10; r++){
 bool pairwiseOn = 0; // 1,949,147,792 comparisons
 if(pairwiseOn){
 	std::cout << "Conducting pairwise comparisons - go get a snack." << std::endl;
-	std::vector<Farm*> focalFarms = f_c_farms[0];
-	std::vector<Farm*> compFarms = f_c_farms[1];
+	std::vector<Farm*> focalFarms = focalFarms1;
+	std::vector<Farm*> compFarms = compFarms1;
 	std::unordered_map<double, int> infectedFarms;
 // replicating the pairwise comparisons
 int t=0;

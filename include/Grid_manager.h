@@ -49,8 +49,6 @@ class Grid_manager
 		
 		void set_maxFarms(unsigned int in_maxFarms); //inlined
 		std::string to_string(grid_cell&) const;
-		void updateFarmList(
-			std::vector<Farm*>&, std::vector<Farm*>&); // removes farms in 1st vector from 2nd (ie recently committed cell from main list)
 		std::vector<Farm*> getFarms(
 			std::vector<double> cellSpecs,
 			const unsigned int maxFarms); // makes list of farms in a cell (quits early if over max)
@@ -113,6 +111,8 @@ class Grid_manager
 			get_gridCellKernel() const; // inlined
 		std::unordered_map<int, Farm*> 
 			get_allFarms() const; //inlined
+		void removeFarmSubset(std::vector<Farm*>&, std::vector<Farm*>&); // removes farms in 1st vector from 2nd (ie recently committed cell from main list)
+
 			
 		/////////// for infection evaluation ///////////
 		// per timestep functions

@@ -116,7 +116,7 @@ Grid_manager::~Grid_manager()
 {
 }
 
-void Grid_manager::updateFarmList(std::vector<Farm*>& farmsToRemove, std::vector<Farm*>& masterFarmList)
+void Grid_manager::removeFarmSubset(std::vector<Farm*>& farmsToRemove, std::vector<Farm*>& masterFarmList)
 // remove farms in first vector from second vector
 {
 	double expectedSize = masterFarmList.size()-farmsToRemove.size();
@@ -213,7 +213,7 @@ void Grid_manager::commitCell(std::vector<double> cellSpecs, std::vector<Farm*>&
     
     allCells.emplace(id,cellToAdd); // add to map of all committed cells, with id as key
     assignCellIDtoFarms(id,farmsInCell);
-    updateFarmList(farmsInCell, farmList);
+    removeFarmSubset(farmsInCell, farmList);
 }
 
 void Grid_manager::splitCell(std::vector<double>& cellSpecs, std::stack< std::vector<double> >& queue)
@@ -367,7 +367,7 @@ void Grid_manager::initiateGrid(std::string& cname)
 					allCells[cellSpecs[0]] = new grid_cell(cellSpecs[0], cellSpecs[1], 									
 						cellSpecs[2], cellSpecs[3], farmsInCell); 
 					assignCellIDtoFarms(cellSpecs[0],farmsInCell);
-					updateFarmList(farmsInCell, farmList);
+					removeFarmSubset(farmsInCell, farmList);
 					}
 			} // close "if line_vector not empty"
 		} // close "while not end of file"
@@ -910,7 +910,7 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 		<< "Infections this time step (gridding): " << infectedFarms.size() << std::endl;
 	
 	std::vector<Farm*> infFarmVec = getInfVec();
-	updateFarmList(infFarmVec,in_compFarms);
+	removeFarmSubset(infFarmVec,in_compFarms);
 }
 
 std::vector<Farm*> Grid_manager::getInfVec() const
@@ -927,16 +927,25 @@ std::vector <std::vector<Farm*>> Grid_manager::setFarmStatuses(std::vector<Farm*
 { 
 	// sort by ID
 	std::sort(focalFarms.begin(),focalFarms.end(),sortByID); 
-	
- 	std::vector <Farm*> comp; // vector of comp farms
+	std::vector <Farm*> comp;
+	for (auto c:farm_map){comp.emplace_back(c.second);}
+	std::sort(comp.begin(),comp.end(),sortByID); // vector of ID-sorted comp farms
 
-	std::vector<Farm*>::iterator i( focalFarms.begin() );
-	for (auto& j:farm_map){
-		if (j.second != *i){
-			comp.emplace_back(j.second);
+	auto it2 = comp.begin();
+	for(auto it = focalFarms.begin(); it != focalFarms.end(); it++)
+	// loop through each focalfarm
+	{		
+		while (it2 != comp.end()) // while end of farm list not reached
+		{
+			if(*it2 == *it) // if doesn't match current farm, add to comp
+			{
+				comp.erase(it2); // add farm to comp list
+				break; // breaks the while loop
 			}
-		else{i++;}
+			it2++; // 
+		}
 	}
+
 	std::vector <std::vector <Farm*>> farmsToReturn;
  		farmsToReturn.emplace_back(focalFarms);
  		farmsToReturn.emplace_back(comp);
