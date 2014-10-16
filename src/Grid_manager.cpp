@@ -553,6 +553,23 @@ void Grid_manager::printCells(std::string& pfile) const
 
 }
 
+void Grid_manager::printVector(std::vector<Farm*>& vec, std::string& fname) const
+{
+	std::string tabdelim;
+	for(auto& it:vec){
+		double fid = it->Farm::get_id();
+		tabdelim += std::to_string(fid);
+		tabdelim += "\n";
+	}
+	
+	std::ofstream f(fname); 
+	if(f.is_open()){
+		f << tabdelim;
+		f.close();
+	}
+	std::cout << "Vector printed to " << fname <<std::endl;
+}
+
 double Grid_manager::shortestCellDist(grid_cell* cell1, grid_cell* cell2)
 // returns shortest distance between cell1 and cell2
 {
@@ -905,8 +922,30 @@ std::vector<Farm*> Grid_manager::getInfVec() const
 	return infFarmVec;
 }
 
-// input is proportion of focal farms (random), all remaining farms are comparison
-std::vector <std::vector<Farm*>> Grid_manager::fakeFarmStatuses(double propFocal)
+// with input vector focal farms, returns vector of comparison (all other) farms
+std::vector <std::vector<Farm*>> Grid_manager::setFarmStatuses(std::vector<Farm*>& focalFarms) const
+{ 
+	// sort by ID
+	std::sort(focalFarms.begin(),focalFarms.end(),sortByID); 
+	
+ 	std::vector <Farm*> comp; // vector of comp farms
+
+	std::vector<Farm*>::iterator i( focalFarms.begin() );
+	for (auto& j:farm_map){
+		if (j.second != *i){
+			comp.emplace_back(j.second);
+			}
+		else{i++;}
+	}
+	std::vector <std::vector <Farm*>> farmsToReturn;
+ 		farmsToReturn.emplace_back(focalFarms);
+ 		farmsToReturn.emplace_back(comp);
+ 	std::cout << "Returning " << focalFarms.size() << " focal farms and " << comp.size() << " comparison farms." << std::endl;
+ 	return farmsToReturn;
+ }
+ 
+// overloaded: input is proportion of focal farms (random), all remaining farms are comparison
+std::vector <std::vector<Farm*>> Grid_manager::setFarmStatuses(double propFocal)
 { 
  	std::vector <Farm*> focal, comp; // two vectors of focal/comp farms
 
@@ -924,11 +963,3 @@ std::vector <std::vector<Farm*>> Grid_manager::fakeFarmStatuses(double propFocal
  	std::cout << "Returning " << focal.size() << " focal farms and " << comp.size() << " comparison farms." << std::endl;
  	return farmsToReturn;
  }
- 
-std::vector<Farm*> Grid_manager::farmsOtherThan(std::vector<Farm*>& in_farms)
-{
-	std::vector<Farm*> allOtherFarms;
-	for (auto a:farm_map){allOtherFarms.emplace_back(a.second);}
-	updateFarmList(in_farms,allOtherFarms);
-return allOtherFarms;
-}

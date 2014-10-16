@@ -47,39 +47,35 @@ int main(int argc, char* argv[])
  			<< 1000.0 * (loading_end - loading_start) / CLOCKS_PER_SEC
  			<< "ms." << std::endl;
  			
- 		// load initial farms from file
- /*
- 	std::vector<Farm*> focalFarms;
- 	int fID;
- 	std::unordered_map<int, Farm*> allFarms = G.get_allFarms();
- 	std::ifstream f("dense_seed.txt");
-	if(!f){std::cout << "Input file not found." << std::endl;}
-	if(f.is_open())
-	{
-	std::cout << "File open" << std::endl;
-		while(! f.eof())
-		{
-			std::string line;
-			getline(f, line); // get line from file "f", save as "line"
-			//std::vector<std::string> line_vector = split(line, '\t'); // separate by tabs
-			
-			if(! line.empty()) // if line has something in it
-			{
-				str_cast(line, fID);
-				focalFarms.emplace_back(allFarms.at(fID));
-			} // close "if line_vector not empty"
-		} // close "while not end of file"
-	} // close "if file is open"	
- 			
- 		std::vector<Farm*> compFarms = G.farmsOtherThan(focalFarms);
- 		std::cout << focalFarms.size() <<" focal farms, "<< compFarms.size()<<" comp farms."<<std::endl;
- */
+
  		
-		// set a proportion to be focal farms (same list for all reps)
-		std::vector <std::vector<Farm*>> f_c_farms = G.fakeFarmStatuses(0.05);
-		std::vector<Farm*> focalFarms = f_c_farms[0];
-		std::vector<Farm*> compFarms = f_c_farms[1];
- 			
+		// pick a proportion to be focal farms and print to external file
+//		std::vector <std::vector<Farm*>> f_c_farms = G.setFarmStatuses(0.05);
+//		std::vector<Farm*> focalFarms = f_c_farms[0];
+//		std::string fname = "seedFarms.txt";
+//		G.printVector(focalFarms,fname);
+
+  		// load initial farms from file
+		std::string fname = "seedFarms.txt";
+	 	std::vector<Farm*> focalFarms;
+	 	std::unordered_map<int, Farm*> allFarms = G.get_allFarms();
+	 	double fID;
+ 		std::ifstream f(fname);
+		if(!f){std::cout << "Input file not found." << std::endl;}
+		if(f.is_open()){
+		std::cout << "File open" << std::endl;
+			while(! f.eof()){
+				std::string line;
+				getline(f, line); // get line from file "f", save as "line"			
+				if(! line.empty()){ // if line has something in it
+					str_cast(line, fID);
+					focalFarms.emplace_back(allFarms.at(fID));
+				} // close "if line_vector not empty"
+			} // close "while not end of file"
+		} // close "if file is open"	
+ 		std::vector <std::vector<Farm*>> f_c_farms = G.setFarmStatuses(focalFarms);
+ 		std::vector<Farm*> compFarms = f_c_farms[1];
+			
  	bool griddingOn = 1;
 if(griddingOn){
 //  		std::vector <double> parList;
@@ -89,13 +85,16 @@ if(griddingOn){
 //    for (auto j:parList)	// for each value of j to run
 //    {
 	 	std::clock_t grid_start = std::clock();		
-//		G.initiateGrid(300,50000); // max farms in cell, kernel radius
-		G.initiateGrid(50000); // length of cell side
+		G.initiateGrid(300,50000); // max farms in cell, kernel radius
+//		G.initiateGrid(80000); // length of cell side
 //		G.printCells(pfile); // option to print cells, based on specified prem file
  		std::clock_t grid_end = std::clock();
 		double gridGenTimeMS = 1000.0 * (grid_end - grid_start) / CLOCKS_PER_SEC;
 		std::cout << "CPU time for generating grid: " << gridGenTimeMS << "ms." << std::endl;
 		
+for (auto r=0; r!=10; r++){
+		std::vector<Farm*> focalFarms = f_c_farms[0];
+		std::vector<Farm*> compFarms = f_c_farms[1];
 		int runningTotal = 0;
 
  		int t=0;
@@ -118,7 +117,8 @@ if(griddingOn){
  		 }
  		 	
  		 t++;
- 		}  		
+ 		}  	
+ }	
    
 /*
 	  	std::string allLinesToPrint, oneLine;

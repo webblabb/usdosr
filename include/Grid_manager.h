@@ -106,27 +106,28 @@ class Grid_manager
 		
 		void printCells(std::string& pfile) const;
 		void printGridKernel() const;
+		void printVector(std::vector<Farm*>&, std::string&) const;
 		std::unordered_map<double, grid_cell*> 
 			get_allCells() const; //inlined	
 		std::unordered_map<double, std::unordered_map<double, double>> 
 			get_gridCellKernel() const; // inlined
 		std::unordered_map<int, Farm*> 
 			get_allFarms() const; //inlined
-// 		std::unordered_map<double, std::vector<double>> 
-// 			get_kernelNeighbors() const; //inlined
-		std::vector<Farm*> 
-			farmsOtherThan(std::vector<Farm*>&);
 			
 		/////////// for infection evaluation ///////////
 		// per timestep functions
 		//void setFocalCells(std::vector<Farm*>& focalFarms); // gets cells of focal farms and sends them to stepThroughCells
-		std::vector <std::vector<Farm*>> fakeFarmStatuses(double);
+		std::vector <std::vector<Farm*>> 
+			setFarmStatuses(std::vector<Farm*>&) const;
+		std::vector <std::vector<Farm*>> 
+			setFarmStatuses(double);
 		void stepThroughCells(std::vector<Farm*>&, std::vector<Farm*>&);
-		void stepThroughCellsAlt(std::vector<Farm*>&, std::vector<Farm*>&);
 		// calcs pw prob for each farm for comparison to gridding loops
 		void setInfectOut(bool); //inlined
-		std::unordered_map<double, std::vector<double>> getTotalInfections() const; //inlined
-		std::vector<Farm*> getInfVec() const;
+		std::unordered_map<double, std::vector<double>> 
+			getTotalInfections() const; //inlined
+		std::vector<Farm*> 
+			getInfVec() const;
 
 
 };
