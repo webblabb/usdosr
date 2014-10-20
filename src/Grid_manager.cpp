@@ -519,6 +519,7 @@ std::string Grid_manager::to_string(grid_cell& gc) const
 
 void Grid_manager::printCells(std::string& pfile) const
 // input is premises file, to be included in cell file name
+// temporarily disabled due to incompatible std::to_string use
 {
 	// sort cells by ID (ensures farm reassignment will be in same order as when created)
 	std::map<double, grid_cell*> orderedCells(allCells.begin(),allCells.end());
@@ -550,11 +551,12 @@ void Grid_manager::printCells(std::string& pfile) const
 		f.close();
 	}
 	std::cout << "Cells printed to " << ofilename <<std::endl;
-
 }
 
 void Grid_manager::printVector(std::vector<Farm*>& vec, std::string& fname) const
+// temporarily disabled due to incompatible std::to_string use
 {
+/*
 	std::string tabdelim;
 	for(auto& it:vec){
 		double fid = it->Farm::get_id();
@@ -568,6 +570,7 @@ void Grid_manager::printVector(std::vector<Farm*>& vec, std::string& fname) cons
 		f.close();
 	}
 	std::cout << "Vector printed to " << fname <<std::endl;
+*/
 }
 
 double Grid_manager::shortestCellDist(grid_cell* cell1, grid_cell* cell2)
@@ -688,7 +691,7 @@ void Grid_manager::makeCellRefs()
 				double pcellcell = 1-exp(-maxI * n2 * maxS * gridValue);
 				if (pcellcell > 0){
 					kernelNeighbors[whichCell1].emplace_back(IDsToCells(whichCell2));
-					if (whichCell1 != whichCell2){
+					if (whichCell1 != whichCell2){ // this was a big bug - double counting self as neighbor
 					kernelNeighbors[whichCell2].emplace_back(IDsToCells(whichCell1));}
 				} // end if prob cell-cell >0
 			} // end if gridValue > 0
@@ -765,10 +768,16 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 // in_focalFarms is either all infectious (infectOut=1) or all susceptible (infectOut=0) premises
 // in_focalFarms is either all susceptible (infectOut=1) or all infectious (infectOut=0) premises
 {
-	// compsMade and cellCompsMade keep track of what's been compared and alerts if repeats occur
+	//compsMade and cellCompsMade keep track of what's been compared and alerts if repeats occur
 // 	std::unordered_map<double,std::vector<double>> compsMade;
 // 	std::unordered_map<double,std::vector<double>> cellCompsMade; // key farm, vector of cells
+
 	infectedFarms.clear();
+	// make map of focalp farms indexed by cells
+	std::unordered_map<double, std::vector<Farm*>> focalCellMap;
+	for (auto& ff:in_focalFarms){ // ff is Farm*
+		focalCellMap[ff->Farm::get_cellID()].emplace_back(ff);
+	}
 	// make map of comp farms indexed by cells
 	std::unordered_map<double, std::vector<Farm*>> compCellMap;
 	for (auto& cf:in_compFarms){ // cf is Farm*
@@ -778,48 +787,43 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 		std::cout << std::endl << compCellMap.size() << " cells contain " << in_compFarms.size() << " comparison farms: ";
 	}
 		
-	// initialize variables 
-	double currentCellID = -1;
-	double farmFoc = 0;
- 	std::vector<grid_cell*> neighborsToCheck;	
+   for (auto& fc1:focalCellMap){ 
+    double fcID = fc1.first; // cell id
+    if(verbose){std::cout << "Focal cell set to " << fcID << std::endl;}
+	// get neighbor cells of focal cell (includes self)
+	std::vector<grid_cell*>& neighborsOfFocal = kernelNeighbors.at(fcID);
+	
+	std::vector<grid_cell*> neighborsToCheck; neighborsToCheck.clear();
+	for (auto& n: neighborsOfFocal){
+		if (compCellMap.count( n->grid_cell::get_id() )>0){ // if this neighbor cell has comparison farms
+			neighborsToCheck.emplace_back(n);}
+		} // end for each neighbor cell
+			if(verbose){std::cout << neighborsToCheck.size() << " neighbor cells to check." << std::endl;}	
 
-	for (auto& f1:in_focalFarms){ // for each focal farm
-		// get cell & parameters
-		double fcID = f1->Farm::get_cellID(); // specified non-virtual function call (Farm::)
- 		if(currentCellID != fcID){ // reset only if focal cell has changed since last farm
-			currentCellID = fcID;
-			if(verbose){std::cout << "Focal cell set to " << currentCellID << std::endl;}
-			farmFoc = getFarmInf(f1); // infectiousness value for focal farm
-				if (!infectOut){farmFoc = getFarmSus(f1);} // susceptibility value for focal farm
-			// get neighbor cells of focal cell (includes self)
-			std::vector<grid_cell*>& neighborsOfFocal = kernelNeighbors.at(currentCellID);
-			// if (!infectOut)...
-			neighborsToCheck.clear();
-			for (auto& n: neighborsOfFocal){
-				if (compCellMap.count( n->grid_cell::get_id() )>0){ // if this neighbor cell has comparison farms
-				neighborsToCheck.emplace_back(n);}
-			} // end for each neighbor
-			if(verbose){std::cout << neighborsToCheck.size() << " neighbor cells to check." << std::endl;}
-		} // end "if focal cell is different this time"
+	for (auto& f1:fc1.second){ // for each focal farm in this cell
+		double farmFoc = getFarmInf(f1); // infectiousness value for focal farm
+			if (!infectOut){farmFoc = getFarmSus(f1);} // susceptibility value for focal farm
 			  
 		for (auto& c2:neighborsToCheck){	// loop through each neighbor cell (c2 as in "cell 2")
 			double compCellID = c2->grid_cell::get_id();
 		
-// 			if (cellCompsMade.count(f1->get_id())>0){
-// 				std::vector<double> tempList = cellCompsMade.at(f1->get_id()); // list of cell IDs at farm id key
-// 				for (auto t:tempList){
-// 					if(t==c2->get_id()){std::cout << std::endl << "Repeated farm-cell comparison. Cell: " << c2->get_id();}
-// 				}
-// 			} else {
-// 				cellCompsMade[f1->get_id()].emplace_back(c2->get_id());
-// 			} 
-			
+/*
+			if (cellCompsMade.count(f1->get_id())>0){
+				std::vector<double> tempList = cellCompsMade.at(f1->get_id()); // list of cell IDs at farm id key
+				for (auto t:tempList){
+					if(t==c2->get_id()){std::cout << std::endl << "Repeated farm-cell comparison. Cell: " << c2->get_id();}
+				}
+			} else {
+				cellCompsMade[f1->get_id()].emplace_back(c2->get_id());
+			} 
+*/
+
 			// get # of eligible farms in comp cell
 			std::vector<Farm*>& compFarmList = compCellMap.at(compCellID); // added &, shaved 100s/rep
 			double compNumFarms = compFarmList.size();
 			
 			// put cell IDs in order, to look up cell-cell kernel value
-			std::vector<double> ids = orderNumbers(currentCellID,compCellID);
+			std::vector<double> ids = orderNumbers(fcID,compCellID);
 			double gridKernValue = 0; // default kernel value is 0
 			if (gridCellKernel.at(ids[0]).count(ids[1]) == 1){ // something exists for this cell pair
 				gridKernValue = gridCellKernel.at(ids[0]).at(ids[1]);}
@@ -845,17 +849,17 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 				double indivFarmMaxProb = 1 - exp(-farmFoc * maxComp * gridKernValue); 
 		
 			 for (auto& f2:compFarmList){
-				
-// 					if (f1->get_id()==f2->get_id()){std::cout<< "Self comparison. ";}
-// 					if (compsMade.count(f1->get_id())>0){
-// 						std::vector<double> tempList = compsMade.at(f1->get_id());
-// 						for (auto t:tempList){
-// 						if(t==f2->get_id()){std::cout << "Repeated farm-farm comparison. ";}
-// 						}
-// 					} else {
-// 						compsMade[f1->get_id()].emplace_back(f2->get_id());
-// 					}
- 
+/*				
+					if (f1->get_id()==f2->get_id()){std::cout<< "Self comparison. ";}
+					if (compsMade.count(f1->get_id())>0){
+						std::vector<double> tempList = compsMade.at(f1->get_id());
+						for (auto t:tempList){
+						if(t==f2->get_id()){std::cout << "Repeated farm-farm comparison. ";}
+						}
+					} else {
+						compsMade[f1->get_id()].emplace_back(f2->get_id());
+					}
+*/ 
 				f2count++;
 				// 2nd "prob5" in MT's Fortran code: - replaces farmToCell while stepping through
 				// # farms left in cell * farm(a) infectiousness * farm(b) susceptibility * grid kernel
@@ -883,7 +887,7 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 					double betweenFarmsProb = 1-exp(-farmFoc * farmComp * kernelBWfarms); // prob tx between this farm pair
 					// "prob3" in MT's Fortran code
 // Grid checkpoint C
-					if (random2 < betweenFarmsProb/remainingFarmsMaxProb){
+					if (random2 < betweenFarmsProb){///remainingFarmsMaxProb){
 						// infect
 						double compFarmID = f2->Farm::get_id();
 						if(verbose){std::cout << "Farm infected. ";}
@@ -904,13 +908,12 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 				farmsinskippedcells += compNumFarms;
 			} // end if p(farm->cell) fails
 		} // end for loop through comparison cells
-	  } // end for each focal cell farm
+	  } // end for each focal farm
+	} // end for each focal cell
 	std::cout << std::endl
 //		<< "Farm to cell skips: " << farmtocellskips << " (avoided " << farmsinskippedcells << " comparisons)" << std::endl
 		<< "Infections this time step (gridding): " << infectedFarms.size() << std::endl;
-	
-	std::vector<Farm*> infFarmVec = getInfVec();
-	removeFarmSubset(infFarmVec,in_compFarms);
+
 }
 
 std::vector<Farm*> Grid_manager::getInfVec() const
@@ -921,39 +924,8 @@ std::vector<Farm*> Grid_manager::getInfVec() const
 	}
 	return infFarmVec;
 }
-
-// with input vector focal farms, returns vector of comparison (all other) farms
-std::vector <std::vector<Farm*>> Grid_manager::setFarmStatuses(std::vector<Farm*>& focalFarms) const
-{ 
-	// sort by ID
-	std::sort(focalFarms.begin(),focalFarms.end(),sortByID); 
-	std::vector <Farm*> comp;
-	for (auto c:farm_map){comp.emplace_back(c.second);}
-	std::sort(comp.begin(),comp.end(),sortByID); // vector of ID-sorted comp farms
-
-	auto it2 = comp.begin();
-	for(auto it = focalFarms.begin(); it != focalFarms.end(); it++)
-	// loop through each focalfarm
-	{		
-		while (it2 != comp.end()) // while end of farm list not reached
-		{
-			if(*it2 == *it) // if doesn't match current farm, add to comp
-			{
-				comp.erase(it2); // add farm to comp list
-				break; // breaks the while loop
-			}
-			it2++; // 
-		}
-	}
-
-	std::vector <std::vector <Farm*>> farmsToReturn;
- 		farmsToReturn.emplace_back(focalFarms);
- 		farmsToReturn.emplace_back(comp);
- 	std::cout << "Returning " << focalFarms.size() << " focal farms and " << comp.size() << " comparison farms." << std::endl;
- 	return farmsToReturn;
- }
  
-// overloaded: input is proportion of focal farms (random), all remaining farms are comparison
+// input is proportion of focal farms (random), all remaining farms are comparison
 std::vector <std::vector<Farm*>> Grid_manager::setFarmStatuses(double propFocal)
 { 
  	std::vector <Farm*> focal, comp; // two vectors of focal/comp farms

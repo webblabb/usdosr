@@ -25,29 +25,24 @@ int main(int argc, char* argv[])
 {
 	// read in file
 	std::string pfile; // file containing premises
-	if(argc > 1)
-	{
+	if(argc > 1){
 		pfile = argv[1];
-	}
-	else
-	{
+	} else {
 		std::cout << "ERROR: No premises file specified." << std::endl <<
 		"Exiting..." << std::endl;
 		exit(EXIT_FAILURE);
 	}
 	
-		int timesteps = 1;
+		int timesteps = 10;
 	
   		// generate map of farms and xylimits
-	 	std::clock_t loading_start = std::clock();
+  	 	std::clock_t loading_start = std::clock();
 		Grid_manager G(pfile,0,0); // reverse x/y on/off, verbose on/off
 		std::clock_t loading_end = std::clock();
 	
  		std::cout << std::endl << "CPU time for loading premises: "
  			<< 1000.0 * (loading_end - loading_start) / CLOCKS_PER_SEC
  			<< "ms." << std::endl;
- 			
-
  		
 		// pick a proportion to be focal farms and print to external file
 //		std::vector <std::vector<Farm*>> f_c_farms = G.setFarmStatuses(0.05);
@@ -55,7 +50,7 @@ int main(int argc, char* argv[])
 //		std::string fname = "seedFarms.txt";
 //		G.printVector(focalFarms,fname);
 
-  		// load initial farms from file
+	// load initial farms from file
 		std::string fname = "seedFarms.txt";
 	 	std::vector<Farm*> focalFarms1, compFarms1;
 	 	std::unordered_map<int, Farm*> allFarms = G.get_allFarms(); 
@@ -76,31 +71,60 @@ int main(int argc, char* argv[])
 			} // close "while not end of file"
 		} // close "if file is open"	
  		G.removeFarmSubset(focalFarms1,compFarms1); // removes focalFarms from compFarms, now compFarms only has compFarms
-			
+
  	bool griddingOn = 1;
 if(griddingOn){
-//  		std::vector <double> parList;
-// 	  	parList.emplace_back(3000.0);
-// 		parList.emplace_back(3500.0);
-// 		parList.emplace_back(4000.0);
-//    for (auto j:parList)	// for each value of j to run
-//    {
+		std::vector<double> paramList;
+			paramList.emplace_back(2000);
+
+	for (auto j:paramList){
+// when changing grid parameters, this chunk (initializing G with prem file) also needs to be re-run
+// apparently having more than one initiateGrid called per instance of Grid_manager is a problem
+		std::clock_t loading_start = std::clock();
+		Grid_manager G(pfile,0,0); // reverse x/y on/off, verbose on/off
+		std::clock_t loading_end = std::clock();
+	
+ 		std::cout << std::endl << "CPU time for loading premises: "
+ 			<< 1000.0 * (loading_end - loading_start) / CLOCKS_PER_SEC
+ 			<< "ms." << std::endl;
+ 			
 	 	std::clock_t grid_start = std::clock();		
-		G.initiateGrid(800,50000); // max farms in cell, kernel radius
-//		G.initiateGrid(80000); // length of cell side
+		G.initiateGrid(j,50000); // max farms in cell, kernel radius
+//		G.initiateGrid(j); // length of cell side
 //		G.printCells(pfile); // option to print cells, based on specified prem file
  		std::clock_t grid_end = std::clock();
 		double gridGenTimeMS = 1000.0 * (grid_end - grid_start) / CLOCKS_PER_SEC;
 		std::cout << "CPU time for generating grid: " << gridGenTimeMS << "ms." << std::endl;
 		
-for (auto r=0; r!=10; r++){
+				std::string fname = "seedFarms.txt";
+	 	std::vector<Farm*> focalFarms1, compFarms1;
+	 	std::unordered_map<int, Farm*> allFarms = G.get_allFarms(); 
+	 	for (auto x:allFarms){compFarms1.emplace_back(x.second);}
+	 	// compFarms first holds all farms for ID reference, then is pared down and used as comparison farm list
+	 	double fID;
+ 		std::ifstream f(fname);
+		if(!f){std::cout << "Input file not found." << std::endl;}
+		if(f.is_open()){
+		std::cout << "Loading seed farms." << std::endl;
+			while(! f.eof()){
+				std::string line;
+				getline(f, line); // get line from file "f", save as "line"			
+				if(! line.empty()){ // if line has something in it
+					str_cast(line, fID);
+					focalFarms1.emplace_back(compFarms1.at(fID)); // using compFarms for reference here
+				} // close "if line_vector not empty"
+			} // close "while not end of file"
+		} // close "if file is open"	
+ 		G.removeFarmSubset(focalFarms1,compFarms1); // removes focalFarms from compFarms, now compFarms only has compFarms
+
+		
+	for (auto r=0; r!=1; r++){
 		std::vector<Farm*> focalFarms = focalFarms1;
 		std::vector<Farm*> compFarms = compFarms1;
 		int runningTotal = 0;
 
  		int t=0;
-   	   while (t!=timesteps && focalFarms.size()!=0 && compFarms.size()!=0) // timesteps, stop early if dies out
-   		{	
+   	   while (t!=timesteps && focalFarms.size()!=0 && compFarms.size()!=0){ // timesteps, stop early if dies out
    		 std::cout << focalFarms.size() << " focal farms and " << compFarms.size() << " comparison farms." << std::endl;
 		 std::cout << "Starting grid check: " << std::endl;
   		 std::clock_t gridcheck_start = std::clock();	  
@@ -109,18 +133,16 @@ for (auto r=0; r!=10; r++){
   		 double gridCheckTimeMS = 1000.0 * (gridcheck_end - gridcheck_start) / CLOCKS_PER_SEC;
  		 std::cout << "CPU time for checking grid: " << gridCheckTimeMS << "ms." << std::endl;		 
  		 if (timesteps>1){
-			 //focalFarms=G.getInfVec(); // compFarms was auto updated at end of stepThroughCells
 			 std::vector<Farm*> newInf = G.getInfVec();
 			 for (auto y:newInf){focalFarms.emplace_back(y);}
-		 
+			 G.removeFarmSubset(newInf,compFarms);
 			 runningTotal += newInf.size();
 			 std::cout << "Cumulative infections: " << runningTotal <<std::endl;
  		 }
- 		 	
  		 t++;
  		}  	
- }	
-   
+ 	} // end for each rep r	
+	} //end for each j   
 /*
 	  	std::string allLinesToPrint, oneLine;
 		char temp[10];
@@ -163,7 +185,6 @@ for (auto r=0; r!=10; r++){
 		}
 */
 
-// 	} // end for each parameter j
 } // end "if griddingOn"
 
 bool pairwiseOn = 0; // 1,949,147,792 comparisons
@@ -226,44 +247,44 @@ int t=0;
 				  << 1000.0 * (slow_end - slow_start) / CLOCKS_PER_SEC
 				  << "ms." << std::endl << std::endl;
 		
-				  
-		std::vector<Farm*> newInf = G.getInfVec();
- 		 for (auto y:newInf){
- 		 	focalFarms.emplace_back(y); // add to list of infectious farms
- 		 	}
- 		 
- 		 runningTotal += newInf.size();
+	if (timesteps >1){		  
+ 		for (auto y:infectedFarms){
+ 		 	focalFarms.emplace_back(compFarms.at(y.first)); // add to list of infectious farms
+ 		}
+ 		 runningTotal += infectedFarms.size();
  		 std::cout << "Cumulative infections: " << runningTotal <<std::endl;
  		 t++;
- 		}  		
-				  
-// 		std::string toPrint;
-// 		char temp[10];
-// 		for(auto it = inf.begin(); it != inf.end(); it++){
-// 			sprintf(temp, "%f\n", *it);
-// 			toPrint += temp;
-// 		}
-// 
-// 		std::string ofilename = "numPairwiseInf.txt";
-// 		std::string headers = "NumInf";
-// 		std::ofstream f(ofilename);
-// 		if(f.is_open())
-//  		{
-// 			f << headers;
-// 			f.close();
-// 		}
-// 	
-// 		std::ofstream outfile;
-// 		outfile.open("numPairwiseInf.txt", std::ios_base::app);
-// 		outfile << toPrint;	
+ 		}  
+ 		
+ 	}
+/*				  
+		std::string toPrint;
+		char temp[10];
+		for(auto it = inf.begin(); it != inf.end(); it++){
+			sprintf(temp, "%f\n", *it);
+			toPrint += temp;
+		}
+
+		std::string ofilename = "numPairwiseInf.txt";
+		std::string headers = "NumInf";
+		std::ofstream f(ofilename);
+		if(f.is_open())
+ 		{
+			f << headers;
+			f.close();
+		}
 	
-//		std::string ofilename = "numPairwiseInf.txt";
-//		std::ofstream f(ofilename);
-//		if(f.is_open())
-// 		{
-//			f << toPrint;
-//			f.close();
-//		}
+		std::ofstream outfile;
+		outfile.open("numPairwiseInf.txt", std::ios_base::app);
+		outfile << toPrint;	
+	
+		std::string ofilename = "numPairwiseInf.txt";
+		std::ofstream f(ofilename);
+		if(f.is_open()){
+			f << toPrint;
+			f.close();
+		}
+		*/
 } // end if pairwiseOn
 
 return 0;
