@@ -72,7 +72,7 @@ int main(int argc, char* argv[])
 		} // close "if file is open"	
  		G.removeFarmSubset(focalFarms1,compFarms1); // removes focalFarms from compFarms, now compFarms only has compFarms
 
- 	bool griddingOn = 1;
+ 	bool griddingOn = 0;
 if(griddingOn){
 		std::vector<double> paramList;
 			paramList.emplace_back(2000);
@@ -187,14 +187,29 @@ if(griddingOn){
 
 } // end "if griddingOn"
 
-bool pairwiseOn = 0; // 1,949,147,792 comparisons
+bool pairwiseOn = 1; // 1,949,147,792 comparisons
+bool printInfFarms =1;
 if(pairwiseOn){
+	
 	std::cout << "Conducting pairwise comparisons - go get a snack." << std::endl;
 	std::vector<Farm*> focalFarms = focalFarms1;
 	std::vector<Farm*> compFarms = compFarms1;
 	std::unordered_map<double, int> infectedFarms;
-// replicating the pairwise comparisons
-int t=0;
+	int t=0;
+
+	// write initially infected farms to file
+	if (printInfFarms == 1){
+	  for (auto fi:focalFarms){
+	    char temp[4];
+	    sprintf(temp, "%d\t", -1);
+		std::string toPrint	= temp; // timestep = -1
+		toPrint += to_string(fi); // farm info and line break
+		std::ofstream outfile;
+		outfile.open("pairwiseInfFarms.txt", std::ios_base::app); // append to existing file
+		outfile << toPrint;	
+	  }
+	}
+	
   while (t!=timesteps && focalFarms.size()!=0 && compFarms.size()!=0){
 	std::cout << "Timestep " << t << ": ";
 	std::clock_t slow_start = std::clock();
@@ -227,12 +242,20 @@ int t=0;
 
 				double random3 = unif_rand();
 				if (random3 < betweenFarmsProb){
-					double infFarmID = f2->Farm::get_id();
 					// success... infect
+					double infFarmID = f2->Farm::get_id();
 					if (infectedFarms.count(infFarmID)==0){ // if this farm hasn't been infected
 						infectedFarms[infFarmID] = 1;
 					} else {
 						infectedFarms.at(infFarmID)=infectedFarms.at(infFarmID)+1;
+					}
+					if (printInfFarms == 1){
+						std::string toPrint	= std::to_string(t); // timestep of infection
+						toPrint += "\t"; // add tab
+						toPrint += to_string(f2); // farm info and line break
+						std::ofstream outfile;
+						outfile.open("pairwiseInfFarms.txt", std::ios_base::app); // append to existing file
+						outfile << toPrint;	
 					}
 				}
 			}
@@ -246,45 +269,19 @@ int t=0;
 		std::cout << "CPU time for checking pairwise: "
 				  << 1000.0 * (slow_end - slow_start) / CLOCKS_PER_SEC
 				  << "ms." << std::endl << std::endl;
-		
-	if (timesteps >1){		  
- 		for (auto y:infectedFarms){
- 		 	focalFarms.emplace_back(compFarms.at(y.first)); // add to list of infectious farms
- 		}
- 		 runningTotal += infectedFarms.size();
- 		 std::cout << "Cumulative infections: " << runningTotal <<std::endl;
- 		 t++;
- 		}  
- 		
- 	}
-/*				  
-		std::string toPrint;
-		char temp[10];
-		for(auto it = inf.begin(); it != inf.end(); it++){
-			sprintf(temp, "%f\n", *it);
-			toPrint += temp;
-		}
 
-		std::string ofilename = "numPairwiseInf.txt";
-		std::string headers = "NumInf";
-		std::ofstream f(ofilename);
-		if(f.is_open())
- 		{
-			f << headers;
-			f.close();
-		}
-	
-		std::ofstream outfile;
-		outfile.open("numPairwiseInf.txt", std::ios_base::app);
-		outfile << toPrint;	
-	
-		std::string ofilename = "numPairwiseInf.txt";
-		std::ofstream f(ofilename);
-		if(f.is_open()){
-			f << toPrint;
-			f.close();
-		}
-		*/
+		// reassign infected farms from comp to focal	
+		if (timesteps >1){		  
+			 runningTotal += infectedFarms.size();
+			 std::cout << "Cumulative infections: " << runningTotal <<std::endl; 
+			 std::vector<Farm*> newInfVec;
+			 for (auto y:infectedFarms){
+			 	newInfVec.emplace_back(allFarms.at(y.first)); // put new inf farms in vector
+			 	focalFarms.emplace_back(allFarms.at(y.first));} // add to infectious list
+			 G.removeFarmSubset(newInfVec,compFarms); // remove from comparison list
+			 t++;
+			}  // end if timesteps >1
+		} // end while spread still possible and under timesteps
 } // end if pairwiseOn
 
 return 0;

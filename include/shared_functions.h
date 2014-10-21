@@ -17,6 +17,7 @@
 		split(const std::string&, char, std::vector<std::string>&);
 	std::vector<std::string> 
 		split(const std::string&, char);
+	std::string to_string(Farm*);
 	double getFarmSus(Farm*);
 	double getFarmInf(Farm*);
 	std::vector<double> orderNumbers(double, double);

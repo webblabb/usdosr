@@ -1,6 +1,7 @@
 #include "shared_functions.h"
 
 // Used in gridding (decision making for stepping into cells)
+// Used in pairwise evaluations in main
 double unif_rand()
 {
 	static std::uniform_real_distribution<double> unif_dist(0.0, 1.0);
@@ -10,7 +11,7 @@ double unif_rand()
 }
 
 // Used in gridding (kernel values for fixed grid distances)
-
+// Used in pairwise evaluations in main
 double kernel(double dist)
 {	
 	double usedist = dist;
@@ -18,6 +19,7 @@ double kernel(double dist)
 	return std::min(1.0, 0.12 / (1 + pow((usedist/1000), 3)));
 }
 
+// used in reading in files
 std::vector<std::string> 
 	split(const std::string &s, char delim, std::vector<std::string> &elems)
 {
@@ -41,8 +43,31 @@ std::vector<std::string>
     return elems;
 }
 
+// used to print infection results from main
+std::string to_string(Farm* farm)
+// overloaded to_string function, makes tab-delim string (one line) for farm with ID, cellID, x, y, pop
+{
+	std::string toPrint;
+	char temp[20];
+	std::vector<double> vars;
+		vars.resize(5);
+		vars[0] = farm->get_id();
+		vars[1] = farm->get_cellID();
+		vars[2] = farm->get_x();
+		vars[3] = farm->get_y();
+		vars[4] = farm->get_size();
+
+	for(auto it:vars){ // for each element in vars (each farm variable)
+		sprintf(temp, "%f\t", it);
+		toPrint += temp;
+	}
+	toPrint.replace(toPrint.end()-1, toPrint.end(), "\n");
+	
+	return toPrint;
+}
+
 // Used by grid_cell to determine max values for inf/sus farms in cell
-// Used by grid_cell_checker to get individual farm sus/inf values
+// Used by Grid_manager to get individual farm sus/inf values
 double getFarmSus(Farm* f)
 {
 	// species-specific susceptibility - each element is a species
