@@ -96,6 +96,7 @@ double getFarmInf(Farm* f)
 	return farmInf;
 }
 
+// used in grid_manager to look up kernel values
 std::vector<double> orderNumbers(double number1, double number2)
 // order number1 and number2 from lowest to highest
 {

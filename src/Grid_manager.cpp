@@ -471,12 +471,12 @@ void Grid_manager::initiateGrid(double cellSide)
 	   		allCells[actualCellCount] = new grid_cell(actualCellCount, xlist[c], ylist[c], cellSide, cellFarmMap[c]);
 	   		assignCellIDtoFarms(actualCellCount,cellFarmMap[c]);
 	   		actualCellCount++;
-	   		if (printNumFarms){
-	   			char temp[5];
-	   			//sprintf(temp, "%u\n", cellFarmMap[c].size()); // use this on sweatshop computers
-	   			sprintf(temp, "%lu\n", cellFarmMap[c].size());
-	   			allLinesToPrint += temp;
-	   		}
+// 	   		if (printNumFarms){
+// 	   			char temp[5];
+// 	   			//sprintf(temp, "%u\n", cellFarmMap[c].size()); // use this on sweatshop computers
+// 	   			sprintf(temp, "%lu\n", cellFarmMap[c].size());
+// 	   			allLinesToPrint += temp;
+// 	   		}
 	   }
    }
    if (printNumFarms){
@@ -899,7 +899,7 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 						} else {
 							infectedFarms.at(compFarmID)[0]++; // would be infected again - keep count
 						} // end if farm is already on infected list
-							
+		
 					} // end "if actual tx occurs"
 				} // end "if trans between indiv farms at max"
 				} // end for each comparison cell farm
