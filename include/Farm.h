@@ -31,9 +31,9 @@ transport object and associates it (adds it to Transp_vector[timestep]) with thi
 #ifndef FARM_H
 #define FARM_H
 
-#include <vector>
-#include <unordered_map>
 #include <string>
+#include <unordered_map>
+#include <vector>
 
 //class Live_transport;
 //class Slaughter_transport;
@@ -46,16 +46,18 @@ class Farm
 {
 	private:
 		double id, x_coordinate, y_coordinate, size, cellID;
+		std::string fips;
 //		int id, x_coordinate, y_coordinate, infected_at_timestep;
 // 		short size, status;
 // 		Time_transp_map timed_transports;
 // 		Time_sl_map timed_sl_transports;
 	
 	public:
-		Farm(double, double, double, double);
+		Farm(double, std::string, double, double, double);
 // 		Farm(int, int, int, short);
 		~Farm();
 		double get_id() const; //Inlined
+		std::string get_fips() const; //Inlined
 		double get_x() const; //Inlined
 		double get_y() const; //Inlined
 		double get_size() const; //Inlined
@@ -78,6 +80,11 @@ class Farm
 inline double Farm::get_id() const
 {
 	return id;
+}
+
+inline std::string Farm::get_fips() const
+{
+	return fips;
 }
 
 inline double Farm::get_x() const

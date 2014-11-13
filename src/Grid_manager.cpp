@@ -22,8 +22,9 @@ Grid_manager::Grid_manager(std::string &fname, bool xyswitch, bool v)
 	if (verbose){std::cout << "Verbose option on" << std::endl;}
 	// modified from Stefan's Farm Manager
 	// read in file of premises
-	double id, size, x, y;
-//	int fcount = 0;
+	double id, x, y, size;
+	std::string fips;
+	int fcount = 0;
 
 	std::ifstream f(fname);
 	if(!f){std::cout << "Input file not found." << std::endl;}
@@ -39,18 +40,21 @@ Grid_manager::Grid_manager(std::string &fname, bool xyswitch, bool v)
 			if(! line_vector.empty()) // if line_vector has something in it
 			{
 				str_cast(line_vector[0], id);
+				fips = line_vector[1];
 				if (!xyswitch){
-					str_cast(line_vector[1], y);
-					str_cast(line_vector[2], x);
-				} else if (xyswitch){
-					str_cast(line_vector[1], x);
 					str_cast(line_vector[2], y);
+					str_cast(line_vector[3], x);
+				} else if (xyswitch){
+					str_cast(line_vector[2], x);
+					str_cast(line_vector[3], y);
 				}
-				str_cast(line_vector[3], size);
+				str_cast(line_vector[4], size);
 
-				farm_map[id] = new Farm(id, x, y, size); 
-				// write pointer to private var farm_map
-				//fcount++;
+				// write farm pointer to private var farm_map
+				farm_map[id] = new Farm(id, fips, x, y, size); 
+				fcount++;
+				// write farm pointer to fips map
+				FIPSmap[fips].emplace_back(farm_map.at(id));
 				
 				// compare/replace limits of xy plane
 				if (!xylimits.empty())// if there are values to compare
@@ -72,15 +76,15 @@ Grid_manager::Grid_manager(std::string &fname, bool xyswitch, bool v)
 			} // close "if line_vector not empty"
 		} // close "while not end of file"
 	} // close "if file is open"
-	if (verbose)
-	{std::cout << "finalized." << std::endl;
+	if (verbose){
 	std::cout << "x min = " << xylimits[0] << std::endl;
 	std::cout << "x max = " << xylimits[1] << std::endl;
 	std::cout << "y min = " << xylimits[2] << std::endl;
 	std::cout << "y max = " << xylimits[3] << std::endl;}
 	
 	f.close();
-	if (verbose){std::cout << "File closed" << std::endl;}
+	if (verbose){std::cout << fcount << " farms in " << FIPSmap.size() 
+		<< " counties loaded. File closed." << std::endl;}
 
 	// copy farmlist from farm_map (will be changed as grid is created)
 	if (verbose){std::cout << "Copying farms from farm_map to farmList..." << std::endl;}
@@ -88,28 +92,13 @@ Grid_manager::Grid_manager(std::string &fname, bool xyswitch, bool v)
 	{
 		farmList.emplace_back(prem.second); // "second" value from map is Farm pointer
 	}
-	
-// 	double firstx = farmList.front()->get_x();
-// 	double lastx = farmList.back()->get_x();
-// 	if (verbose)
-// 	{
-// 		std::cout << "farmList length: " << farmList.size() << std::endl;
-// 
-// 		std::cout << "First farm x: " << firstx << std::endl;
-// 		std::cout << "Last farm x: " << lastx << std::endl;
-// 		std::cout << "Sorting..." << std::endl;
-// 	}
-// 
+	 
 	// sort farmList by ID
-	std::sort(farmList.begin(),farmList.end(),sortByID); // sorted farms by x-coordinates
-// 	firstx = farmList.front()->get_x();
-// 	lastx = farmList.back()->get_x();
-// 	if (verbose)
-// 	{
-// 		std::cout << "First farm x: " << firstx << std::endl;
-// 		std::cout << "Last farm x: " << lastx << std::endl;
-// 	}
-
+	std::sort(farmList.begin(),farmList.end(),sortByID);
+	// sort within each FIPS map element by farm size (population)
+	for (auto& farmFIPS:FIPSmap){
+		std::sort(farmFIPS.begin(),farmFIPS.end(),sortByPop);
+	}
 }
 
 Grid_manager::~Grid_manager()
@@ -142,7 +131,7 @@ void Grid_manager::removeFarmSubset(std::vector<Farm*>& farmsToRemove, std::vect
 		std::cout<<"Error in updating farm list. "<<std::endl;}
 }
 
-std::vector<Farm*> Grid_manager::getFarms(std::vector<double> cellSpecs, const unsigned int maxFarms=0)
+std::vector<Farm*> Grid_manager::getFarms(std::vector<double> cellSpecs, const unsigned int maxFarms/*=0*/)
 // based on cell specs, finds farms in cell and saves pointers to farmsInCell
 {
 	if(verbose){std::cout << "Getting farms in cell..." << std::endl;}
@@ -324,9 +313,7 @@ void Grid_manager::initiateGrid(const unsigned int in_maxFarms, const int kernel
 
 void Grid_manager::initiateGrid(std::string& cname)
 // overloaded (alternate) constructor that reads in external file of cells
-// temporarily disabled due to incompatible std::to_string use
-{/*
-
+{
 	// read in file of premises
 	std::vector<Farm*> farmsInCell;
 
@@ -340,7 +327,7 @@ void Grid_manager::initiateGrid(std::string& cname)
 			std::vector<double> cellSpecs;
 			std::string line;
 			getline(f, line); // get line from file "f", save as "line"
-			std::vector<std::string> line_vector = split(line, '\t'); // separate by tabs
+			std::vector<std::string> line_vector = split(line, '\t'); // separated by tabs
 			
 			if(! line_vector.empty()) // if line_vector has something in it
 			{ // convert each string piece to double
@@ -376,7 +363,7 @@ void Grid_manager::initiateGrid(std::string& cname)
 	if (verbose){std::cout << "File closed" << std::endl;}
 	std::cout << allCells.size() << " cells loaded from file. Sample cell: x=" 
 		<< allCells.at(1)->get_x() << " y=" << allCells.at(1)->get_y() << " s=" 
-		<< allCells.at(1)->get_s() << ", contains " << allCells.at(1)->get_num_farms() << std::endl;
+		<< allCells.at(1)->get_s() << ", contains " << allCells.at(1)->get_num_farms() <<" farms."<<std::endl;
 	if (!farmList.empty()){
 		Farm* f = farmList[0];
 		std::cout << farmList.size() << " unassigned farms, first: " << f->get_id() << ": x=" << f->get_x() <<
@@ -384,7 +371,6 @@ void Grid_manager::initiateGrid(std::string& cname)
 		}
 	std::cout << "Grid loaded. Pre-calculating distances..." << std::endl;		
 	makeCellRefs();
-*/
 }
 
 void Grid_manager::initiateGrid(double cellSide)
@@ -545,7 +531,7 @@ void Grid_manager::printCells(std::string& pfile) const
 	ofilename += pfile;
 	
 	std::ofstream f(ofilename); 
-	// will look something like "max15f_932c_USprems.txt"
+	// will look something like "15f_932c_USprems.txt"
 	if(f.is_open()){
 		f << tabdelim;
 		f.close();
@@ -869,6 +855,7 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 // Grid checkpoint B
 				if (random2 < indivFarmMaxProb/remainingFarmsMaxProb){	
 					// if (one max susceptible)/(entrance prob accounting for # of farms checked) succeeds
+					s = 0; // remainingFarmProb recalculates to 1 for remainder of loop
 					// get actual distances between farms
 					double f1x = f1 -> Farm::get_x();
 					double f1y = f1 -> Farm::get_y();
@@ -891,7 +878,7 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 						// infect
 						double compFarmID = f2->Farm::get_id();
 						if(verbose){std::cout << "Farm infected. ";}
-						s = 0; // remainingFarmProb recalculates to 1 for remainder of loop
+//						s = 0; // remainingFarmProb recalculates to 1 for remainder of loop
 						if (infectedFarms.count(compFarmID)==0){ // if this farm hasn't been infected
 							infectedFarms[compFarmID].emplace_back(1);
 							//infectedFarms[f2->get_id()].emplace_back(f2x);
