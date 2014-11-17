@@ -23,16 +23,19 @@ class Shipment_manager
 		// the following are recreated/rewritten at each timestep
 		std::vector<std::tuple<std::string,std::string,int>>
 			countyShipmentList; // vector of tuples, each containing originFIPS, destFIPS, volume
-		std::vector<std::tuple<double,double,int>> 
+		std::vector<std::tuple<int,int,int>> 
 			farmShipmentList; // 1st key: origin farm ID, 2nd key: destination farm ID, value: shipment count
+		std::vector<std::tuple<int,int,int>>
+			infFarmShips; // shipments that originate from infectious farms to susceptible farms
 
 		// functions
 		void countyCountyShipments(std::string&, int method = 0); // determines county-county movements & volumes
 		void farmFarmShipments(std::unordered_map<std::string, std::vector<Farm*>>, 
-			std::unordered_map<std::string, std::vector<Farm*>>, int method = 0); 
+			std::unordered_map<std::string, std::vector<Farm*>>, int method = 1); 
 		// assign county shipments to individual farms
 		// input is FIPS-keyed maps of infectious farms and susceptible farms, assignment method indicator
-		int getMaxFarmPop(std::string&);
+		void checkShipTrans(std::vector<std::tuple<int,int,int>>&, 
+			std::vector<Farm*>&, std::vector<Farm*>&);
 	
 	public:
 		Shipment_manager( // construct with 
@@ -40,14 +43,16 @@ class Shipment_manager
 		
 		~Shipment_manager();
 		
-		void shipFrom(std::vector<Farm*>&, std::vector<Farm*>&);
+		void makeShipments(std::vector<Farm*>&, std::vector<Farm*>&);
 				
 		std::vector<std::tuple<std::string,std::string,int>>
 			get_countyShipments() const; // inlined
 			
-		std::vector<std::tuple<double,double,int>> 
+		std::vector<std::tuple<int,int,int>> 
 			get_farmShipments() const; // inlined
 
+		std::vector<std::tuple<int,int,int>> 
+			get_infFarmShipments() const; // inlined
 		// get county shipment list
 		// get farm shipment list
 };
@@ -58,10 +63,16 @@ inline std::vector<std::tuple<std::string,std::string,int>>
 	return(countyShipmentList);
 }
 
-inline std::vector<std::tuple<double,double,int>>
+inline std::vector<std::tuple<int,int,int>>
 	Shipment_manager::get_farmShipments() const
 {
 	return(farmShipmentList);
+}
+
+inline std::vector<std::tuple<int,int,int>>
+	Shipment_manager::get_infFarmShipments() const
+{
+	return(infFarmShips);
 }
 
 #endif

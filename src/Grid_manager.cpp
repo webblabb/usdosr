@@ -22,7 +22,8 @@ Grid_manager::Grid_manager(std::string &fname, bool xyswitch, bool v)
 	if (verbose){std::cout << "Verbose option on" << std::endl;}
 	// modified from Stefan's Farm Manager
 	// read in file of premises
-	double id, x, y, size;
+	double id, size;
+	double x, y;
 	std::string fips;
 	int fcount = 0;
 
@@ -97,7 +98,7 @@ Grid_manager::Grid_manager(std::string &fname, bool xyswitch, bool v)
 	std::sort(farmList.begin(),farmList.end(),sortByID);
 	// sort within each FIPS map element by farm size (population)
 	for (auto& farmFIPS:FIPSmap){
-		std::sort(farmFIPS.begin(),farmFIPS.end(),sortByPop);
+		std::sort(farmFIPS.second.begin(),farmFIPS.second.end(),sortByPop);
 	}
 }
 
@@ -774,7 +775,7 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 	}
 		
    for (auto& fc1:focalCellMap){ 
-    double fcID = fc1.first; // cell id
+    int fcID = fc1.first; // cell id
     if(verbose){std::cout << "Focal cell set to " << fcID << std::endl;}
 	// get neighbor cells of focal cell (includes self)
 	std::vector<grid_cell*>& neighborsOfFocal = kernelNeighbors.at(fcID);
@@ -791,7 +792,7 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 			if (!infectOut){farmFoc = getFarmSus(f1);} // susceptibility value for focal farm
 			  
 		for (auto& c2:neighborsToCheck){	// loop through each neighbor cell (c2 as in "cell 2")
-			double compCellID = c2->grid_cell::get_id();
+			int compCellID = c2->grid_cell::get_id();
 		
 /*
 			if (cellCompsMade.count(f1->get_id())>0){
@@ -809,7 +810,7 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 			double compNumFarms = compFarmList.size();
 			
 			// put cell IDs in order, to look up cell-cell kernel value
-			std::vector<double> ids = orderNumbers(fcID,compCellID);
+			std::vector<int> ids = orderNumbers(fcID,compCellID);
 			double gridKernValue = 0; // default kernel value is 0
 			if (gridCellKernel.at(ids[0]).count(ids[1]) == 1){ // something exists for this cell pair
 				gridKernValue = gridCellKernel.at(ids[0]).at(ids[1]);}
@@ -876,7 +877,7 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 // Grid checkpoint C
 					if (random2 < betweenFarmsProb){///remainingFarmsMaxProb){
 						// infect
-						double compFarmID = f2->Farm::get_id();
+						int compFarmID = f2->Farm::get_id();
 						if(verbose){std::cout << "Farm infected. ";}
 //						s = 0; // remainingFarmProb recalculates to 1 for remainder of loop
 						if (infectedFarms.count(compFarmID)==0){ // if this farm hasn't been infected

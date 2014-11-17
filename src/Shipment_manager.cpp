@@ -3,6 +3,7 @@
 // Nov 10 2014
 
 #include <cmath> // floor
+#include <iostream> // for error-checking output
 // included in Shipment_manager.h: Farm, shared_functions
 #include "Shipment_manager.h"
 
@@ -24,25 +25,28 @@ Shipment_manager::~Shipment_manager()
 {
 }
 
-void Shipment_manager::shipFrom(std::vector<Farm*>& infFarms, std::vector<Farm*>& suscFarms)
+void Shipment_manager::makeShipments(std::vector<Farm*>& infFarms, std::vector<Farm*>& suscFarms)
+// makes shipments for ALL counties, not just inf/susc provided in arguments.
+// arguments are for disease bits.
 {
 	// get counties (by FIPS codes) of infectious farms
 	std::unordered_map<std::string, std::vector<Farm*>> infFIPSmap;
 	for (auto& i:infFarms){
 		infFIPSmap[i->get_fips()].emplace_back(i);
 	}
+	std::cout << infFarms.size()<<" infectious farms in "<<infFIPSmap.size()<<" counties. ";
 	// get counties (by FIPS codes) of susceptible farms
 	std::unordered_map<std::string, std::vector<Farm*>> suscFIPSmap;
 	for (auto& s:suscFarms){
 		suscFIPSmap[s->get_fips()].emplace_back(s);
 	}
-	
+	std::cout << suscFarms.size()<<" susceptible farms in "<<suscFIPSmap.size()<<" counties. ";
 	// generate county-county shipments for each origin county
 	for (auto& oc:allFIPS){ // oc = origin county
 		countyCountyShipments(oc); // writes to countyShipmentList
 	}
+	std::cout << std::endl << countyShipmentList.size() <<" shipments at county level. Assigning to farms... "<<std::endl;
 	farmFarmShipments(infFIPSmap, suscFIPSmap); // reads from countyShipmentList, writes to farmShipmentList
-
 }
 
 void Shipment_manager::countyCountyShipments(std::string& oCounty, int method)
@@ -51,7 +55,7 @@ void Shipment_manager::countyCountyShipments(std::string& oCounty, int method)
 	if (method == 0){
 	//  randomly assign destination counties with volume = 1
 		double random = unif_rand();
-		bool makeShipment = (random < 0.25); // 1/4 of all counties make a shipment
+		bool makeShipment = (random < 0.05); // 5% of all counties make a shipment
 		if (makeShipment){
 			std::string dCounty = randomFrom(allFIPS);
 			std::tuple<std::string,std::string,int> countyShip (oCounty,dCounty,1);
@@ -63,7 +67,8 @@ void Shipment_manager::countyCountyShipments(std::string& oCounty, int method)
 void Shipment_manager::farmFarmShipments(std::unordered_map<std::string, std::vector<Farm*>> infFIPSmap,
 	std::unordered_map<std::string, std::vector<Farm*>> suscFIPSmap, int method)
 // assigns shipments to farms from one county to another
-// distribute to only biggest farms, by farm rankings, random
+// distribute randomly (method=0), to only biggest farms in county (method=1)
+// by matching farm size rankings (method=2)
 {
 	for (auto& s:countyShipmentList){
 		std::string oFIPS = std::get<0>(s); // 1st element of tuple (origin FIPS)
@@ -78,60 +83,81 @@ void Shipment_manager::farmFarmShipments(std::unordered_map<std::string, std::ve
 				std::vector<Farm*> oFarms = FIPSmap.at(oFIPS); // can be sent from any farm regardless of status
 				std::vector<Farm*> dFarms = FIPSmap.at(dFIPS); // can be sent to any farm regardless of status
 				// assignment
-				std::vector<std::tuple<double,double,int>> farmShips;
+				std::vector<std::tuple<int,int,int>> farmShips;
 				if (method == 0){ // random
-					while (farmShips.size() < volume){ // for each shipment between these counties
+					for (int v = 0; v!= volume; v++){ // for each shipment between these counties
 						Farm* oFarm = randomFrom(oFarms);
 						Farm* dFarm = randomFrom(dFarms);
-						std::tuple<double, double, int> fShip (oFarm->get_id(),dFarm->get_id(),1);
+						std::tuple<int,int,int> fShip (oFarm->get_id(),dFarm->get_id(),1);
 						farmShips.emplace_back(fShip);
 					}
-				} else if (method == 1){ // all shipments to single largest farm (random origin)
-					while (farmShips.size() < volume){
-						Farm* oFarm = randomFrom<Farm*>(oFarms);
-						Farm* dFarm = dFarms.back(); // last value has largest pop
-						std::tuple<double, double, int> fShip (oFarm->get_id(),dFarm->get_id(),1);
+				} else if (method == 1){ // shipment probability based on relative farm size
+					// get sizes of each farm
+					std::vector<int> oFarmSizes, dFarmSizes;
+					for (auto& o1:oFarms){oFarmSizes.emplace_back(o1->get_size());}
+					for (auto& d1:dFarms){dFarmSizes.emplace_back(d1->get_size());}
+					// get cumulative sums for farms in county to distribute probabilities
+					std::vector<int> oCumSums = {oFarmSizes[0]};
+					std::vector<int> dCumSums = {dFarmSizes[0]};
+					for (int oi=1; oi!=oFarmSizes.size(); oi++){ //oi = origin iterator
+						oCumSums.emplace_back(oCumSums[oi-1]+oFarmSizes[oi]);} 
+					for (int di=1; di!=dFarmSizes.size(); di++){ //di = destination iterator
+						dCumSums.emplace_back(dCumSums[di-1]+dFarmSizes[di]);} 
+					std::cout << std::endl << "Origin county: ";
+					for (auto& ocs:oCumSums){
+						std::cout <<ocs<< " ";}
+					std::cout << std::endl << "Destination county: ";
+					for (auto& dcs:dCumSums){
+						std::cout <<dcs<< " ";}
+						
+					for (int v=0; v!=volume; v++){
+						double oRand = unif_rand();
+						double dRand = unif_rand();
+						int oElement = whichElement(oRand,oCumSums);
+						int dElement = whichElement(dRand,dCumSums);
+						Farm* oFarm = oFarms[oElement];
+						Farm* dFarm = dFarms[dElement];
+						std::tuple<int,int,int> fShip (oFarm->get_id(),dFarm->get_id(),1);
 						farmShips.emplace_back(fShip);
+						std::cout << std::endl << "Random O: " << oRand << " matches size "
+							<< oCumSums[oElement];
+						std::cout << std::endl << "Random D: " << dRand << " matches size "
+							<< dCumSums[dElement];
 					}				
-				} else if (method == 2){ // doesn't work yet
-					// assign based on rankings
-					// number of shipments, farms in o, farms in d
-					// one farm in each - assign all shipments to these two
-					// more farms in o than d, both less than volume - 1:5 to 1:3, v=10
-					// - divide larger by smaller - p(top proportion) goes to first, etc
-					// reverse for more farms in d than o
-					if(oFarms.size() > dFarms.size()){
-					} else if (dFarms.size() > oFarms.size()){
-					} else if (oFarms.size == dFarms.size()){ // one-to-one line-up
-						while (farmShips.size() < volume){
-							double re = unif_rand(); // re = random element
-							if (re==1){re=0.99999;}
-							int randomElement = floor(re*oFarms.size());
-							std::tuple<double, double, int> fShip (
-								oFarms[randomElement]->get_id(),
-								dFarms[randomElement]->get_id(), 1);
-							farmShips.emplace_back(fShip);
-						}	
-					}
-				}
+				} else { 
+				} // end methods
 				for (auto& f:farmShips){
-					farmShipmentList.emplace_back(f); // contains non-infectious shipments
+					farmShipmentList.emplace_back(f); // contains non-infectious shipments as well
 				}
-			}
-		}
-	}
+				// id infectious shipments from this county
+				checkShipTrans(farmShips,infFIPSmap.at(oFIPS),suscFIPSmap.at(dFIPS));
+				farmShips.clear();
+			} // end if origin has inf and dest has susc
+		} // end if origin has inf
+	} // end for each shipment
 	
 }
 
-int Shipment_manager::getMaxFarmPop(std::string& FIPS){
-	std::vector<Farm*> farmsInCo = FIPSmap.at(FIPS);
-	int largest = -1;
-	double farmID = -1;
-	for (auto& f:farmsInCo){
-		int farmpop = f->get_size();
-		if (farmpop > largest){
-			largest = farmpop;
-			farmID = f->get_id();
-		}
+void Shipment_manager::checkShipTrans(std::vector<std::tuple<int,int,int>>& farmShips, 
+	std::vector<Farm*>& infInoFIPS, std::vector<Farm*>& suscIndFIPS)
+// identify shipments from infectious to susceptible farms
+// input is: (1) tuple of origin farm ID, dest farm ID, volume,
+// (2) vector<Farm*> of infectious farms in origin farm's county
+// (3) vector<Farm*> of susceptible farms in destination farm's county
+{	
+	// put IDs of infectious and susceptible farms into vectors for isWithin function
+	std::vector<int> infFarmIDs, suscFarmIDs;
+	for (auto& ifarm:infInoFIPS){infFarmIDs.emplace_back(ifarm->get_id());}
+	for (auto& sfarm:suscIndFIPS){suscFarmIDs.emplace_back(sfarm->get_id());}
+
+	for (auto fs:farmShips){ // check if each origin farm is infectious
+		int origFarm = std::get<0>(fs); // get origin farm ID for this shipment
+		 if(isWithin(origFarm,infFarmIDs)){ // if origin is infectious
+			int destFarm = std::get<1>(fs); // get dest farm ID for this shipment
+			if(isWithin(destFarm,suscFarmIDs)){ // check if destination is in susceptible list
+				infFarmShips.emplace_back(fs);}
+		 }
 	}
+		
 }
+

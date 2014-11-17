@@ -39,17 +39,6 @@ int main(int argc, char* argv[])
  	bool printgInfFarms = 0;
 if(griddingOn){
 
-// 	std::vector<double> paramList;
-// 		paramList.emplace_back(25000);
-// 		paramList.emplace_back(50000);
-// 		paramList.emplace_back(75000);
-// 		paramList.emplace_back(100000);
-// 		paramList.emplace_back(150000);
-// 		paramList.emplace_back(200000);
-// 
-// 	for (auto j:paramList){	
-//		int j=2000;
-	
   		// generate map of farms and xylimits
   	 	std::clock_t loading_start = std::clock();
 		Grid_manager G(pfile,0,0); // reverse x/y on/off, verbose on/off
@@ -93,8 +82,6 @@ if(griddingOn){
 //		G.initiateGrid(j,50000); // max farms in cell, kernel radius
 		std::string cellfile = "2000f_731c_USprems.txt";
 		G.initiateGrid(cellfile); // about the same time as generating, for 2000mf
-// 		G.initiateGrid(j); // length of cell side
-//		G.printCells(pfile); // turn on to print cells, based on specified prem file
  		std::clock_t grid_end = std::clock();
 		double gridGenTimeMS = 1000.0 * (grid_end - grid_start) / CLOCKS_PER_SEC;
 		std::cout << "CPU time for generating grid: " << gridGenTimeMS << "ms." << std::endl;
@@ -106,64 +93,74 @@ if(griddingOn){
 		int runningTotal = 0;
 		
 		// write initially infected farms to file
-		std::string toPrint;
-		if (printgInfFarms == 1){
-		char temp[6];
-		std::string outfilename = "gridInfFarms";
-		sprintf(temp, "%d", int(j));
-			outfilename += temp;
-		outfilename += "_rep";
-		sprintf(temp, "%d", r);
-			outfilename += temp;
-		outfilename += ".txt";
-		std::ofstream outfile(outfilename);
-		  for (auto fi:focalFarms1){		  	
-			sprintf(temp, "%d\t", -1); // timestep = -1
-				toPrint	+= temp; 
-			toPrint += to_string(fi); // farm info and line break
-		  } // end for each farm
-		  if(outfile.is_open()){
-			outfile << toPrint;
-			outfile.close();
-		  }
-		} // end if print infected farms
+// 		if (printgInfFarms == 1){
+// 		int j=0;
+// 		std::string toPrint;
+// 		char temp[6];
+// 		std::string outfilename = "gridInfFarms";
+// 		sprintf(temp, "%d", int(j));
+// 			outfilename += temp;
+// 		outfilename += "_rep";
+// 		sprintf(temp, "%d", r);
+// 			outfilename += temp;
+// 		outfilename += ".txt";
+// 		std::ofstream outfile(outfilename);
+// 		  for (auto fi:focalFarms1){		  	
+// 			sprintf(temp, "%d\t", -1); // timestep = -1
+// 				toPrint	+= temp; 
+// 			toPrint += to_string(fi); // farm info and line break
+// 		  } // end for each farm
+// 		  if(outfile.is_open()){
+// 			outfile << toPrint;
+// 			outfile.close();
+// 		  }
+// 		} // end if print infected farms
 
  		int t=0;
    	   while (t!=timesteps && focalFarms.size()!=0 && compFarms.size()!=0){ // timesteps, stop early if dies out
    		 std::cout << focalFarms.size() << " focal farms and " << compFarms.size() << " comparison farms." << std::endl;
-		 std::cout << "Starting grid check: " << std::endl;
+		 std::cout << "Starting grid check (local spread): " << std::endl;
   		 std::clock_t gridcheck_start = std::clock();	  
 		 G.stepThroughCells(focalFarms,compFarms);
 		 std::vector<Farm*> gInfFarms = G.getInfVec();
 		
-		 if (printgInfFarms == 1){
-		 	std::cout << "t = " << t <<std::endl;
-		 	std::string toPrint2;
-		 	char temp[4];
-	  	 for (auto fi:gInfFarms){
-	    	sprintf(temp, "%d\t", t);
-				toPrint2 += temp; // timestep
-			toPrint2 += to_string(fi); // farm info and line break
-	  	 }
-	  	 outfile.open(outfilename, std::ios_base::app); // append to existing file
-		 outfile << toPrint2;
-		 outfile.close();
-	  	 } // end if print grid infected farms
+// 		 if (printgInfFarms == 1){
+// 		 	std::cout << "t = " << t <<std::endl;
+// 		 	std::string toPrint2;
+// 		 	char temp[4];
+// 	  	 for (auto fi:gInfFarms){
+// 	    	sprintf(temp, "%d\t", t);
+// 				toPrint2 += temp; // timestep
+// 			toPrint2 += to_string(fi); // farm info and line break
+// 	  	 }
+// 	  	 outfile.open(outfilename, std::ios_base::app); // append to existing file
+// 		 outfile << toPrint2;
+// 		 outfile.close();
+// 	  	 } // end if print grid infected farms
 	  	 
   		 std::clock_t gridcheck_end = std::clock();
   		 double gridCheckTimeMS = 1000.0 * (gridcheck_end - gridcheck_start) / CLOCKS_PER_SEC;
- 		 std::cout << "CPU time for checking grid: " << gridCheckTimeMS << "ms." << std::endl;		 
- 		 if (timesteps>1){
-			 std::vector<Farm*> newInf = G.getInfVec();
-			 for (auto y:newInf){focalFarms.emplace_back(y);}
-			 G.removeFarmSubset(newInf,compFarms);
-			 runningTotal += newInf.size();
-			 std::cout << "Cumulative infections: " << runningTotal <<std::endl;
- 		 }
+ 		 std::cout << "CPU time for checking grid: " << gridCheckTimeMS << "ms." << std::endl
+ 		 	<< "Starting shipments: ";		 
+ 		 // initiate shipments
+ 		 S.makeShipments(focalFarms,compFarms);
+ 		 std::vector<std::tuple<std::string,std::string,int>> coShips = S.get_countyShipments();
+ 		 std::cout <<std::endl<< coShips.size()<<" county shipments, ";
+ 		 std::vector<std::tuple<int,int,int>> fShips = S.get_farmShipments();
+ 		 std::cout << fShips.size()<<" farm-farm shipments."<<std::endl;
+ 		 std::vector<std::tuple<int,int,int>> infShips = S.get_infFarmShipments();
+ 		 std::cout << infShips.size()<<" infectious shipments."<<std::endl;
+
+ 	// 	 
+// 		std::vector<Farm*> newInf = G.getInfVec();
+// 			 for (auto y:newInf){focalFarms.emplace_back(y);}
+// 			 G.removeFarmSubset(newInf,compFarms);
+// 			 runningTotal += newInf.size();
+// 			 std::cout << "Cumulative infections: " << runningTotal <<std::endl;
+//  		 }
  		 t++;
  		}  	
  	} // end for each rep r	
-//	} //end for each j   
 
 
 } // end "if griddingOn"
@@ -215,17 +212,17 @@ if(pairwiseOn){
 	int t=0;
 
 	// write initially infected farms to file
-	if (printInfFarms == 1){
-	  for (auto fi:focalFarms){
-	    char temp[4];
-	    sprintf(temp, "%d\t", -1);
-		std::string toPrint	= temp; // timestep = -1
-		toPrint += to_string(fi); // farm info and line break
-		std::ofstream outfile;
-		outfile.open("pairwiseInfFarms.txt", std::ios_base::app); // append to existing file
-		outfile << toPrint;	
-	  }
-	}
+// 	if (printInfFarms == 1){
+// 	  for (auto fi:focalFarms){
+// 	    char temp[4];
+// 	    sprintf(temp, "%d\t", -1);
+// 		std::string toPrint	= temp; // timestep = -1
+// 		toPrint += to_string(fi); // farm info and line break
+// 		std::ofstream outfile;
+// 		outfile.open("pairwiseInfFarms.txt", std::ios_base::app); // append to existing file
+// 		outfile << toPrint;	
+// 	  }
+// 	}
 	
   while (t!=timesteps && focalFarms.size()!=0 && compFarms.size()!=0){
 	std::cout << "Timestep " << t << ": ";
