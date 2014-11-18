@@ -7,7 +7,7 @@
 
 #include "grid_cell.h" // Point defined here
 
-grid_cell::grid_cell(const double in_id, const double in_x, const double in_y, const double in_s, const std::vector<Farm*> in_farms)
+grid_cell::grid_cell(const int in_id, const double in_x, const double in_y, const double in_s, const std::vector<Farm*> in_farms)
 {
     id = in_id;
     x = in_x;

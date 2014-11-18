@@ -38,21 +38,21 @@ transport object and associates it (adds it to Transp_vector[timestep]) with thi
 class Farm
 {
 	private:
-		double id, x_coordinate, y_coordinate, size, cellID;
+		int id, size, cellID;
+		double x_coordinate, y_coordinate;
 		std::string fips;
 //		int id, x_coordinate, y_coordinate, infected_at_timestep;
 // 		short size, status;
 	
 	public:
-		Farm(double, std::string, double, double, double);
-// 		Farm(int, int, int, short);
+		Farm(int, std::string, double, double, int);
 		~Farm();
-		double get_id() const; //Inlined
+		int get_id() const; //Inlined
 		std::string get_fips() const; //Inlined
 		double get_x() const; //Inlined
 		double get_y() const; //Inlined
-		double get_size() const; //Inlined
-		double get_cellID() const; //inlined
+		int get_size() const; //Inlined
+		int get_cellID() const; //inlined
 
 //  	short get_size() const; //Inlined
 // 		short get_status() const; //Inlined
@@ -60,13 +60,13 @@ class Farm
 // 		std::string get_info() const;
 
 // 		
-		void set_cellID(const double cellID);
+		void set_cellID(const int cellID);
 // 		void set_status(const short);
 // 		void set_time_of_infection(const int);
 
 };
 
-inline double Farm::get_id() const
+inline int Farm::get_id() const
 {
 	return id;
 }
@@ -86,13 +86,13 @@ inline double Farm::get_y() const
 	return y_coordinate;
 }
 
-inline double Farm::get_size() const
+inline int Farm::get_size() const
 //inline short Farm::get_size() const
 {
 	return size;
 }
 
-inline double Farm::get_cellID() const
+inline int Farm::get_cellID() const
 {
 	return cellID;
 }

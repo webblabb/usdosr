@@ -16,7 +16,9 @@
 #include <algorithm> // std::sort, std::any_of
 #include <queue> // for checking neighbor cells
 #include <stack>
+#include <tuple>
 #include <unordered_map>
+#include <utility> // std::pair
 #include <vector>
 
 class Grid_manager
@@ -25,7 +27,7 @@ class Grid_manager
 		bool verbose; // if true, outputs processing details
 		// variables for grid creation
 		unsigned int maxFarms;
-		std::unordered_map<double, grid_cell*> 
+		std::unordered_map<int, grid_cell*> 
 			allCells; // map of cells in grid
 		std::unordered_map<int, Farm*> 
 			farm_map; // Contains all farm objects. Id as key.
@@ -33,13 +35,13 @@ class Grid_manager
 			FIPSmap; // key is fips code, value is vector of farms within
  		std::vector<Farm*> 
  			farmList; // vector of pointers to all farms (deleted in chunks as grid is created)
-		std::vector<double> 
+		std::tuple<double,double,double,double> 
 			xylimits; // [0]x min, [1]x max, [2]y min, [3]y max
-		std::unordered_map<double, std::unordered_map<double, double>> 
+		std::unordered_map<int, std::unordered_map<int, double>> 
 			gridCellKernel; // kernel values between cell pairs
-		std::unordered_map<double, std::unordered_map<double, double>> 
+		std::unordered_map<int, std::unordered_map<int, double>> 
 			storedDists; // freq-used distances between cell pairs, used in shortestCellDist
-		std::unordered_map<double, std::vector<grid_cell*>> 
+		std::unordered_map<int, std::vector<grid_cell*>> 
 			kernelNeighbors; // each cell's susceptible neighbors with p>0
 		// variables for infection evaluation
 		bool infectOut; // if true, looks at transmission TO other cells, otherwise FROM other cells
@@ -47,7 +49,7 @@ class Grid_manager
 		// per timestep variables
 		int farmtocellskips = 0;
 		int farmsinskippedcells = 0;
-		std::unordered_map<double, std::vector<double>> infectedFarms; // ids & counts of farms infected in a timestep
+		std::unordered_map<int, std::vector<int>> infectedFarms; // ids (key) & counts of farms infected in a timestep - counts > 1 are post-infection exposures
 
 		// functions
 		void setVerbose(bool); // inlined
@@ -55,29 +57,29 @@ class Grid_manager
 		void set_maxFarms(unsigned int in_maxFarms); //inlined
 		std::string to_string(grid_cell&) const;
 		std::vector<Farm*> getFarms(
-			std::vector<double> cellSpecs,
+			std::tuple<int,double,double,double> cellSpecs,
 			const unsigned int maxFarms=0); // makes list of farms in a cell (quits early if over max)
 		void removeParent(
-			std::stack< std::vector<double> >& queue);// removes 1st vector in queue
+			std::stack< std::tuple<int,double,double,double> >& queue);// removes 1st vector in queue
 		void addOffspring(
-			std::vector<double> cellSpecs, 
-			std::stack< std::vector<double> >& queue); // adds subdivided cells to queue
+			std::tuple<int,double,double,double> cellSpecs, 
+			std::stack< std::tuple<int,double,double,double> >& queue); // adds subdivided cells to queue
 		void commitCell(
-			std::vector<double> cellSpecs, 
+			std::tuple<int,double,double,double> cellSpecs, 
 			std::vector<Farm*>& farmsInCell); // adds cell as type GridCell to set allCells
 		void splitCell(
-			std::vector<double>& cellSpecs, 
-			std::stack< std::vector<double> >& queue); // replaces parent cell with subdivided offspring quadrants
- 		void assignCellIDtoFarms(double cellID, std::vector<Farm*>& farmsInCell);
+			std::tuple<int,double,double,double>& cellSpecs, 
+			std::stack< std::tuple<int,double,double,double> >& queue); // replaces parent cell with subdivided offspring quadrants
+ 		void assignCellIDtoFarms(int cellID, std::vector<Farm*>& farmsInCell);
 		double shortestCellDist(
 			grid_cell* cell1, 
 			grid_cell* cell2); // calculates shortest distance between two cells
 		void makeCellRefs(); // make reference matrices for distance and kernel		
 		// functions for infection evaluation
 		std::vector<grid_cell*> 
-			IDsToCells(std::vector<double>); // convert vector of IDs to cell pointers
+			IDsToCells(std::vector<int>); // convert vector of IDs to cell pointers
 		grid_cell* 				
-			IDsToCells(double);  // overloaded to accept single ID also
+			IDsToCells(int);  // overloaded to accept single ID also
 		
 	public:
 		/////////// for grid creation ///////////
@@ -110,10 +112,10 @@ class Grid_manager
 		void printVector(
 			std::vector<Farm*>&, std::string&) const;
 			
-		std::unordered_map<double, grid_cell*> 
+		std::unordered_map<int, grid_cell*> 
 			get_allCells() const; //inlined	
 			
-		std::unordered_map<double, std::unordered_map<double, double>> 
+		std::unordered_map<int, std::unordered_map<int, double>> 
 			get_gridCellKernel() const; // inlined
 			
 		std::unordered_map<int, Farm*> 
@@ -134,7 +136,7 @@ class Grid_manager
 		
 		void setInfectOut(bool); //inlined
 		
-		std::unordered_map<double, std::vector<double>> 
+		std::unordered_map<int, std::vector<int>> 
 			getTotalInfections() const; //inlined
 			
 		std::vector<Farm*> 
@@ -173,13 +175,13 @@ inline void Grid_manager::set_maxFarms(unsigned int in_maxFarms)
 	maxFarms = in_maxFarms;
 }
 
-inline std::unordered_map<double, grid_cell*> 
+inline std::unordered_map<int, grid_cell*> 
 	Grid_manager::get_allCells() const
 {
 	return (allCells);
 }
 
-inline std::unordered_map<double, std::unordered_map<double, double>> 
+inline std::unordered_map<int, std::unordered_map<int, double>> 
 	Grid_manager::get_gridCellKernel() const
 {
 	return(gridCellKernel);
@@ -209,7 +211,7 @@ inline void Grid_manager::setInfectOut(bool io)
 	infectOut = io;
 }
 
-inline std::unordered_map<double, std::vector<double>> Grid_manager::getTotalInfections() const
+inline std::unordered_map<int, std::vector<int>> Grid_manager::getTotalInfections() const
 {
 	return infectedFarms;
 }

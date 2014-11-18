@@ -33,7 +33,7 @@ int main(int argc, char* argv[])
 		"Exiting..." << std::endl;
 		exit(EXIT_FAILURE);
 	}
-	
+
 	int timesteps = 1;
  	bool griddingOn = 1;
  	bool printgInfFarms = 0;
@@ -60,9 +60,9 @@ if(griddingOn){
 		std::string fname = "seedFarms.txt";
 	 	std::vector<Farm*> focalFarms1, compFarms1;
 	 	std::unordered_map<int, Farm*> allFarms = G.get_allFarms(); 
-	 	for (auto x:allFarms){compFarms1.emplace_back(x.second);}
-	 	// "compFarms" first holds all farms for ID reference, then is pared down and used as comparison farm list
-	 	double fID;
+	 	for (auto& x:allFarms){compFarms1.emplace_back(x.second);}
+	 	// "compFarms" first holds all farms, then is pared down and used as comparison farm list
+	 	int fID;
  		std::ifstream f(fname);
 		if(!f){std::cout << "Input file not found." << std::endl;}
 		if(f.is_open()){
@@ -72,20 +72,19 @@ if(griddingOn){
 				getline(f, line); // get line from file "f", save as "line"			
 				if(! line.empty()){ // if line has something in it
 					str_cast(line, fID);
-					focalFarms1.emplace_back(compFarms1.at(fID)); // using compFarms for reference here
+					focalFarms1.emplace_back(allFarms.at(fID));
 				} // close "if line_vector not empty"
 			} // close "while not end of file"
 		} // close "if file is open"	
  		G.removeFarmSubset(focalFarms1,compFarms1); // removes focalFarms from compFarms, now compFarms only has compFarms
 
 	 	std::clock_t grid_start = std::clock();		
-//		G.initiateGrid(j,50000); // max farms in cell, kernel radius
-		std::string cellfile = "2000f_731c_USprems.txt";
-		G.initiateGrid(cellfile); // about the same time as generating, for 2000mf
+		G.initiateGrid(2000,50000); // max farms in cell, kernel radius
+//		std::string cellfile = "2000f_731c_USprems.txt"; G.initiateGrid(cellfile); // reading in/making cells takes ~ 60 sec
  		std::clock_t grid_end = std::clock();
 		double gridGenTimeMS = 1000.0 * (grid_end - grid_start) / CLOCKS_PER_SEC;
 		std::cout << "CPU time for generating grid: " << gridGenTimeMS << "ms." << std::endl;
-		
+/*		
 	for (auto r=0; r!=1; r++){
 	
 		std::vector<Farm*> focalFarms = focalFarms1;
@@ -162,7 +161,7 @@ if(griddingOn){
  		}  	
  	} // end for each rep r	
 
-
+*/
 } // end "if griddingOn"
 
 bool pairwiseOn = 0; // 1,949,147,792 comparisons

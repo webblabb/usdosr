@@ -113,8 +113,8 @@ void Shipment_manager::farmFarmShipments(std::unordered_map<std::string, std::ve
 					for (int v=0; v!=volume; v++){
 						double oRand = unif_rand();
 						double dRand = unif_rand();
-						int oElement = whichElement(oRand,oCumSums);
-						int dElement = whichElement(dRand,dCumSums);
+						int oElement = whichElement(oRand,oCumSums); // in shared_functions.h
+						int dElement = whichElement(dRand,dCumSums); // in shared_functions.h
 						Farm* oFarm = oFarms[oElement];
 						Farm* dFarm = dFarms[dElement];
 						std::tuple<int,int,int> fShip (oFarm->get_id(),dFarm->get_id(),1);

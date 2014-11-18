@@ -96,20 +96,6 @@ double getFarmInf(Farm* f)
 	return farmInf;
 }
 
-// used in grid_manager to look up kernel values
-// std::vector<double> orderNumbers(double& number1, double& number2)
-// order number1 and number2 from lowest to highest
-// {
-// 	std::vector<double> ordered;
-// 	ordered.emplace_back(number1);
-// 	if (number2 < number1){
-// 		ordered.insert(ordered.begin(),number2);
-// 	} else {
-// 		ordered.emplace_back(number2); // if number2 is larger or equal to number1
-// 	}
-// 	return ordered;
-// }
-
 // determine which element's range a number falls into
 // input is maximum for each element
 int whichElement(double& toMatch, std::vector<int>& elementMaxes)
