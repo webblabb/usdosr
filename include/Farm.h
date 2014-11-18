@@ -31,53 +31,49 @@ transport object and associates it (adds it to Transp_vector[timestep]) with thi
 #ifndef FARM_H
 #define FARM_H
 
-#include <vector>
-#include <unordered_map>
 #include <string>
-
-//class Live_transport;
-//class Slaughter_transport;
-
-// typedef std::vector<Live_transport*> Transp_vector;
-// typedef std::unordered_map<short, Transp_vector> Time_transp_map;
-// typedef std::unordered_map<int, std::vector<Slaughter_transport*>> Time_sl_map;
+#include <unordered_map>
+#include <vector>
 
 class Farm
 {
 	private:
-		double id, x_coordinate, y_coordinate, size, cellID;
+		int id, size, cellID;
+		double x_coordinate, y_coordinate;
+		std::string fips;
 //		int id, x_coordinate, y_coordinate, infected_at_timestep;
 // 		short size, status;
-// 		Time_transp_map timed_transports;
-// 		Time_sl_map timed_sl_transports;
 	
 	public:
-		Farm(double, double, double, double);
-// 		Farm(int, int, int, short);
+		Farm(int, std::string, double, double, int);
 		~Farm();
-		double get_id() const; //Inlined
+		int get_id() const; //Inlined
+		std::string get_fips() const; //Inlined
 		double get_x() const; //Inlined
 		double get_y() const; //Inlined
-		double get_size() const; //Inlined
-		double get_cellID() const; //inlined
+		int get_size() const; //Inlined
+		int get_cellID() const; //inlined
 
 //  	short get_size() const; //Inlined
 // 		short get_status() const; //Inlined
 // 		int get_infected_at() const; //Inlined
 // 		std::string get_info() const;
-// 		Transp_vector* get_transports(const short);	//Inlined
-// 		std::vector<Slaughter_transport*>* get_sl_transports(int const);
+
 // 		
-		void set_cellID(const double cellID);
+		void set_cellID(const int cellID);
 // 		void set_status(const short);
 // 		void set_time_of_infection(const int);
-// 		void add_live_transport(Live_transport*);
-// 		void add_sl_transport(int const, Slaughter_transport*);
+
 };
 
-inline double Farm::get_id() const
+inline int Farm::get_id() const
 {
 	return id;
+}
+
+inline std::string Farm::get_fips() const
+{
+	return fips;
 }
 
 inline double Farm::get_x() const
@@ -90,13 +86,13 @@ inline double Farm::get_y() const
 	return y_coordinate;
 }
 
-inline double Farm::get_size() const
+inline int Farm::get_size() const
 //inline short Farm::get_size() const
 {
 	return size;
 }
 
-inline double Farm::get_cellID() const
+inline int Farm::get_cellID() const
 {
 	return cellID;
 }
@@ -111,16 +107,6 @@ inline double Farm::get_cellID() const
 // 	return infected_at_timestep;
 // }
 // 
-// inline Transp_vector* Farm::get_transports(const short timestep)
-// {
-// 	if(timed_transports.find(timestep) != timed_transports.end())
-// 	{
-// 		if(!timed_transports[timestep].empty())
-// 		{
-// 			return &timed_transports[timestep];
-// 		}
-// 	}
-// 	return NULL;
-// }
+
 
 #endif //FARM_H

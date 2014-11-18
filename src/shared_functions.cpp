@@ -96,16 +96,28 @@ double getFarmInf(Farm* f)
 	return farmInf;
 }
 
-// used in grid_manager to look up kernel values
-std::vector<double> orderNumbers(double number1, double number2)
-// order number1 and number2 from lowest to highest
+// determine which element's range a number falls into
+// input is maximum for each element
+int whichElement(double& toMatch, std::vector<int>& elementMaxes)
 {
-	std::vector<double> ordered;
-	ordered.emplace_back(number1);
-	if (number2 < number1){
-		ordered.insert(ordered.begin(),number2);
-	} else {
-		ordered.emplace_back(number2); // if number2 is larger or equal to number1
+	int match = -1;
+	if (elementMaxes.size() < 1){std::cout << "Vector of element sizes < 1. ";}
+	if (toMatch < 0 || toMatch > 1){std::cout << "Number to match out of range. ";}
+	else{
+		double matchValue = toMatch * elementMaxes.back(); // scale up to 
+		elementMaxes.insert(elementMaxes.begin(),0); // add 0 as minimum end of first range
+		if (elementMaxes[0]!=0){std::cout << "0 insertion error. ";}
+		bool found = 0;
+		int it = 1;
+		while (it!=elementMaxes.size() && found == 0){
+			if (matchValue>elementMaxes[it-1] && matchValue<=elementMaxes[it]){ // greater than previous, <= current
+				match = it-1; // subtract one to make up for the 0 we added at the beginning
+				found = 1;}
+			it++;
+			if (it==elementMaxes.size() && found == 0){
+				std::cout << " Match not found.";}
+		}
 	}
-	return ordered;
+	return match;
 }
+

@@ -24,26 +24,27 @@ class grid_cell
 	};
 
     private:
-        double id, x, y, s, maxSus, maxInf; // x and y are coordinates for lower left corner
+    	int id;
+        double x, y, s, maxSus, maxInf; // x and y are coordinates for lower left corner
         std::vector<Farm*> farms;
 		std::vector<Point*> corners;
     
     public:
-		grid_cell(const double, const double, const double, const double, const std::vector<Farm*>);
+		grid_cell(const int, const double, const double, const double, const std::vector<Farm*>);
 		~grid_cell();
-		double get_id() const; //inlined
+		int get_id() const; //inlined
         double get_x() const; // inlined
         double get_y() const; // inlined
         double get_s() const; // inlined
         std::vector<Farm*> get_farms() const; // inlined
-        double get_num_farms() const; // inlined
+        int get_num_farms() const; // inlined
         std::vector<grid_cell::Point*> get_corners() const; // inlined
         double get_maxSus() const; //inlined
         double get_maxInf() const; //inlined
 
 };
 
-inline double grid_cell::get_id() const
+inline int grid_cell::get_id() const
 {
     return id;
 }
@@ -68,7 +69,7 @@ inline std::vector<Farm*> grid_cell::get_farms() const
     return farms;
 }
 
-inline double grid_cell::get_num_farms() const
+inline int grid_cell::get_num_farms() const
 {
 	return double(farms.size());
 }
