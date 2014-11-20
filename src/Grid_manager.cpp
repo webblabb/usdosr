@@ -103,6 +103,7 @@ Grid_manager::~Grid_manager()
 {
 }
 
+/*
 void Grid_manager::removeFarmSubset(std::vector<Farm*>& farmsToRemove, std::vector<Farm*>& masterFarmList)
 // remove farms in first vector from second vector
 {
@@ -128,6 +129,7 @@ void Grid_manager::removeFarmSubset(std::vector<Farm*>& farmsToRemove, std::vect
 	if(masterFarmList.size()!= expectedSize){
 		std::cout<<"Error in updating farm list. "<<std::endl;}
 }
+*/
 
 std::vector<Farm*> Grid_manager::getFarms(std::tuple<int,double,double,double> cellSpecs, const unsigned int maxFarms/*=0*/)
 // based on cell specs, finds farms in cell and saves pointers to farmsInCell

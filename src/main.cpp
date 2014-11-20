@@ -76,7 +76,7 @@ if(griddingOn){
 				} // close "if line_vector not empty"
 			} // close "while not end of file"
 		} // close "if file is open"	
- 		G.removeFarmSubset(focalFarms1,compFarms1); // removes focalFarms from compFarms, now compFarms only has compFarms
+ 		removeFarmSubset(focalFarms1,compFarms1); // removes focalFarms from compFarms, now compFarms only has compFarms
 
 	 	std::clock_t grid_start = std::clock();		
 		G.initiateGrid(2000,50000); // max farms in cell, kernel radius
@@ -202,7 +202,7 @@ if(pairwiseOn){
 				} // close "if line_vector not empty"
 			} // close "while not end of file"
 		} // close "if file is open"	
- 		G.removeFarmSubset(focalFarms1,compFarms1); // removes focalFarms from compFarms, now compFarms only has compFarms
+ 		removeFarmSubset(focalFarms1,compFarms1); // removes focalFarms from compFarms, now compFarms only has compFarms
 
 	std::cout << "Conducting pairwise comparisons - go get a snack." << std::endl;
 	std::vector<Farm*> focalFarms = focalFarms1;
@@ -292,7 +292,7 @@ if(pairwiseOn){
 			 for (auto y:infectedFarms){
 			 	newInfVec.emplace_back(allFarms.at(y.first)); // put new inf farms in vector
 			 	focalFarms.emplace_back(allFarms.at(y.first));} // add to infectious list
-			 G.removeFarmSubset(newInfVec,compFarms); // remove from comparison list
+			 removeFarmSubset(newInfVec,compFarms); // remove from comparison list
 			 t++;
 			}  // end if timesteps >1
 		} // end while spread still possible and under timesteps

@@ -20,6 +20,7 @@
 	std::string to_string(Farm*);
 	double getFarmSus(Farm*);
 	double getFarmInf(Farm*);
+	void removeFarmSubset(std::vector<Farm*>&, std::vector<Farm*>&);
 	int whichElement(double&, std::vector<int>&);
 	
 	template<typename T> void str_cast(const std::string &s, T &ref)
@@ -66,5 +67,12 @@
 	
 	return found;
 }
+
+inline bool sortByID(const Farm* farm1, const Farm* farm2)
+// "compare" function to sort farms by ID
+// must be defined outside of class, or else sort doesn't work
+{
+	return (farm1 -> get_id()) < (farm2 -> get_id());
+}	
 
 #endif

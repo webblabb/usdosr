@@ -124,7 +124,7 @@ class Grid_manager
 		std::unordered_map<std::string, std::vector<Farm*>> 
 			get_FIPSmap() const; //inlined
 			
-		void removeFarmSubset(std::vector<Farm*>&, std::vector<Farm*>&); // removes farms in 1st vector from 2nd (ie recently committed cell from main list)
+//		void removeFarmSubset(std::vector<Farm*>&, std::vector<Farm*>&); // removes farms in 1st vector from 2nd (ie recently committed cell from main list)
 		/////////// for infection evaluation ///////////
 		// per timestep functions
 		std::vector <std::vector<Farm*>> 
@@ -152,12 +152,12 @@ inline bool sortByX(const Farm* farm1, const Farm* farm2)
 {
 	return (farm1 -> get_x()) < (farm2 -> get_x());
 }
-inline bool sortByID(const Farm* farm1, const Farm* farm2)
-// "compare" function to sort farms by ID
-// must be defined outside of class, or else sort doesn't work
-{
-	return (farm1 -> get_id()) < (farm2 -> get_id());
-}
+// inline bool sortByID(const Farm* farm1, const Farm* farm2)
+// // "compare" function to sort farms by ID
+// // must be defined outside of class, or else sort doesn't work
+// {
+// 	return (farm1 -> get_id()) < (farm2 -> get_id());
+// }
 inline bool sortByPop(const Farm* farm1, const Farm* farm2)
 // "compare" function to sort farms by ID
 // must be defined outside of class, or else sort doesn't work
