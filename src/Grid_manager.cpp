@@ -542,25 +542,25 @@ void Grid_manager::printCells(std::string& pfile) const
 	std::cout << "Cells printed to " << ofilename <<std::endl;
 }
 
-void Grid_manager::printVector(std::vector<Farm*>& vec, std::string& fname) const
-// temporarily disabled due to incompatible std::to_string use
-{
-/*
-	std::string tabdelim;
-	for(auto& it:vec){
-		double fid = it->Farm::get_id();
-		tabdelim += std::to_string(fid);
-		tabdelim += "\n";
-	}
-	
-	std::ofstream f(fname); 
-	if(f.is_open()){
-		f << tabdelim;
-		f.close();
-	}
-	std::cout << "Vector printed to " << fname <<std::endl;
-*/
-}
+// void Grid_manager::printVector(std::vector<Farm*>& vec, std::string& fname) const
+// // temporarily disabled due to incompatible std::to_string use
+// {
+// /*
+// 	std::string tabdelim;
+// 	for(auto& it:vec){
+// 		double fid = it->Farm::get_id();
+// 		tabdelim += std::to_string(fid);
+// 		tabdelim += "\n";
+// 	}
+// 	
+// 	std::ofstream f(fname); 
+// 	if(f.is_open()){
+// 		f << tabdelim;
+// 		f.close();
+// 	}
+// 	std::cout << "Vector printed to " << fname <<std::endl;
+// */
+// }
 
 double Grid_manager::shortestCellDist(grid_cell* cell1, grid_cell* cell2)
 // returns shortest distance between cell1 and cell2
@@ -905,32 +905,3 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 		<< "Infections this time step (gridding): " << infectedFarms.size() << std::endl;
 
 }
-
-std::vector<Farm*> Grid_manager::getInfVec() const
-{
-	std::vector<Farm*> infFarmVec;
-	for (auto z:infectedFarms){
-		infFarmVec.emplace_back(farm_map.at(z.first));
-	}
-	return infFarmVec;
-}
- 
-// input is proportion of focal farms (random), all remaining farms are comparison
-std::vector <std::vector<Farm*>> Grid_manager::setFarmStatuses(double propFocal)
-{ 
- 	std::vector <Farm*> focal, comp; // two vectors of focal/comp farms
-
-	for (auto i:farm_map){
-		double randomnum = unif_rand();
-		if (randomnum <= propFocal){
-			focal.emplace_back(i.second);
-		} else {
-			comp.emplace_back(i.second);
-		}
-	}
-	std::vector <std::vector <Farm*>> farmsToReturn;
- 		farmsToReturn.emplace_back(focal);
- 		farmsToReturn.emplace_back(comp);
- 	std::cout << "Returning " << focal.size() << " focal farms and " << comp.size() << " comparison farms." << std::endl;
- 	return farmsToReturn;
- }

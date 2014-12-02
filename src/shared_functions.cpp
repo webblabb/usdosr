@@ -9,6 +9,14 @@ double unif_rand()
 	static std::mt19937 generator(seed); //Mersenne Twister pseudo-random number generator. Generally considered research-grade.
 	return unif_dist(generator);
 }
+// Used in Status_manager to determine status duration
+double norm_rand()
+{
+	static std::normal_distribution<double> norm_dist(0,1);
+	static unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count();
+	static std::mt19937 generator(seed); //Mersenne Twister pseudo-random number generator. Generally considered research-grade.
+	return norm_dist(generator);
+}
 
 // Used in gridding (kernel values for fixed grid distances)
 // Used in pairwise evaluations in main
@@ -152,9 +160,9 @@ int whichElement(double& toMatch, std::vector<int>& elementMaxes)
 	if (elementMaxes.size() < 1){std::cout << "Vector of element sizes < 1. ";}
 	if (toMatch < 0 || toMatch > 1){std::cout << "Number to match out of range. ";}
 	else{
-		double matchValue = toMatch * elementMaxes.back(); // scale up to 
+		double matchValue = toMatch * elementMaxes.back(); // scale up to actual ranges
 		elementMaxes.insert(elementMaxes.begin(),0); // add 0 as minimum end of first range
-		if (elementMaxes[0]!=0){std::cout << "0 insertion error. ";}
+// 		if (elementMaxes[0]!=0){std::cout << "0 insertion error. ";}
 		bool found = 0;
 		int it = 1;
 		while (it!=elementMaxes.size() && found == 0){
@@ -162,9 +170,9 @@ int whichElement(double& toMatch, std::vector<int>& elementMaxes)
 				match = it-1; // subtract one to make up for the 0 we added at the beginning
 				found = 1;}
 			it++;
-			if (it==elementMaxes.size() && found == 0){
-				std::cout << " Match not found.";}
 		}
+		if (it==elementMaxes.size() && found == 0){
+			std::cout << " Match not found.";}
 	}
 	return match;
 }

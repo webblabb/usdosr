@@ -4,7 +4,6 @@
 // #include "Live_transport.h"
 // #include "Slaughter_transport.h"
 
-//Farm::Farm(int in_id, int in_x, int in_y, short in_size)
 Farm::Farm(int in_id, std::string in_fips, double in_x, double in_y, int in_size)
 {
 	id = in_id;
@@ -13,7 +12,7 @@ Farm::Farm(int in_id, std::string in_fips, double in_x, double in_y, int in_size
 	y_coordinate = in_y;
 	size = in_size;
 	
-// 	status = 0;
+ 	status = 0;
 // 	infected_at_timestep = -1;
 }
 
@@ -54,11 +53,12 @@ void Farm::set_cellID(const int in_cellID)
 {
 	cellID = in_cellID;
 }
-// void Farm::set_status(const short in_status)
-// {
-// 	status = in_status;
-// }
-// 
+
+void Farm::set_status(const int in_status)
+{
+	status = in_status;
+}
+
 // void Farm::set_time_of_infection(const int in_timestep)
 // {	
 // 	infected_at_timestep = in_timestep;

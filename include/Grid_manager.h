@@ -109,8 +109,8 @@ class Grid_manager
 			
 		void printGridKernel() const;
 		
-		void printVector(
-			std::vector<Farm*>&, std::string&) const;
+// 		void printVector(
+// 			std::vector<Farm*>&, std::string&) const;
 			
 		std::unordered_map<int, grid_cell*> 
 			get_allCells() const; //inlined	
@@ -124,23 +124,14 @@ class Grid_manager
 		std::unordered_map<std::string, std::vector<Farm*>> 
 			get_FIPSmap() const; //inlined
 			
-//		void removeFarmSubset(std::vector<Farm*>&, std::vector<Farm*>&); // removes farms in 1st vector from 2nd (ie recently committed cell from main list)
 		/////////// for infection evaluation ///////////
-		// per timestep functions
-		std::vector <std::vector<Farm*>> 
-			setFarmStatuses(double);
+		// per timestep function
 			
 		void stepThroughCells(
 			std::vector<Farm*>&, std::vector<Farm*>&);
 		// calcs pw prob for each farm for comparison to gridding loops
 		
 		void setInfectOut(bool); //inlined
-		
-		std::unordered_map<int, std::vector<int>> 
-			getTotalInfections() const; //inlined
-			
-		std::vector<Farm*> 
-			getInfVec() const;
 
 };
 
@@ -211,9 +202,5 @@ inline void Grid_manager::setInfectOut(bool io)
 	infectOut = io;
 }
 
-inline std::unordered_map<int, std::vector<int>> Grid_manager::getTotalInfections() const
-{
-	return infectedFarms;
-}
 
 #endif

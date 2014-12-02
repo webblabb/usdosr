@@ -21,6 +21,7 @@
 
 #include "Grid_manager.h"
 #include "Shipment_manager.h"
+#include "Status_manager.h"
 
 int main(int argc, char* argv[])
 {
@@ -36,132 +37,74 @@ int main(int argc, char* argv[])
 
 	int timesteps = 1;
  	bool griddingOn = 1;
- 	bool printgInfFarms = 0;
+ 	
 if(griddingOn){
 
   		// generate map of farms and xylimits
   	 	std::clock_t loading_start = std::clock();
+  	 	// load file containing premises
 		Grid_manager G(pfile,0,0); // reverse x/y on/off, verbose on/off
+		
+		// instantiate Shipment manager based on FIPS of loaded farms
 		std::unordered_map<std::string, std::vector<Farm*>> fipsmap = G.get_FIPSmap();
-		Shipment_manager S(fipsmap);
+		Shipment_manager Ship(fipsmap);
+		
+		// get full list of farms
+		std::unordered_map<int, Farm*> allFarms = G.get_allFarms(); 
+
+	// pick a proportion to be focal farms and print to external file
+//		std::string fname = "seedFarms.txt"; Status.pickInfAndPrint(0.05, allFarms, fname)
+		
+		// load initially infected farms and instantiate Status manager
+		std::string fname = "seedFarms.txt";
+		std::tuple<double,double> params = std::make_tuple(5,1);
+		Status_manager Status(fname, params, allFarms, timesteps);	 	
 		std::clock_t loading_end = std::clock();
 	
  		std::cout << std::endl << "CPU time for loading premises: "
  			<< 1000.0 * (loading_end - loading_start) / CLOCKS_PER_SEC
  			<< "ms." << std::endl;
  		
-		// pick a proportion to be focal farms and print to external file
-//		std::vector <std::vector<Farm*>> f_c_farms = G.setFarmStatuses(0.05);
-//		std::vector<Farm*> focalFarms = f_c_farms[0];
-//		std::string fname = "seedFarms.txt";
-//		G.printVector(focalFarms,fname);
-
-	// load initial farms from file
-		std::string fname = "seedFarms.txt";
-	 	std::vector<Farm*> focalFarms1, compFarms1;
-	 	std::unordered_map<int, Farm*> allFarms = G.get_allFarms(); 
-	 	for (auto& x:allFarms){compFarms1.emplace_back(x.second);}
-	 	// "compFarms" first holds all farms, then is pared down and used as comparison farm list
-	 	int fID;
- 		std::ifstream f(fname);
-		if(!f){std::cout << "Input file not found." << std::endl;}
-		if(f.is_open()){
-		std::cout << "Loading seed farms." << std::endl;
-			while(! f.eof()){
-				std::string line;
-				getline(f, line); // get line from file "f", save as "line"			
-				if(! line.empty()){ // if line has something in it
-					str_cast(line, fID);
-					focalFarms1.emplace_back(allFarms.at(fID));
-				} // close "if line_vector not empty"
-			} // close "while not end of file"
-		} // close "if file is open"	
- 		removeFarmSubset(focalFarms1,compFarms1); // removes focalFarms from compFarms, now compFarms only has compFarms
-
+		// initiate grid
 	 	std::clock_t grid_start = std::clock();		
-		G.initiateGrid(2000,50000); // max farms in cell, kernel radius
-//		std::string cellfile = "2000f_731c_USprems.txt"; G.initiateGrid(cellfile); // reading in/making cells takes ~ 60 sec
+//		G.initiateGrid(2000,50000); // max farms in cell, kernel radius
+		std::string cellfile = "2000f_731c_USprems.txt"; G.initiateGrid(cellfile); // reading in/making cells takes ~ 60 sec
  		std::clock_t grid_end = std::clock();
 		double gridGenTimeMS = 1000.0 * (grid_end - grid_start) / CLOCKS_PER_SEC;
 		std::cout << "CPU time for generating grid: " << gridGenTimeMS << "ms." << std::endl;
-/*		
-	for (auto r=0; r!=1; r++){
-	
-		std::vector<Farm*> focalFarms = focalFarms1;
-		std::vector<Farm*> compFarms = compFarms1;
-		int runningTotal = 0;
-		
-		// write initially infected farms to file
-// 		if (printgInfFarms == 1){
-// 		int j=0;
-// 		std::string toPrint;
-// 		char temp[6];
-// 		std::string outfilename = "gridInfFarms";
-// 		sprintf(temp, "%d", int(j));
-// 			outfilename += temp;
-// 		outfilename += "_rep";
-// 		sprintf(temp, "%d", r);
-// 			outfilename += temp;
-// 		outfilename += ".txt";
-// 		std::ofstream outfile(outfilename);
-// 		  for (auto fi:focalFarms1){		  	
-// 			sprintf(temp, "%d\t", -1); // timestep = -1
-// 				toPrint	+= temp; 
-// 			toPrint += to_string(fi); // farm info and line break
-// 		  } // end for each farm
-// 		  if(outfile.is_open()){
-// 			outfile << toPrint;
-// 			outfile.close();
-// 		  }
-// 		} // end if print infected farms
 
- 		int t=0;
-   	   while (t!=timesteps && focalFarms.size()!=0 && compFarms.size()!=0){ // timesteps, stop early if dies out
+ 		int t=0;		
+		std::vector<Farm*> focalFarms = Status.allWithStatus(2, t);
+		std::vector<Farm*> compFarms = Status.allWithStatus(0, t);
+	std::cout<<"Retreived from statusTimeFarms: "<<focalFarms.size()<<" infectious and "<<compFarms.size()<<
+		" susceptible farms."<<std::endl;
+
+//		int runningTotal = 0;
+
+   	   while (t!=timesteps && focalFarms.size()!=0){ // timesteps, stop early if dies out
    		 std::cout << focalFarms.size() << " focal farms and " << compFarms.size() << " comparison farms." << std::endl;
 		 std::cout << "Starting grid check (local spread): " << std::endl;
   		 std::clock_t gridcheck_start = std::clock();	  
 		 G.stepThroughCells(focalFarms,compFarms);
-		 std::vector<Farm*> gInfFarms = G.getInfVec();
-		
-// 		 if (printgInfFarms == 1){
-// 		 	std::cout << "t = " << t <<std::endl;
-// 		 	std::string toPrint2;
-// 		 	char temp[4];
-// 	  	 for (auto fi:gInfFarms){
-// 	    	sprintf(temp, "%d\t", t);
-// 				toPrint2 += temp; // timestep
-// 			toPrint2 += to_string(fi); // farm info and line break
-// 	  	 }
-// 	  	 outfile.open(outfilename, std::ios_base::app); // append to existing file
-// 		 outfile << toPrint2;
-// 		 outfile.close();
-// 	  	 } // end if print grid infected farms
-	  	 
+//		 std::vector<Farm*> gInfFarms = G.getInfVec();
+			  	 
   		 std::clock_t gridcheck_end = std::clock();
   		 double gridCheckTimeMS = 1000.0 * (gridcheck_end - gridcheck_start) / CLOCKS_PER_SEC;
  		 std::cout << "CPU time for checking grid: " << gridCheckTimeMS << "ms." << std::endl
  		 	<< "Starting shipments: ";		 
- 		 // initiate shipments
- 		 S.makeShipments(focalFarms,compFarms);
- 		 std::vector<std::tuple<std::string,std::string,int>> coShips = S.get_countyShipments();
+ 		 // initiate shipments	 
+ 		 /*
+ 		 Ship.makeShipments(focalFarms,compFarms);
+ 		 std::vector<std::tuple<std::string,std::string,int>> coShips = Ship.get_countyShipments();
  		 std::cout <<std::endl<< coShips.size()<<" county shipments, ";
- 		 std::vector<std::tuple<int,int,int>> fShips = S.get_farmShipments();
+ 		 std::vector<std::tuple<int,int,int>> fShips = Ship.get_farmShipments();
  		 std::cout << fShips.size()<<" farm-farm shipments."<<std::endl;
- 		 std::vector<std::tuple<int,int,int>> infShips = S.get_infFarmShipments();
+ 		 std::vector<std::tuple<int,int,int>> infShips = Ship.get_infFarmShipments();
  		 std::cout << infShips.size()<<" infectious shipments."<<std::endl;
-
- 	// 	 
-// 		std::vector<Farm*> newInf = G.getInfVec();
-// 			 for (auto y:newInf){focalFarms.emplace_back(y);}
-// 			 G.removeFarmSubset(newInf,compFarms);
-// 			 runningTotal += newInf.size();
-// 			 std::cout << "Cumulative infections: " << runningTotal <<std::endl;
-//  		 }
- 		 t++;
+*/		 
+		t++;
  		}  	
- 	} // end for each rep r	
 
-*/
 } // end "if griddingOn"
 
 bool pairwiseOn = 0; // 1,949,147,792 comparisons

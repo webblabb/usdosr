@@ -7,8 +7,8 @@
 // included in Shipment_manager.h: Farm, shared_functions
 #include "Shipment_manager.h"
 
-Shipment_manager::Shipment_manager(std::unordered_map<std::string, 
-	std::vector<Farm*>>& in_FIPSmap)
+Shipment_manager::Shipment_manager(
+	std::unordered_map<std::string, std::vector<Farm*>>& in_FIPSmap)
 {	
 	// copy FIPSmap
 	FIPSmap = in_FIPSmap;
