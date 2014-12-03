@@ -35,7 +35,7 @@ int main(int argc, char* argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	int timesteps = 1;
+	int timesteps = 5;
  	bool griddingOn = 1;
  	
 if(griddingOn){
@@ -83,7 +83,7 @@ if(griddingOn){
 
 //		int runningTotal = 0;
 
-   	   while (t!=timesteps && focalFarms.size()!=0){ // timesteps, stop early if dies out
+   	   while (t!=timesteps && focalFarms.size()!=0 && compFarms.size()!=0){ // timesteps, stop early if dies out
    	   	 t++;
    		 std::cout << focalFarms.size() << " focal farms and " << compFarms.size() << " comparison farms." << std::endl;
 		 std::cout << "Starting grid check (local spread): " << std::endl;
@@ -131,10 +131,10 @@ if(griddingOn){
 		 	
 		focalFarms = Status.allWithStatus(2, t);
 		compFarms = Status.allWithStatus(0, t);
-		std::vector<Farm*> expFarms = Status.allWithStatus(1, t);
-		std::cout<<"Retreived from statusTimeFarms: "<<focalFarms.size()<<" infectious and "<<compFarms.size()<<
-		" susceptible and "<<expFarms.size()<<" exposed farms."<<std::endl;
- 		}  	
+//		std::vector<Farm*> expFarms = Status.allWithStatus(1, t);
+//		std::cout<<"Retreived from statusTimeFarms: "<<focalFarms.size()<<" infectious and "<<compFarms.size()<<
+//		" susceptible and "<<expFarms.size()<<" exposed farms."<<std::endl;
+ 		}  	// end "while under time and infectious and susceptible farms remain"
 
 } // end "if griddingOn"
 

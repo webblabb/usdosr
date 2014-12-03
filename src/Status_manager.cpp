@@ -11,8 +11,13 @@
 
 Status_manager::Status_manager(std::string fname, std::tuple<double,double> params, std::unordered_map<int, Farm*>& allPrems, int endTime)
 {
+	// initialize all farms as susceptible, with end time after end of run time
+	for (auto& ap:allPrems){
+		statusTimeFarms[0][endTime+1].emplace_back(ap.second);
+		// put each under status key 0, time key 1+end
+	}
 	// read in initially infected prems from file
-		std::vector<Farm*> focalFarms, compFarms;
+		std::vector<Farm*> focalFarms;
 	 	int fID;
  		std::ifstream f(fname);
 		if(!f){std::cout << "Input file not found." << std::endl;}
@@ -28,19 +33,19 @@ Status_manager::Status_manager(std::string fname, std::tuple<double,double> para
 			} // close "while not end of file"
 		} // close "if file is open"
 		
-		for (auto& p:allPrems){
-			compFarms.emplace_back(p.second);}
-		// removes focalFarms from compFarms, now compFarms only has susceptibles
- 		removeFarmSubset(focalFarms,compFarms); 
+		// for (auto& p:allPrems){
+// 			compFarms.emplace_back(p.second);}
+// 		// removes focalFarms from compFarms, now compFarms only has susceptibles
+//  		removeFarmSubset(focalFarms,compFarms); 
 
-	for (auto& c:compFarms){
-		statusTimeFarms[0][endTime+1].emplace_back(c);
-	}
+// 	for (auto& c:compFarms){
+// 		statusTimeFarms[0][endTime+1].emplace_back(c);
+// 	}
 	
 	changeTo(2, focalFarms, 0, params);
 	// change focalFarms' status to 2 (infectious), with durations via params, at base time 0
 //	if (verbose){
-		std::cout<<compFarms.size()<<" susceptible and "<<focalFarms.size()<<" infectious farms initiated. End times for infectious farms: "<<std::endl;
+		std::cout<<focalFarms.size()<<" infectious farms initiated. End times for infectious farms: "<<std::endl;
 		for (auto&i : statusTimeFarms[2]){
 			std::cout<<i.first<<": "<<i.second.size()<<" farms, ";}
 //	}
@@ -95,10 +100,12 @@ void Status_manager::changeTo(int status, std::vector<Farm*>& toChange, int t,
 	// for each farm to be exposed, draw an end time (last day this status is valid)
 	double mean = std::get<0>(params);
 	double var = std::get<1>(params);
+	std::vector<Farm*> toRemoveFromSus;
 	for (auto& f:toChange){
 	// Change status in Farm object
+		if(f->get_status()==0){toRemoveFromSus.emplace_back(f);}
 		f->set_status(status);
-	
+		
 		// determine length of period drawn from normal distribution
 		double normDraw = norm_rand()*var + mean; // scaled to # drawn from N(0,1)
 		int draw = (int)(normDraw+0.5); // round to nearest day
@@ -106,9 +113,9 @@ void Status_manager::changeTo(int status, std::vector<Farm*>& toChange, int t,
 	// Add to status map  
 		statusTimeFarms[status][t+draw].emplace_back(f);
 	}
-	// if farms are being changed to exposed, remove them from susceptible list
-	if (status == 1){ 
-		removeFarmSubset(toChange,(*statusTimeFarms[0].begin()).second);
+	// if any farms were susceptible before the change, remove them from susceptible list
+	if (toRemoveFromSus.size()>0){ 
+		removeFarmSubset(toRemoveFromSus,(*statusTimeFarms[0].begin()).second);
 		// statusTimeFarms[0] should only have one map since they all have the same end time (1+ the total runtime).
 		// begin() points to this one map, and second gets us to the actual vector of farms.
 	}
@@ -118,13 +125,15 @@ void Status_manager::changeTo(int status, std::vector<Farm*>& toChange, int t,
 void Status_manager::changeTo(int status, std::vector<Farm*>& toChange, int t, 
 	int endTime)
 {
+	std::vector<Farm*> toRemoveFromSus;
 	for (auto& f:toChange){
+		if(f->get_status()==0){toRemoveFromSus.emplace_back(f);}
 		f->set_status(status);
 		statusTimeFarms[status][endTime].emplace_back(f);
 	}
-	// if farms are being changed to exposed, remove them from susceptible list
-	if (status == 1){ 
-		removeFarmSubset(toChange,(*statusTimeFarms[0].begin()).second);
+	// if any farms were susceptible before the change, remove them from susceptible list
+	if (toRemoveFromSus.size()>0){ 
+		removeFarmSubset(toRemoveFromSus,(*statusTimeFarms[0].begin()).second);
 		// statusTimeFarms[0] should only have one map since they all have the same end time (1+ the total runtime).
 		// begin() points to this one map, and second gets us to the actual vector of farms.
 	}

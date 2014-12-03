@@ -73,9 +73,11 @@
 // input is vector of vectors to combine
 	template<typename T> std::vector<T> uniqueFrom(std::vector<std::vector<T>>& vec)
 {
+	int totalElements = 0;
 	std::unordered_map<T,int> combinedMap;
 	for (auto& v1:vec){
 		for (auto& v2:v1){
+			totalElements++;
 			if (combinedMap.count(v2)==0){combinedMap[v2]=1;}
 		}
 	}
@@ -83,6 +85,7 @@
 	for (auto& cm:combinedMap){
 		toReturn.emplace_back(cm.first);
 	}
+	std::cout << totalElements-combinedMap.size() <<" duplicate elements removed. ";
 	return toReturn;
 }
 
