@@ -56,9 +56,11 @@ if(griddingOn){
 //		std::string fname = "seedFarms.txt"; Status.pickInfAndPrint(0.05, allFarms, fname)
 		
 		// load initially infected farms and instantiate Status manager
+		// note that initial farms are started as infectious (rather than exposed - separate 
+		// handling/removal of susceptibles from list for these cases)
 		std::string fname = "seedFarms.txt";
-		std::tuple<double,double> params = std::make_tuple(5,1);
-		Status_manager Status(fname, params, allFarms, timesteps);	 	
+		std::tuple<double,double> infectiousParams = std::make_tuple(5,1); // mean duration 5 days, var 1
+		Status_manager Status(fname, infectiousParams, allFarms, timesteps);	 	
 		std::clock_t loading_end = std::clock();
 	
  		std::cout << std::endl << "CPU time for loading premises: "
@@ -82,27 +84,51 @@ if(griddingOn){
 //		int runningTotal = 0;
 
    	   while (t!=timesteps && focalFarms.size()!=0){ // timesteps, stop early if dies out
+   	   	 t++;
    		 std::cout << focalFarms.size() << " focal farms and " << compFarms.size() << " comparison farms." << std::endl;
 		 std::cout << "Starting grid check (local spread): " << std::endl;
   		 std::clock_t gridcheck_start = std::clock();	  
 		 G.stepThroughCells(focalFarms,compFarms);
-//		 std::vector<Farm*> gInfFarms = G.getInfVec();
 			  	 
   		 std::clock_t gridcheck_end = std::clock();
   		 double gridCheckTimeMS = 1000.0 * (gridcheck_end - gridcheck_start) / CLOCKS_PER_SEC;
  		 std::cout << "CPU time for checking grid: " << gridCheckTimeMS << "ms." << std::endl
  		 	<< "Starting shipments: ";		 
  		 // initiate shipments	 
- 		 /*
- 		 Ship.makeShipments(focalFarms,compFarms);
+ 		 std::clock_t ship_start = std::clock();	  
+ 		 Ship.makeShipments(focalFarms,compFarms,2); // last number is which method to use to assign farm level
  		 std::vector<std::tuple<std::string,std::string,int>> coShips = Ship.get_countyShipments();
- 		 std::cout <<std::endl<< coShips.size()<<" county shipments, ";
+ 		 std::cout <<coShips.size()<<" county shipments, ";
  		 std::vector<std::tuple<int,int,int>> fShips = Ship.get_farmShipments();
  		 std::cout << fShips.size()<<" farm-farm shipments."<<std::endl;
- 		 std::vector<std::tuple<int,int,int>> infShips = Ship.get_infFarmShipments();
+ 		 
+ 		 std::vector<std::tuple<int,int,int>> infShips = Ship.get_infFarmShipments(); // need this for later
  		 std::cout << infShips.size()<<" infectious shipments."<<std::endl;
-*/		 
-		t++;
+ 		 std::clock_t ship_end = std::clock();
+ 		 double shipTimeMS = 1000.0 * (ship_end - ship_start) / CLOCKS_PER_SEC;
+ 		 std::cout << "CPU time for shipping: " << shipTimeMS << "ms." << std::endl;
+ 		 
+ 		 // actually change statuses:
+ 		 // infections from local spread
+ 		 std::tuple<double,double> latencyParams = std::make_tuple(4,1); // mean duration 4 days, variance 1 day
+ 		 std::vector<Farm*> gridInf = G.get_infectedFarms();
+ 		 Status.changeTo(1, gridInf, t, latencyParams);
+ 		 // infections from shipping
+ 		 std::vector<Farm*> shipInf; shipInf.clear();
+ 		 for (auto& is:infShips){
+ 		 	int destFarmID = std::get<1>(is); // second component is destination farm ID
+ 		 	shipInf.emplace_back(allFarms.at(destFarmID));
+ 		 }
+ 		 Status.changeTo(1, shipInf, t, latencyParams);
+
+		 std::cout<<gridInf.size()<<" farms changed to exposed from local spread. "<<shipInf.size()
+		 	<<" farms changed to exposed from shipments."<<std::endl;
+		 	
+		focalFarms = Status.allWithStatus(2, t);
+		compFarms = Status.allWithStatus(0, t);
+		std::vector<Farm*> expFarms = Status.allWithStatus(1, t);
+		std::cout<<"Retreived from statusTimeFarms: "<<focalFarms.size()<<" infectious and "<<compFarms.size()<<
+		" susceptible and "<<expFarms.size()<<" exposed farms."<<std::endl;
  		}  	
 
 } // end "if griddingOn"

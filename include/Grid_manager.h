@@ -124,6 +124,9 @@ class Grid_manager
 		std::unordered_map<std::string, std::vector<Farm*>> 
 			get_FIPSmap() const; //inlined
 			
+		std::vector<Farm*>
+			get_infectedFarms() const;
+			
 		/////////// for infection evaluation ///////////
 		// per timestep function
 			

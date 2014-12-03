@@ -25,8 +25,8 @@ class Status_manager
 			
 		~Status_manager();
 	
-		void changeTo(int status,std::vector<Farm*>&toChange,int t,std::tuple<double,double> params);
-		void changeTo(int status,std::vector<Farm*>&toChange,int t,int endTime);
+		void changeTo(int status, std::vector<Farm*>&toChange, int t, std::tuple<double,double> params);
+		void changeTo(int status, std::vector<Farm*>&toChange, int t, int endTime);
 
 		std::vector<Farm*> allWithStatus(int, int); // get vector of Farm*s with status @ time
 

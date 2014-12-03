@@ -905,3 +905,10 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 		<< "Infections this time step (gridding): " << infectedFarms.size() << std::endl;
 
 }
+
+std::vector<Farm*> Grid_manager::get_infectedFarms() const
+{
+	std::vector<Farm*> toReturn;
+	for (auto& p:infectedFarms){toReturn.emplace_back(farm_map.at(p.first));}
+	return(toReturn);	
+}

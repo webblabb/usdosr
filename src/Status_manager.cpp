@@ -106,6 +106,12 @@ void Status_manager::changeTo(int status, std::vector<Farm*>& toChange, int t,
 	// Add to status map  
 		statusTimeFarms[status][t+draw].emplace_back(f);
 	}
+	// if farms are being changed to exposed, remove them from susceptible list
+	if (status == 1){ 
+		removeFarmSubset(toChange,(*statusTimeFarms[0].begin()).second);
+		// statusTimeFarms[0] should only have one map since they all have the same end time, 1+ the total runtime.
+		// begin() points to this one map, and second gets us to the vector of farms.
+	}
 }
 
 // overloaded version accepts a fixed end time (used for -1 = indefinite)
@@ -115,6 +121,12 @@ void Status_manager::changeTo(int status, std::vector<Farm*>& toChange, int t,
 	for (auto& f:toChange){
 		f->set_status(status);
 		statusTimeFarms[status][endTime].emplace_back(f);
+	}
+	// if farms are being changed to exposed, remove them from susceptible list
+	if (status == 1){ 
+		removeFarmSubset(toChange,(*statusTimeFarms[0].begin()).second);
+		// statusTimeFarms[0] should only have one map since they all have the same end time, 1+ the total runtime.
+		// begin() points to this one map, and second gets us to the vector of farms.
 	}
 }
 

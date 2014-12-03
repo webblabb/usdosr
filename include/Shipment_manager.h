@@ -31,7 +31,7 @@ class Shipment_manager
 		// functions
 		void countyCountyShipments(std::string&, int method = 0); // determines county-county movements & volumes
 		void farmFarmShipments(std::unordered_map<std::string, std::vector<Farm*>>, 
-			std::unordered_map<std::string, std::vector<Farm*>>, int method = 1); 
+			std::unordered_map<std::string, std::vector<Farm*>>, int); 
 		// assign county shipments to individual farms
 		// input is FIPS-keyed maps of infectious farms and susceptible farms, assignment method indicator
 		void checkShipTrans(std::vector<std::tuple<int,int,int>>&, 
@@ -43,18 +43,17 @@ class Shipment_manager
 		
 		~Shipment_manager();
 		
-		void makeShipments(std::vector<Farm*>&, std::vector<Farm*>&);
+		void makeShipments(std::vector<Farm*>&, std::vector<Farm*>&, int farmFarmMethod=1);
 				
-		std::vector<std::tuple<std::string,std::string,int>>
+		std::vector<std::tuple<std::string,std::string,int>> // returns vector of tuples of origin FIPS, dest FIPS, volume
 			get_countyShipments() const; // inlined
 			
-		std::vector<std::tuple<int,int,int>> 
+		std::vector<std::tuple<int,int,int>> // returns vector of tuples of origin farm id, dest farm id, volume
 			get_farmShipments() const; // inlined
 
-		std::vector<std::tuple<int,int,int>> 
+		std::vector<std::tuple<int,int,int>> // returns vector of tuples of origin farm id, dest farm id, volume
 			get_infFarmShipments() const; // inlined
-		// get county shipment list
-		// get farm shipment list
+
 };
 
 inline std::vector<std::tuple<std::string,std::string,int>>
