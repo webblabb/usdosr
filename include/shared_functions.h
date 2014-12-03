@@ -69,6 +69,23 @@
 	return found;
 }
 
+// combine multiple vectors and remove any duplicates
+// input is vector of vectors to combine
+	template<typename T> std::vector<T> uniqueFrom(std::vector<std::vector<T>>& vec)
+{
+	std::unordered_map<T,int> combinedMap;
+	for (auto& v1:vec){
+		for (auto& v2:v1){
+			if (combinedMap.count(v2)==0){combinedMap[v2]=1;}
+		}
+	}
+	std::vector<T> toReturn;
+	for (auto& cm:combinedMap){
+		toReturn.emplace_back(cm.first);
+	}
+	return toReturn;
+}
+
 inline bool sortByID(const Farm* farm1, const Farm* farm2)
 // "compare" function to sort farms by ID
 // must be defined outside of class, or else sort doesn't work

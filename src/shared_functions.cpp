@@ -176,4 +176,3 @@ int whichElement(double& toMatch, std::vector<int>& elementMaxes)
 	}
 	return match;
 }
-

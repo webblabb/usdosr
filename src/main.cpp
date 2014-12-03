@@ -97,10 +97,10 @@ if(griddingOn){
  		 // initiate shipments	 
  		 std::clock_t ship_start = std::clock();	  
  		 Ship.makeShipments(focalFarms,compFarms,2); // last number is which method to use to assign farm level
- 		 std::vector<std::tuple<std::string,std::string,int>> coShips = Ship.get_countyShipments();
- 		 std::cout <<coShips.size()<<" county shipments, ";
- 		 std::vector<std::tuple<int,int,int>> fShips = Ship.get_farmShipments();
- 		 std::cout << fShips.size()<<" farm-farm shipments."<<std::endl;
+//  		 std::vector<std::tuple<std::string,std::string,int>> coShips = Ship.get_countyShipments();
+//  		 std::cout <<coShips.size()<<" county shipments, ";
+//  		 std::vector<std::tuple<int,int,int>> fShips = Ship.get_farmShipments();
+//  		 std::cout << fShips.size()<<" farm-farm shipments."<<std::endl;
  		 
  		 std::vector<std::tuple<int,int,int>> infShips = Ship.get_infFarmShipments(); // need this for later
  		 std::cout << infShips.size()<<" infectious shipments."<<std::endl;
@@ -112,14 +112,19 @@ if(griddingOn){
  		 // infections from local spread
  		 std::tuple<double,double> latencyParams = std::make_tuple(4,1); // mean duration 4 days, variance 1 day
  		 std::vector<Farm*> gridInf = G.get_infectedFarms();
- 		 Status.changeTo(1, gridInf, t, latencyParams);
+
  		 // infections from shipping
  		 std::vector<Farm*> shipInf; shipInf.clear();
  		 for (auto& is:infShips){
  		 	int destFarmID = std::get<1>(is); // second component is destination farm ID
  		 	shipInf.emplace_back(allFarms.at(destFarmID));
  		 }
- 		 Status.changeTo(1, shipInf, t, latencyParams);
+ 		 
+ 		 // combine & eliminate duplicates
+ 		 std::vector<std::vector<Farm*>> toCombine {gridInf, shipInf}; // create a vector of vectors called "toCombine"
+ 		 std::vector<Farm*> makeExposed = uniqueFrom(toCombine);
+ 		 // change statuses for these farms
+ 		 Status.changeTo(1, makeExposed, t, latencyParams);
 
 		 std::cout<<gridInf.size()<<" farms changed to exposed from local spread. "<<shipInf.size()
 		 	<<" farms changed to exposed from shipments."<<std::endl;
