@@ -139,7 +139,6 @@ void removeFarmSubset(std::vector<Farm*>& subVec, std::vector<Farm*>& fullVec)
 			}
 		}	
 	}
-	
 	// rewrite fullVec
 	std::vector<Farm*> temp;
 	for (auto& f1:fullMap){
@@ -149,30 +148,103 @@ void removeFarmSubset(std::vector<Farm*>& subVec, std::vector<Farm*>& fullVec)
 		
 	if (expectedSize != fullVec.size()){std::cout << "Error in removeFarmSubset: expected size"<< expectedSize <<
 		", actual size: "<< fullVec.size() <<". ";}
+
+}
+// uses fips-indexed maps to reduce unnecessary comparisons
+// std::vector<Farm*> removeFarmSubset(std::vector<Farm*>& subVec, std::vector<Farm*>& fullVec, bool returnVec)
+// remove farms in first vector from second vector and return shortened second vector
+// {
+// 	int expectedSize = fullVec.size()-subVec.size();
+// //	std::cout << "Removing "<<subVec.size()<<" farms from list of "<<fullVec.size()<<std::endl;
+// 
+// 	// put vectors into fips-indexed maps
+// 	std::unordered_map< std::string, std::vector<Farm*> > subMap, fullMap; 
+// 	for (auto& sv:subVec){
+// 		subMap[sv->get_fips()].emplace_back(sv);}
+// 	for (auto& fv:fullVec){
+// 		fullMap[fv->get_fips()].emplace_back(fv);}
+// 
+// 	for (auto& sub:subMap){
+// 		// for each fips in sub list
+// 		std::string fips = sub.first;
+// 		// sort both lists of farms with this fips
+// 		std::sort(sub.second.begin(),sub.second.end(),sortByID);
+// 		std::sort(fullMap.at(fips).begin(),fullMap.at(fips).end(),sortByID);
+// 		// iterate through full list, erasing matching sub as found
+// 		auto it2 = fullMap.at(fips).begin();
+// 		for(auto it = sub.second.begin(); it != sub.second.end(); it++)
+// 		// loop through each farm in this FIPS
+// 		{		
+// 			
+// 			while (it2 != fullMap.at(fips).end()){ // while end of full list not reached
+// 				if(*it2 == *it){ // finds match in farmList to farmInCell
+// 					fullMap.at(fips).erase(it2); // remove from farmList
+// 					break; // start at next farm instead of looping over again
+// 				}
+// 				it2++;
+// 			}
+// 		}	
+// 	}	
+// 	// rewrite fullVec
+// 	std::vector<Farm*> temp;
+// 	for (auto& f1:fullMap){
+// 	  for (auto& f2:f1.second){
+// 		temp.emplace_back(f2);}}
+// 	fullVec = temp;
+// 		
+// 	if (expectedSize != fullVec.size()){std::cout << "Error in removeFarmSubset: expected size"<< expectedSize <<
+// 		", actual size: "<< fullVec.size() <<". ";}
+//  return fullVec;
+// }
+
+std::vector<double> stringToNumVec(std::string& toConvert)
+{
+	std::vector<double> output;
+    std::string delim = ",";
+    std::string substring;
+    double temp;
+
+    auto start = 0;
+    auto end = toConvert.find(delim); // first delimiter occurrence
+    while (end != std::string::npos)
+    {
+        substring = toConvert.substr(start, end - start);
+        substring.erase(std::remove_if(substring.begin(), substring.end(), isspace), substring.end()); // remove whitespace
+        str_cast(substring,temp); // convert substring to double
+        output.emplace_back(temp); // add double to vector
+        start = end + delim.length(); // set end(+delimiter) as new start point
+        end = toConvert.find(delim, start); // find new endpoint
+    }
+    substring = toConvert.substr(start, end); // last substring
+    substring.erase(std::remove_if(substring.begin(), substring.end(), isspace), substring.end()); // remove whitespace
+	str_cast(substring,temp); // convert substring to double
+    output.emplace_back(temp); // add double to vector
+    
+    return output;
 }
 
-
-// determine which element's range a number falls into
-// input is maximum for each element
-int whichElement(double& toMatch, std::vector<int>& elementMaxes)
+std::vector<int> stringToIntVec(std::string& toConvert)
 {
-	int match = -1;
-	if (elementMaxes.size() < 1){std::cout << "Vector of element sizes < 1. ";}
-	if (toMatch < 0 || toMatch > 1){std::cout << "Number to match out of range. ";}
-	else{
-		double matchValue = toMatch * elementMaxes.back(); // scale up to actual ranges
-		elementMaxes.insert(elementMaxes.begin(),0); // add 0 as minimum end of first range
-// 		if (elementMaxes[0]!=0){std::cout << "0 insertion error. ";}
-		bool found = 0;
-		int it = 1;
-		while (it!=elementMaxes.size() && found == 0){
-			if (matchValue>elementMaxes[it-1] && matchValue<=elementMaxes[it]){ // greater than previous, <= current
-				match = it-1; // subtract one to make up for the 0 we added at the beginning
-				found = 1;}
-			it++;
-		}
-		if (it==elementMaxes.size() && found == 0){
-			std::cout << " Match not found.";}
-	}
-	return match;
+	std::vector<int> output;
+    std::string delim = ",";
+    std::string substring;
+    int temp;
+
+    auto start = 0;
+    auto end = toConvert.find(delim); // first delimiter occurrence
+    while (end != std::string::npos)
+    {
+        substring = toConvert.substr(start, end - start);
+        substring.erase(std::remove_if(substring.begin(), substring.end(), isspace), substring.end()); // remove whitespace
+        str_cast(substring,temp); // convert substring to double
+        output.emplace_back(temp); // add double to vector
+        start = end + delim.length(); // set end(+delimiter) as new start point
+        end = toConvert.find(delim, start); // find new endpoint
+    }
+    substring = toConvert.substr(start, end); // last substring
+    substring.erase(std::remove_if(substring.begin(), substring.end(), isspace), substring.end()); // remove whitespace
+	str_cast(substring,temp); // convert substring to double
+    output.emplace_back(temp); // add double to vector
+    
+    return output;
 }

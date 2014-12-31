@@ -21,10 +21,11 @@
 #include <utility> // std::pair
 #include <vector>
 
+extern bool verbose;
+
 class Grid_manager
 {
 	private:
-		bool verbose; // if true, outputs processing details
 		// variables for grid creation
 		unsigned int maxFarms;
 		std::unordered_map<int, grid_cell*> 
@@ -51,9 +52,7 @@ class Grid_manager
 		int farmsinskippedcells = 0;
 		std::unordered_map<int, std::vector<int>> infectedFarms; // ids (key) & counts of farms infected in a timestep - counts > 1 are post-infection exposures
 
-		// functions
-		void setVerbose(bool); // inlined
-		
+		// functions		
 		void set_maxFarms(unsigned int in_maxFarms); //inlined
 		std::string to_string(grid_cell&) const;
 		std::vector<Farm*> getFarms(
@@ -85,8 +84,7 @@ class Grid_manager
 		/////////// for grid creation ///////////
 		Grid_manager( // constructor loads premises
 			std::string &fname, // filename of premises
-			bool xyswitch = 0, // switch x/y columns
-			bool v = 0); 
+			bool xyswitch = 0); // switch x/y columns
 			
 		~Grid_manager();
 		
@@ -125,7 +123,7 @@ class Grid_manager
 			get_FIPSmap() const; //inlined
 			
 		std::vector<Farm*>
-			get_infectedFarms() const;
+			get_infectedFarms() const; // called from main
 			
 		/////////// for infection evaluation ///////////
 		// per timestep function
@@ -157,11 +155,6 @@ inline bool sortByPop(const Farm* farm1, const Farm* farm2)
 // must be defined outside of class, or else sort doesn't work
 {
 	return (farm1 -> get_size()) < (farm2 -> get_size());
-}
-
-inline void Grid_manager::setVerbose(bool v)
-{
-	verbose = v;
 }
 
 inline void Grid_manager::set_maxFarms(unsigned int in_maxFarms)

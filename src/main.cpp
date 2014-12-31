@@ -19,48 +19,132 @@
 #include <cmath> // std::sqrt
 #include <unordered_map>
 
+#include "file_manager.h"
 #include "Grid_manager.h"
+#include "shared_functions.h"
 #include "Shipment_manager.h"
 #include "Status_manager.h"
 
+bool verbose; // global variable
+
 int main(int argc, char* argv[])
 {
-	// read in file
-	std::string pfile; // file containing premises
-	if(argc > 1){
-		pfile = argv[1];
-	} else {
-		std::cout << "ERROR: No premises file specified." << std::endl <<
+
+	std::string cfile; // Config file
+// Check for command line arguments
+	if(argc == 2){cfile = argv[1];}
+	else if(argc < 2){
+		std::cout << "ERROR: No config file specified." << std::endl <<
+		"Exiting..." << std::endl;
+		exit(EXIT_FAILURE);
+	}
+	else if(argc > 2){
+		std::cout << "ERROR: Too many input arguments specified. Should only be config file." << std::endl <<
 		"Exiting..." << std::endl;
 		exit(EXIT_FAILURE);
 	}
 
-	int timesteps = 5;
- 	bool griddingOn = 1;
+	file_manager fm; // construct file_manager object
+	fm.readConfig(cfile); // reads config file, saves to pv, and checks for errors
+	std::vector<std::string> pv = fm.getPV(); // get parameter vector
+	
+	// Element numbers correspond to those specified in config.txt
+	// Batch settings
+	//std::string batch_name = pv[0]; //Folder where this run will be saved. Currently win-only.
+	int reps; str_cast(pv[1],reps); // Number of replicates to run - save pv[1] as int reps.
+	bool griddingOn; str_cast(pv[2],griddingOn);
+	bool pairwiseOn; str_cast(pv[3],pairwiseOn);
+	// pv[4] ... pv[9]
+
+	// General settings
+	std::string pfile = pv[10]; // All premises filename
+	std::string seedfile = pv[11]; // Initially infected premises filename
+	//std::string seedFIPSfile = pv[12]; // Initially infected FIPS filename
+	int timesteps; str_cast(pv[13],timesteps); // Total timesteps to run
+	// pv[14]	//If run times for replicates should be saved (0 or 1).
+	str_cast(pv[15],verbose); // turn global variable verbose on/off
+	bool switchXY; str_cast(pv[16],switchXY); // if off, y is before x
+	// pv[17] ... pv[19]
+	
+	// Grid-related settings
+	int maxFarms=-1;
+	double kernelRadius=-1;
+	double cellSide=0;
+	std::string cellFile = pv[20]; // Grid cells filename
+	std::vector<double> gridParamsDensity = stringToNumVec(pv[21]); // Maximum farms per cell - split into ints
+	if (gridParamsDensity.size()==0){
+		maxFarms = gridParamsDensity[0];
+		kernelRadius = gridParamsDensity[1];
+	}
+	str_cast(pv[22],cellSide); // Length of side for uniform cells	
+	// pv[23] ... pv[28]
+	std::string outCellFile = pv[29]; // Filename to write cells to
+	
+	// Shipment-related settings
+	std::vector<int> coShipMethods = stringToIntVec(pv[30]); // Methods to use to ship county-county
+		coShipMethods.emplace_back(timesteps+1); // whichElement function needs a maximum
+	std::vector<int> coShipTimes = stringToIntVec(pv[31]); // Times to start using the above methods
+
+	int farmFarmMethod; str_cast(pv[32],farmFarmMethod); // Method to assign shipments to premises
+	// pv[33] ... pv[37]
+	// std::string outShipFile = pv[38]; // Filename to write shipments (with flagged bans) to
+	// int outShipRes; str_cast(pv[39], outShipRes); // Output shipments at premises (0), county (1), or state (2) level
+	
+	// Infection-related settings
+	int kernelType; str_cast(pv[40],kernelType); // for local (diffuse) spread
+	// int quarantine = str_cast(pv[41]); // length of quarantine in days for all shipments
+	std::vector<double> lp = stringToNumVec(pv[42]); // convert to numbers
+		std::tuple<double,double> latencyParams = std::make_tuple(lp[0],lp[1]);
+	std::vector<double> ip = stringToNumVec(pv[43]); // convert to numbers
+		std::tuple<double,double> infectiousParams = std::make_tuple(ip[0],ip[1]);
+		
+	// pv[44] ... pv[47]
+	// std::string outStatusFile = pv[48];
+	// std::vector<double> outStatuses = stringToNumVec(pv[49]);
+	
+	// Control-related settings
+	std::vector<double> rp = stringToNumVec(pv[50]);
+		std::tuple<double,double> reportParams = std::make_tuple(rp[0],rp[1]);
+	int shipBanCompliance; str_cast(pv[51], shipBanCompliance); // Percent effectiveness
+	int shipBanRes; str_cast(pv[52], shipBanRes); // resolution of shipping ban (0-county, 1-state)
+	std::vector<int> shipParams = {shipBanCompliance, shipBanRes, farmFarmMethod};
+	std::vector<double> bip = stringToNumVec(pv[53]);
+		std::tuple<double,double> banInitParams = std::make_tuple(bip[0],bip[1]);
+	std::vector<double> bcp = stringToNumVec(pv[54]);
+		std::tuple<double,double> banComplianceParams = std::make_tuple(bcp[0],bcp[1]);
+	//pv[55] ... pv[59]
+	
+	std::unordered_map< std::string, std::tuple<double,double> > lagParams;
+												// Time lag (mean and variance) between:
+		lagParams["latency"] = latencyParams; 		//exposed-infectious
+		lagParams["infectious"] = infectiousParams; 	//infectious-recovered
+		lagParams["report"] = reportParams; 		//exposed-reported
+		lagParams["startBan"] = banInitParams; 		//reported-banned
+		lagParams["complyBan"] = banComplianceParams; // banned-compliant
+		
+	
+//~~~~~~~ Parameters loaded and ready to start...
  	
 if(griddingOn){
 
   		// generate map of farms and xylimits
   	 	std::clock_t loading_start = std::clock();
   	 	// load file containing premises
-		Grid_manager G(pfile,0,0); // reverse x/y on/off, verbose on/off
+		Grid_manager G(pfile,switchXY); // reverse x/y on/off
 		
 		// instantiate Shipment manager based on FIPS of loaded farms
 		std::unordered_map<std::string, std::vector<Farm*>> fipsmap = G.get_FIPSmap();
-		Shipment_manager Ship(fipsmap);
+		Shipment_manager Ship(fipsmap, shipParams);
 		
 		// get full list of farms
 		std::unordered_map<int, Farm*> allFarms = G.get_allFarms(); 
 
-	// pick a proportion to be focal farms and print to external file
+	// randomly pick a proportion to be focal farms and print to external file - for testing
 //		std::string fname = "seedFarms.txt"; Status.pickInfAndPrint(0.05, allFarms, fname)
 		
 		// load initially infected farms and instantiate Status manager
-		// note that initial farms are started as infectious (rather than exposed - separate 
-		// handling/removal of susceptibles from list for these cases)
-		std::string fname = "seedFarms.txt";
-		std::tuple<double,double> infectiousParams = std::make_tuple(5,1); // mean duration 5 days, var 1
-		Status_manager Status(fname, infectiousParams, allFarms, timesteps);	 	
+		// note that initial farms are started as infectious (2) rather than exposed (1)
+		Status_manager Status(seedfile, lagParams, allFarms, timesteps);	 	
 		std::clock_t loading_end = std::clock();
 	
  		std::cout << std::endl << "CPU time for loading premises: "
@@ -69,81 +153,113 @@ if(griddingOn){
  		
 		// initiate grid
 	 	std::clock_t grid_start = std::clock();		
-//		G.initiateGrid(2000,50000); // max farms in cell, kernel radius
-		std::string cellfile = "2000f_731c_USprems.txt"; G.initiateGrid(cellfile); // reading in/making cells takes ~ 60 sec
+	 	// if file provided, use that
+	 	if (cellFile!=""){G.initiateGrid(cellFile);} // reading in/making cells takes ~45 sec
+	 	// else use density params
+	 	else if (maxFarms>-1 && kernelRadius >-1){G.initiateGrid(maxFarms,kernelRadius);}
+	 	// else use uniform params
+	 	else if (cellSide!=0){G.initiateGrid(cellSide);}
+	 	else {std::cout<<"Error (main.cpp): no gridding parameters suitable for initiation"<<std::endl<<
+	 		"Exiting..." << std::endl;
+			exit(EXIT_FAILURE);}
+	 	
+		// to do: if filename provided, turn on bool to print cells - maybe through file manager?
+		
  		std::clock_t grid_end = std::clock();
 		double gridGenTimeMS = 1000.0 * (grid_end - grid_start) / CLOCKS_PER_SEC;
 		std::cout << "CPU time for generating grid: " << gridGenTimeMS << "ms." << std::endl;
 
+		
  		int t=0;		
-		std::vector<Farm*> focalFarms = Status.allWithStatus(2, t);
-		std::vector<Farm*> compFarms = Status.allWithStatus(0, t);
-	std::cout<<"Retreived from statusTimeFarms: "<<focalFarms.size()<<" infectious and "<<compFarms.size()<<
-		" susceptible farms."<<std::endl;
+ 		// set focalFarms as all farms with status inf at time 0
+		std::vector<Farm*> focalFarms = Status.premsWithStatus("inf", t);
+		// set compFarms as all farms with status sus at time 0
+		std::vector<Farm*> compFarms = Status.premsWithStatus("sus", t);
+		int numExposed = Status.premsWithStatus("exp", t).size();
+		bool potentialTx = (focalFarms.size()!=0 && compFarms.size()!=0) || 
+			(numExposed>0 && compFarms.size()!=0);
 
-//		int runningTotal = 0;
-
-   	   while (t!=timesteps && focalFarms.size()!=0 && compFarms.size()!=0){ // timesteps, stop early if dies out
-   	   	 t++;
-   		 std::cout << focalFarms.size() << " focal farms and " << compFarms.size() << " comparison farms." << std::endl;
-		 std::cout << "Starting grid check (local spread): " << std::endl;
+   	   while (t<timesteps && potentialTx){ // timesteps, stop early if dies out
+   	   	 t++; // starts at 1
+   	   	 
+   		 std::cout << std::endl<<"Timestep "<<t<<": "
+   		 	<<Status.premsWithStatus("sus", t).size()<<" susceptible, "
+   		 	<<Status.premsWithStatus("exp", t).size()<<" exposed, "
+   		 	<<Status.premsWithStatus("inf", t).size()<<" infectious, "
+   		 	<<Status.premsWithStatus("imm", t).size()<<" immune premises. "<<std::endl
+   		 	<<Status.FIPSWithStatus("reported", t).size()<<" FIPS reported. "
+   		 	<<Status.FIPSWithStatus("complyBan", t).size()<<" FIPS compliant with shipping ban. "
+   		 	<<std::endl;
+   		 
+   		 // update all farm/FIPS statuses: at the proper times, exposed become infectious, infectious recover,
+   		 // exposed are reported, reported are banned, banned are compliant
+   		 Status.updates(t);
+   		 
+   		 // determine infections that will happen from local diffusion
+		 std::cout << "Starting grid check (local spread): "<<std::endl;
   		 std::clock_t gridcheck_start = std::clock();	  
 		 G.stepThroughCells(focalFarms,compFarms);
 			  	 
   		 std::clock_t gridcheck_end = std::clock();
   		 double gridCheckTimeMS = 1000.0 * (gridcheck_end - gridcheck_start) / CLOCKS_PER_SEC;
- 		 std::cout << "CPU time for checking grid: " << gridCheckTimeMS << "ms." << std::endl
- 		 	<< "Starting shipments: ";		 
- 		 // initiate shipments	 
+ 		 if(verbose){std::cout << "CPU time for checking grid: " << gridCheckTimeMS << "ms." << std::endl
+ 		 	<< "Starting shipments: ";		 }
+ 		 // determine infections that will happen from shipments	 
  		 std::clock_t ship_start = std::clock();	  
- 		 Ship.makeShipments(focalFarms,compFarms,2); // last number is which method to use to assign farm level
-//  		 std::vector<std::tuple<std::string,std::string,int>> coShips = Ship.get_countyShipments();
-//  		 std::cout <<coShips.size()<<" county shipments, ";
-//  		 std::vector<std::tuple<int,int,int>> fShips = Ship.get_farmShipments();
-//  		 std::cout << fShips.size()<<" farm-farm shipments."<<std::endl;
- 		 
- 		 std::vector<std::tuple<int,int,int>> infShips = Ship.get_infFarmShipments(); // need this for later
- 		 std::cout << infShips.size()<<" infectious shipments."<<std::endl;
+ 		 std::vector<std::string> bannedFIPS = Status.FIPSWithStatus("banCompliant", t);
+ 		 // assign county method according to time
+ 		 int cmElement = whichElement(t, coShipTimes); // which time span does t fall into
+ 		 int countyMethod = coShipMethods[cmElement]; // get matching shipment method
+ 		 Ship.makeShipments(focalFarms, compFarms, countyMethod, bannedFIPS);
+ 		  		 
+ 		 std::vector<std::tuple<int,int,int,bool>> infShips = Ship.get_infFarmShipments(); // need this for later
+ 		 if(verbose){std::cout << infShips.size()<<" infectious shipments. "<<std::endl;}
+ 		 int banCount = 0;
+ 		 for (auto& shipment:infShips){if(std::get<3>(shipment)==1){banCount++;}}
+ 		 if(verbose){std::cout << banCount<<" of those shipments were banned (didn't happen)."<<std::endl;}
  		 std::clock_t ship_end = std::clock();
  		 double shipTimeMS = 1000.0 * (ship_end - ship_start) / CLOCKS_PER_SEC;
- 		 std::cout << "CPU time for shipping: " << shipTimeMS << "ms." << std::endl;
+ 		 if(verbose){std::cout << "CPU time for shipping: " << shipTimeMS << "ms." << std::endl;}
  		 
  		 // actually change statuses:
  		 // infections from local spread
- 		 std::tuple<double,double> latencyParams = std::make_tuple(4,1); // mean duration 4 days, variance 1 day
  		 std::vector<Farm*> gridInf = G.get_infectedFarms();
 
- 		 // infections from shipping
+ 		 // infections from shipping (exclude banned shipments)
  		 std::vector<Farm*> shipInf; shipInf.clear();
  		 for (auto& is:infShips){
- 		 	int destFarmID = std::get<1>(is); // second component is destination farm ID
- 		 	shipInf.emplace_back(allFarms.at(destFarmID));
+ 		  if (std::get<3>(is)==0){ // if this shipment was not banned
+ 		 	int destFarmID = std::get<1>(is); // get destination farm ID
+ 		 	shipInf.emplace_back(allFarms.at(destFarmID)); // add to list of farms to become exposed
+ 		  }
  		 }
  		 
  		 // combine & eliminate duplicates
  		 std::vector<std::vector<Farm*>> toCombine {gridInf, shipInf}; // create a vector of vectors called "toCombine"
- 		 std::vector<Farm*> makeExposed = uniqueFrom(toCombine);
+ 		 std::vector<Farm*> makeExposed = uniqueFrom(toCombine); // eliminate duplicates
  		 // change statuses for these farms
- 		 Status.changeTo(1, makeExposed, t, latencyParams);
+ 		 Status.changeTo("exp", makeExposed, t, latencyParams);
 
-		 std::cout<<gridInf.size()<<" farms changed to exposed from local spread. "<<shipInf.size()
-		 	<<" farms changed to exposed from shipments."<<std::endl;
+		 std::cout<<gridInf.size()<<" farms now exposed from local spread. "<<shipInf.size()
+		 	<<" farms now exposed from shipments."<<std::endl;
 		 	
-		focalFarms = Status.allWithStatus(2, t);
-		compFarms = Status.allWithStatus(0, t);
-//		std::vector<Farm*> expFarms = Status.allWithStatus(1, t);
+		focalFarms = Status.premsWithStatus("inf", t);
+		compFarms = Status.premsWithStatus("sus", t);
+		numExposed = Status.premsWithStatus("exp", t).size();
+		potentialTx = (focalFarms.size()!=0 && compFarms.size()!=0) || 
+			(numExposed>0 && compFarms.size()!=0);
 //		std::cout<<"Retreived from statusTimeFarms: "<<focalFarms.size()<<" infectious and "<<compFarms.size()<<
 //		" susceptible and "<<expFarms.size()<<" exposed farms."<<std::endl;
  		}  	// end "while under time and infectious and susceptible farms remain"
 
 } // end "if griddingOn"
 
-bool pairwiseOn = 0; // 1,949,147,792 comparisons
 bool printInfFarms = 0;
 if(pairwiseOn){
+// 1,949,147,792 comparisons
 	  	// generate map of farms and xylimits
   	 	std::clock_t loading_start = std::clock();
-		Grid_manager G(pfile,0,0); // reverse x/y on/off, verbose on/off
+		Grid_manager G(pfile,0); // reverse x/y on/offs
 		std::clock_t loading_end = std::clock();
 	
  		std::cout << std::endl << "CPU time for loading premises: "

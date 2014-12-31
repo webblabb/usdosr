@@ -1,3 +1,5 @@
+// add functions to split comma-sep string into vector of ints
+
 #ifndef shared_functions_h
 #define shared_functions_h
 
@@ -22,14 +24,19 @@
 	double getFarmSus(Farm*);
 	double getFarmInf(Farm*);
 	void removeFarmSubset(std::vector<Farm*>&, std::vector<Farm*>&);
-	int whichElement(double&, std::vector<int>&);
+// 	std::vector<Farm*> removeFarmSubset(std::vector<Farm*>&, std::vector<Farm*>&, bool);
+	std::vector<double> stringToNumVec(std::string&);
+	std::vector<int> stringToIntVec(std::string&);
+
 	
 	template<typename T> void str_cast(const std::string &s, T &ref)
+	// str_cast(s, v) casts a number represented as a string and stores it in v,
+	// v can be any type that can store numericals such as int, double etc.
 {
 	std::stringstream convert;
 	convert << s;
 	if(!(convert >> ref))
-		ref = 0;
+		ref = -1;
 }
 
 	// used in grid_manager to look up kernel values
@@ -85,8 +92,32 @@
 	for (auto& cm:combinedMap){
 		toReturn.emplace_back(cm.first);
 	}
-	std::cout << totalElements-combinedMap.size() <<" duplicate elements removed. ";
+// 	std::cout << totalElements-combinedMap.size() <<" duplicate elements removed. ";
 	return toReturn;
+}
+
+// determine which element's range a number falls into
+// arguments are the number to match and vector of ordered maximums for each element
+// returns largest element of elementMaxes that is less than or = toMatch
+	template<typename T> int whichElement(T& toMatch, std::vector<T>& elementMaxes)
+{
+	T matchValue = toMatch;
+	int match = -1;
+	if (elementMaxes.size() < 1){std::cout << "Error (whichElement): Vector of element sizes < 1. ";}
+	if (elementMaxes.size()==1){match=0;}
+	else{
+		bool found = 0;
+		int it = 1;
+		while (it!=elementMaxes.size() && found == 0){
+			if (matchValue>=elementMaxes[it-1] && matchValue<elementMaxes[it]){ // >= than previous, < current
+				match = it-1; // subtract one to make up for the 0 we added at the beginning
+				found = 1;}
+			it++;
+		}
+		if (it==elementMaxes.size() && found == 0){
+			std::cout << " Match not found.";}
+	}
+	return match;
 }
 
 inline bool sortByID(const Farm* farm1, const Farm* farm2)
