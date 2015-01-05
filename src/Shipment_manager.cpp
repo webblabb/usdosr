@@ -96,14 +96,18 @@ void Shipment_manager::countyCountyShipments(std::string& oCounty, int method)
 }
 
 bool Shipment_manager::banShipment(std::string& oCounty)
-// determines whether or not a single shipment is banned
+// determines whether or not a given shipment is banned
 // based on origin county and compliance level
 {
 	bool ban = 0; // initialize as no ban
 	if (banCompliance > 0){
 	if (isWithin(oCounty,allBannedFIPS)){ // if a ban is active for this FIPS
-		double randDraw = unif_rand();
-		if (randDraw <= banCompliance/100){ban = 1;} // stochastic compliance
+		if (banCompliance == 100){
+			ban = 1;
+		} else {
+			double randDraw = unif_rand();
+			if (randDraw <= banCompliance/100){ban = 1;} // stochastic compliance
+		}
 	}
 	}
  return ban;

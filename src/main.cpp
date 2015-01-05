@@ -82,8 +82,8 @@ int main(int argc, char* argv[])
 	
 	// Shipment-related settings
 	std::vector<int> coShipMethods = stringToIntVec(pv[30]); // Methods to use to ship county-county
-		coShipMethods.emplace_back(timesteps+1); // whichElement function needs a maximum
 	std::vector<int> coShipTimes = stringToIntVec(pv[31]); // Times to start using the above methods
+		coShipTimes.emplace_back(timesteps+1); // whichElement function needs a maximum (element won't be used)
 
 	int farmFarmMethod; str_cast(pv[32],farmFarmMethod); // Method to assign shipments to premises
 	// pv[33] ... pv[37]
@@ -106,8 +106,8 @@ int main(int argc, char* argv[])
 	std::vector<double> rp = stringToNumVec(pv[50]);
 		std::tuple<double,double> reportParams = std::make_tuple(rp[0],rp[1]);
 	int shipBanCompliance; str_cast(pv[51], shipBanCompliance); // Percent effectiveness
-	int shipBanRes; str_cast(pv[52], shipBanRes); // resolution of shipping ban (0-county, 1-state)
-	std::vector<int> shipParams = {shipBanCompliance, shipBanRes, farmFarmMethod};
+	int shipBanScale; str_cast(pv[52], shipBanScale); // resolution of shipping ban (0-county, 1-state)
+	std::vector<int> shipParams = {shipBanCompliance, shipBanScale, farmFarmMethod};
 	std::vector<double> bip = stringToNumVec(pv[53]);
 		std::tuple<double,double> banInitParams = std::make_tuple(bip[0],bip[1]);
 	std::vector<double> bcp = stringToNumVec(pv[54]);
@@ -147,9 +147,11 @@ if(griddingOn){
 		Status_manager Status(seedfile, lagParams, allFarms, timesteps);	 	
 		std::clock_t loading_end = std::clock();
 	
- 		std::cout << std::endl << "CPU time for loading premises: "
+ 		if(verbose){
+ 			std::cout << std::endl << "CPU time for loading premises: "
  			<< 1000.0 * (loading_end - loading_start) / CLOCKS_PER_SEC
  			<< "ms." << std::endl;
+ 		}
  		
 		// initiate grid
 	 	std::clock_t grid_start = std::clock();		
@@ -188,7 +190,8 @@ if(griddingOn){
    		 	<<Status.premsWithStatus("inf", t).size()<<" infectious, "
    		 	<<Status.premsWithStatus("imm", t).size()<<" immune premises. "<<std::endl
    		 	<<Status.FIPSWithStatus("reported", t).size()<<" FIPS reported. "
-   		 	<<Status.FIPSWithStatus("complyBan", t).size()<<" FIPS compliant with shipping ban. "
+   		 	<<Status.FIPSWithStatus("banOrdered", t).size()<<" FIPS with ban ordered. "
+   		 	<<Status.FIPSWithStatus("banActive", t).size()<<" FIPS with active shipping ban (independent of compliance). "
    		 	<<std::endl;
    		 
    		 // update all farm/FIPS statuses: at the proper times, exposed become infectious, infectious recover,
@@ -196,7 +199,7 @@ if(griddingOn){
    		 Status.updates(t);
    		 
    		 // determine infections that will happen from local diffusion
-		 std::cout << "Starting grid check (local spread): "<<std::endl;
+		 if(verbose){std::cout << "Starting grid check (local spread): "<<std::endl;}
   		 std::clock_t gridcheck_start = std::clock();	  
 		 G.stepThroughCells(focalFarms,compFarms);
 			  	 
@@ -206,17 +209,18 @@ if(griddingOn){
  		 	<< "Starting shipments: ";		 }
  		 // determine infections that will happen from shipments	 
  		 std::clock_t ship_start = std::clock();	  
- 		 std::vector<std::string> bannedFIPS = Status.FIPSWithStatus("banCompliant", t);
+ 		 std::vector<std::string> bannedFIPS = Status.FIPSWithStatus("banActive", t);
  		 // assign county method according to time
+ 		 
  		 int cmElement = whichElement(t, coShipTimes); // which time span does t fall into
  		 int countyMethod = coShipMethods[cmElement]; // get matching shipment method
  		 Ship.makeShipments(focalFarms, compFarms, countyMethod, bannedFIPS);
  		  		 
  		 std::vector<std::tuple<int,int,int,bool>> infShips = Ship.get_infFarmShipments(); // need this for later
- 		 if(verbose){std::cout << infShips.size()<<" infectious shipments. "<<std::endl;}
+ 		 std::cout << infShips.size()<<" infectious shipments, of which "<<std::endl;
  		 int banCount = 0;
  		 for (auto& shipment:infShips){if(std::get<3>(shipment)==1){banCount++;}}
- 		 if(verbose){std::cout << banCount<<" of those shipments were banned (didn't happen)."<<std::endl;}
+ 		 std::cout << banCount<<" were banned (didn't happen)."<<std::endl;
  		 std::clock_t ship_end = std::clock();
  		 double shipTimeMS = 1000.0 * (ship_end - ship_start) / CLOCKS_PER_SEC;
  		 if(verbose){std::cout << "CPU time for shipping: " << shipTimeMS << "ms." << std::endl;}
@@ -239,10 +243,10 @@ if(griddingOn){
  		 std::vector<Farm*> makeExposed = uniqueFrom(toCombine); // eliminate duplicates
  		 // change statuses for these farms
  		 Status.changeTo("exp", makeExposed, t, latencyParams);
-
-		 std::cout<<gridInf.size()<<" farms now exposed from local spread. "<<shipInf.size()
+		 if(verbose){
+		 	std::cout<<gridInf.size()<<" farms now exposed from local spread. "<<shipInf.size()
 		 	<<" farms now exposed from shipments."<<std::endl;
-		 	
+		 }
 		focalFarms = Status.premsWithStatus("inf", t);
 		compFarms = Status.premsWithStatus("sus", t);
 		numExposed = Status.premsWithStatus("exp", t).size();

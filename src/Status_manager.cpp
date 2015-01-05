@@ -208,7 +208,7 @@ void Status_manager::updates(int t)
 	for (auto& bf:statusFIPSTime.at("banOrdered")){
 	// bf.first is FIPS, bf.second is first day of ban
 		if (bf.second == t){ // if today is the first day of ban compliance
-			statusFIPSTime["banCompliant"][bf.first] = pastEndTime;
+			statusFIPSTime["banActive"][bf.first] = pastEndTime;
 //			if(verbose){std::cout<<FIPSWithStatus("banCompliant",t).size()<<" ban-compliant FIPS. ";}
 		}
 	}

@@ -44,8 +44,8 @@ class Shipment_manager
 		bool banShipment(std::string&);
 		void farmFarmShipments(std::unordered_map<std::string, std::vector<Farm*>>, 
 			std::unordered_map<std::string, std::vector<Farm*>>); 
-		// assigns county shipments to individual farms
-		// input is FIPS-keyed maps of infectious farms and susceptible farms, assignment method indicator
+			// assigns county shipments to individual farms
+			// input is FIPS-keyed maps of infectious farms and susceptible farms, assignment method indicator
 		void checkShipTrans(std::vector<std::tuple<int,int,int,bool>>&, 
 			std::vector<Farm*>&, std::vector<Farm*>&);
 	

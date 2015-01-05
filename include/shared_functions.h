@@ -101,21 +101,28 @@
 // returns largest element of elementMaxes that is less than or = toMatch
 	template<typename T> int whichElement(T& toMatch, std::vector<T>& elementMaxes)
 {
-	T matchValue = toMatch;
-	int match = -1;
-	if (elementMaxes.size() < 1){std::cout << "Error (whichElement): Vector of element sizes < 1. ";}
+	int match = -1; // the element that will be returned
+	if (toMatch > elementMaxes.back()){
+		std::cout<<"Error: (whichElement): value to match exceeds largest of comparison values. Exiting..."
+		<< std::endl; 
+		exit(EXIT_FAILURE);}
+	if (elementMaxes.size() < 1){
+		std::cout << "Error (whichElement): Vector of element sizes < 1. Exiting..."
+		<< std::endl; 
+		exit(EXIT_FAILURE);}
 	if (elementMaxes.size()==1){match=0;}
 	else{
 		bool found = 0;
 		int it = 1;
 		while (it!=elementMaxes.size() && found == 0){
-			if (matchValue>=elementMaxes[it-1] && matchValue<elementMaxes[it]){ // >= than previous, < current
-				match = it-1; // subtract one to make up for the 0 we added at the beginning
-				found = 1;}
+			if (toMatch>=elementMaxes[it-1] && toMatch<elementMaxes[it]){ // >= than previous, < current
+				match = it-1; // subtract one to get the element below
+				found = 1;
+			}
 			it++;
 		}
 		if (it==elementMaxes.size() && found == 0){
-			std::cout << " Match not found.";}
+			std::cout << "Warning: (whichElement): Match not found.";}
 	}
 	return match;
 }

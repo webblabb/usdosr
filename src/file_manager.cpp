@@ -77,9 +77,8 @@ void file_manager::readConfig(std::string& cfile)
 			 // check that each value is between 1 and number of timesteps
 			bool rangeflag = 0;
 			for (auto& pv31v:pv31){if(pv31v<1 || pv31v>timesteps){rangeflag=1;}}
-			if (rangeflag){std::cout << "ERROR (config 31): Timepoints to apply county-level shipment methods not within timespan (config 13)." << std::endl; exitflag=1;}
+			if (rangeflag){std::cout << "Warning (config 31): Simulation timespan (config 13) is shorter than largest timepoint for county-level shipment methods - some methods may not be used." << std::endl;}
 			if (pv31[0] != 1){std::cout << "ERROR (config 31): First county-level shipment method start time must be 1."<<std::endl; exitflag=1;}
-
 		if (pv[32]=="*"){std::cout << "ERROR (config 32): No premises-level shipment assignment method specified." << std::endl; exitflag=1;}
 		if (pv[38]!="*" && pv[39]=="*"){std::cout << "ERROR (config 38-39): If writing shipments to file, scale must be specified." << std::endl; exitflag=1;}
 		if (pv[40]=="*"){std::cout << "ERROR (config 40): No diffusion kernel type specified." << std::endl; exitflag=1;}

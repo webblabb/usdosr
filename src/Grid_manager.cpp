@@ -342,7 +342,6 @@ void Grid_manager::initiateGrid(std::string& cname)
 		std::cout << farmList.size() << " unassigned farms, first: " << f->get_id() << ": x=" << f->get_x() <<
 			", y=" << f->get_y() << std::endl;
 		}
-	std::cout << "Grid loaded. Pre-calculating distances..." << std::endl;		
 	makeCellRefs();
 }
 
@@ -450,8 +449,6 @@ void Grid_manager::initiateGrid(double cellSide)
 
 	std::cout << "Grid loaded with " << actualCellCount << " uniform cells. Pre-calculating distances..." << std::endl;		
 	makeCellRefs();
-	if(!verbose){std::cout << "Grid initiated with uniform cell parameters. ";}
-
 }
 
 std::string Grid_manager::to_string(grid_cell& gc) const 
@@ -872,10 +869,9 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 		} // end for loop through comparison cells
 	  } // end for each focal farm
 	} // end for each focal cell
-	std::cout << std::endl
-//		<< "Farm to cell skips: " << farmtocellskips << " (avoided " << farmsinskippedcells << " comparisons)" << std::endl
-		<< "Infections this time step (gridding): " << infectedFarms.size() << std::endl;
-
+	if(verbose){
+		std::cout<<"Infections this time step (gridding): "<<infectedFarms.size()<<std::endl;
+	}
 }
 
 std::vector<Farm*> Grid_manager::get_infectedFarms() const
