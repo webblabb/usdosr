@@ -12,8 +12,10 @@ class file_manager
 	private:
 		std::vector<std::string> pv; // parameter vector
 		
-		bool checkMeanVar(std::string&,int,std::string);
-		
+		bool checkMeanVar(std::string&, int, std::string);
+		bool checkPositive(std::vector<int>&, int);
+		bool checkPositive(std::vector<double>&, int);
+
 	public:
 		file_manager();
 		~file_manager();

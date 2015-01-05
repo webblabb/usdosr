@@ -97,8 +97,10 @@ int main(int argc, char* argv[])
 		std::tuple<double,double> latencyParams = std::make_tuple(lp[0],lp[1]);
 	std::vector<double> ip = stringToNumVec(pv[43]); // convert to numbers
 		std::tuple<double,double> infectiousParams = std::make_tuple(ip[0],ip[1]);
-		
-	// pv[44] ... pv[47]
+	std::vector<std::string> speciesOnPrems = stringToStringVec(pv[44]); // get species names as vector of strings
+	std::vector<double> spSus = stringToNumVec(pv[45]);
+	std::vector<double> spInf = stringToNumVec(pv[46]);
+	// pv[47]
 	// std::string outStatusFile = pv[48];
 	// std::vector<double> outStatuses = stringToNumVec(pv[49]);
 	
@@ -125,26 +127,17 @@ int main(int argc, char* argv[])
 	
 //~~~~~~~ Parameters loaded and ready to start...
  	
-if(griddingOn){
-
   		// generate map of farms and xylimits
   	 	std::clock_t loading_start = std::clock();
-  	 	// load file containing premises
-		Grid_manager G(pfile,switchXY); // reverse x/y on/off
+  	 	// load file containing premises and related info
+		Grid_manager G(pfile,switchXY,speciesOnPrems,spSus,spInf);
 		
-		// instantiate Shipment manager based on FIPS of loaded farms
+		// for instantiating Shipment manager: FIPS of loaded farms
 		std::unordered_map<std::string, std::vector<Farm*>> fipsmap = G.get_FIPSmap();
-		Shipment_manager Ship(fipsmap, shipParams);
 		
 		// get full list of farms
 		std::unordered_map<int, Farm*> allFarms = G.get_allFarms(); 
 
-	// randomly pick a proportion to be focal farms and print to external file - for testing
-//		std::string fname = "seedFarms.txt"; Status.pickInfAndPrint(0.05, allFarms, fname)
-		
-		// load initially infected farms and instantiate Status manager
-		// note that initial farms are started as infectious (2) rather than exposed (1)
-		Status_manager Status(seedfile, lagParams, allFarms, timesteps);	 	
 		std::clock_t loading_end = std::clock();
 	
  		if(verbose){
@@ -171,7 +164,17 @@ if(griddingOn){
 		double gridGenTimeMS = 1000.0 * (grid_end - grid_start) / CLOCKS_PER_SEC;
 		std::cout << "CPU time for generating grid: " << gridGenTimeMS << "ms." << std::endl;
 
-		
+// ideally start loop here
+for (auto r=1; r<=reps; r++){
+		std::clock_t rep_start = std::clock();
+		// randomly pick a proportion to be focal farms and print to external file - for testing
+//		std::string fname = "seedFarms.txt"; Status.pickInfAndPrint(0.05, allFarms, fname)
+	if(griddingOn){
+		// load initially infected farms and instantiate Status manager
+		// note that initial farms are started as infectious (2) rather than exposed (1)
+		Status_manager Status(seedfile, lagParams, allFarms, timesteps);	 	
+		Shipment_manager Ship(fipsmap, shipParams);
+
  		int t=0;		
  		// set focalFarms as all farms with status inf at time 0
 		std::vector<Farm*> focalFarms = Status.premsWithStatus("inf", t);
@@ -191,7 +194,7 @@ if(griddingOn){
    		 	<<Status.premsWithStatus("imm", t).size()<<" immune premises. "<<std::endl
    		 	<<Status.FIPSWithStatus("reported", t).size()<<" FIPS reported. "
    		 	<<Status.FIPSWithStatus("banOrdered", t).size()<<" FIPS with ban ordered. "
-   		 	<<Status.FIPSWithStatus("banActive", t).size()<<" FIPS with active shipping ban (independent of compliance). "
+   		 	<<Status.FIPSWithStatus("banActive", t).size()<<" FIPS with active shipping ban. "
    		 	<<std::endl;
    		 
    		 // update all farm/FIPS statuses: at the proper times, exposed become infectious, infectious recover,
@@ -255,9 +258,15 @@ if(griddingOn){
 //		std::cout<<"Retreived from statusTimeFarms: "<<focalFarms.size()<<" infectious and "<<compFarms.size()<<
 //		" susceptible and "<<expFarms.size()<<" exposed farms."<<std::endl;
  		}  	// end "while under time and infectious and susceptible farms remain"
+ 		
+ 		std::clock_t rep_end = std::clock();
+ 		double repTimeMS = 1000.0 * (rep_end - rep_start) / CLOCKS_PER_SEC;
+		std::cout << "CPU time for rep "<<r<<": " << repTimeMS << "ms." << std::endl;
+	} // end "if griddingOn"
 
-} // end "if griddingOn"
+} // end for loop
 
+/*
 bool printInfFarms = 0;
 if(pairwiseOn){
 // 1,949,147,792 comparisons
@@ -391,6 +400,6 @@ if(pairwiseOn){
 			}  // end if timesteps >1
 		} // end while spread still possible and under timesteps
 } // end if pairwiseOn
-
+*/
 return 0;
 }

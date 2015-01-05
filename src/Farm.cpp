@@ -4,33 +4,16 @@
 // #include "Live_transport.h"
 // #include "Slaughter_transport.h"
 
-Farm::Farm(int in_id, std::string in_fips, double in_x, double in_y, int in_size, std::string in_status)
+Farm::Farm(int in_id, std::string in_fips, double in_x, double in_y)
 {
 	id = in_id;
 	fips = in_fips;
 	x_coordinate = in_x;
 	y_coordinate = in_y;
-	size = in_size;
- 	status = in_status;
 }
 
 Farm::~Farm()
 {
-// 	for(auto timestep : timed_transports)
-// 	{
-// 		for(auto transport : timestep.second)
-// 		{
-// 			delete transport;
-// 		}
-// 	}
-// 
-// 	for(auto timestep : timed_sl_transports)
-// 	{
-// 		for(auto transport : timestep.second)
-// 		{
-// 			delete transport;
-// 		}
-// 	}	
 }
 
 // std::string Farm::get_info() const
@@ -47,6 +30,14 @@ Farm::~Farm()
 // }
 // 
 
+int Farm::get_size(const std::string species) const
+{
+	int count = 0;
+	if (speciesCounts.count(species) != 0){count = speciesCounts.at(species);}
+	
+	return count;
+}
+
 void Farm::set_cellID(const int in_cellID)
 {
 	cellID = in_cellID;
@@ -54,32 +45,24 @@ void Farm::set_cellID(const int in_cellID)
 
 void Farm::set_status(const std::string in_status)
 {
-	status = in_status;
+	if (in_status != "sus" && in_status != "exp" && in_status != "inf" && in_status != "imm"){
+		std::cout<<"ERROR: Farm status set to invalid value "<<in_status<<". Exiting...";
+		exit(EXIT_FAILURE);
+	} else {
+	status = in_status;}
 }
 
-// void Farm::set_time_of_infection(const int in_timestep)
-// {	
-// 	infected_at_timestep = in_timestep;
-// }
-// 
-// void Farm::add_live_transport(Live_transport* T)
-// {
-// 	timed_transports[T->get_timestep()].emplace_back(T);
-// }
-// 
-// void Farm::add_sl_transport(int const timestep, Slaughter_transport* sl_trp)
-// {
-// 	timed_sl_transports[timestep].emplace_back(sl_trp);
-// }
-// 
-// std::vector<Slaughter_transport*>* Farm::get_sl_transports(int const timestep)
-// {
-// 	if(timed_sl_transports.find(timestep) != timed_sl_transports.end())
-// 	{
-// 		if(!timed_sl_transports[timestep].empty())
-// 		{
-// 			return &timed_sl_transports[timestep];
-// 		}
-// 	}
-// 	return NULL;
-// }
+void Farm::set_speciesCount(const std::string species, int count)
+{
+	speciesCounts[species] = count;
+}
+
+void Farm::set_sus(const double in_sus)
+{
+	sus = in_sus;
+}
+
+void Farm::set_inf(const double in_inf)
+{
+	inf = in_inf;
+}

@@ -1,32 +1,22 @@
-/* A class describing a farm object.
-One object of this type is created for each farm/premises 
+/* A class describing a premises object.
+One object of this type is created for each premises 
 described by the input data. 
 
 Contains the data members:
-id, a unique integer identifying this farm (PPN)
-x and y coordinates of the farm
-size, animal-holding capacity
-status, a flag describing the infectious status of the farm:
-		0 - susceptible
-		1 - infected but not infectious
-		2 - infected and infectious
-		3 - recovered/removed
-Time_transp_map, an std::unordered_map containing timesteps as keys
-and a vector as value. The vector contains pointers to transport objects
-that originate from this farm. The idea is that this map provides an easy 
-way to quickly provide access to the transports that need to be processed
-during the current timestep instead of going through all transports that originate
-from this farm.
+id, a unique integer identifying this premises
+x and y coordinates of the premises
+fips, the county identifier (string)
+status, the current infection status (mostly used to check if a premises is susceptible)
+speciesCounts, a species-indexed map of how many animals of each species are on a premises
 
 Contains the public member functions:
-get_id(), get_x(), get_y() returns corresponding data member as int.
-get_size() & get_status(), returns size/status as short.
-set_status(short), sets the status to the provided argument. Needs failsafe/logging functionality.
-set_time_of_infection(short), sets the timestep that infection occurred.
-get_transports(short), returns a vector of pointers to the transport objects that has
-this farm as origin.
-add_live_transport(Live_transport*) used in the initialization process. Takes a pointer to a
-transport object and associates it (adds it to Transp_vector[timestep]) with this farm. */
+get_id(), get_cellID return corresponding data member as int.
+get_x(), get_y() return corresponding data member as double.
+get_fips() & get_status(), returns fips/status as string.
+
+set_cellID(int), set_status(std::string), sets the cellID/status to the provided argument.
+set_speciesCount(std::string species, int count) sets the population for "species" to "count"
+ */
 
 #ifndef FARM_H
 #define FARM_H
@@ -38,27 +28,29 @@ transport object and associates it (adds it to Transp_vector[timestep]) with thi
 class Farm
 {
 	private:
-		int id, size, cellID;
-		double x_coordinate, y_coordinate;
+		int id, cellID;
+		double x_coordinate, y_coordinate, sus, inf;
 		std::string fips, status;
-//		int id, x_coordinate, y_coordinate, infected_at_timestep;
-// 		short size, status;
+		std::unordered_map< std::string, int > speciesCounts;
 	
 	public:
-		Farm(int, std::string, double, double, int, std::string);
+		Farm(int, std::string, double, double);
 		~Farm();
 		int get_id() const; //Inlined
-		std::string get_fips() const; //Inlined
+		int get_cellID() const; //inlined
 		double get_x() const; //Inlined
 		double get_y() const; //Inlined
-		int get_size() const; //Inlined
-		int get_cellID() const; //inlined
+		double get_sus() const; //Inlined
+		double get_inf() const; //Inlined
  		std::string get_status() const; //Inlined
- 		
-// 		std::string get_info() const;
- 		
+ 		std::string get_fips() const; //Inlined
+ 		int get_size(const std::string species) const;
+ 		 		
 		void set_cellID(const int cellID);
  		void set_status(const std::string);
+ 		void set_speciesCount(const std::string, int);
+ 		void set_sus(const double);
+ 		void set_inf(const double);
 };
 
 inline int Farm::get_id() const
@@ -81,11 +73,16 @@ inline double Farm::get_y() const
 	return y_coordinate;
 }
 
-inline int Farm::get_size() const
-//inline short Farm::get_size() const
+inline double Farm::get_sus() const
 {
-	return size;
+	return sus;
 }
+
+inline double Farm::get_inf() const
+{
+	return inf;
+}
+
 
 inline int Farm::get_cellID() const
 {
@@ -96,7 +93,6 @@ inline std::string Farm::get_status() const
 {
 	return status;
 }
-
 
 
 #endif //FARM_H

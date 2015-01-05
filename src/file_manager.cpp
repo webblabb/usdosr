@@ -1,5 +1,8 @@
-// file_manager.cpp
-// Dec 23 2014
+/* file_manager.cpp
+Dec 23 2014
+
+Reads configuration file and checks for errors. Holds vector of all input parameters.
+*/
 
 #include "file_manager.h"
 
@@ -87,6 +90,15 @@ void file_manager::readConfig(std::string& cfile)
 			pv[41]="0";}
 		checkExit = checkMeanVar(pv[42],42,"latency"); if (checkExit==1){exitflag=1;} // if exit triggered by this check, set exitflag=1
 		checkExit = checkMeanVar(pv[43],43,"infectiousness"); if (checkExit==1){exitflag=1;} // if exit triggered by this check, set exitflag=1
+		int pv44size, pv45size, pv46size;
+		std::vector<std::string> pv44 = stringToStringVec(pv[44]); pv44size = pv44.size();
+			checkExit = checkPositive(tempVec, 44); if (checkExit==1){exitflag=1;}
+		tempVec = stringToNumVec(pv[45]); pv45size = tempVec.size();
+			checkExit = checkPositive(tempVec, 45); if (checkExit==1){exitflag=1;}
+		tempVec = stringToNumVec(pv[46]); pv46size = tempVec.size();
+			checkExit = checkPositive(tempVec, 46); if (checkExit==1){exitflag=1;}
+		if (!(pv44size == pv45size && pv44size == pv46size)){
+			std::cout<<"ERROR (config 44-46): Same number of arguments must be provided for species, susceptibility, and infectiousness."<<std::endl; exitflag=1;}
 		if (pv[48]!="*" && pv[49]=="*"){std::cout << "ERROR (config 48-49): If writing statuses to file, statuses must be specified." << std::endl; exitflag=1;}
 		checkExit = checkMeanVar(pv[50],50,"reporting"); if (checkExit==1){exitflag=1;} // if exit triggered by this check, set exitflag=1
 		str_cast(pv[51],tempInt);
@@ -125,10 +137,37 @@ bool file_manager::checkMeanVar(std::string& s, int lineNum, std::string paramDe
 		} else if (tempVec.size()==1){std::cout << "Warning (config "<<lineNum<<"): Only one "<<paramDesc<<" parameter provided, mean will be set to "<<tempVec[0]<<" and variance to 0."<<std::endl;
 			s.append(",0");
 		} else if (tempVec.size()>2){std::cout << "ERROR (config "<<lineNum<<"): Only 2 "<<paramDesc<<" parameters (mean,variance) permitted, "<<tempVec.size()<<" were provided." << std::endl; exitflag=1;}
-	for (auto& tv:tempVec){
-		if(tv<0){std::cout << "ERROR (config "<<lineNum<<"): All parameters must be positive. " << std::endl;
-		exitflag=1;}
+
+		bool checkPos = checkPositive(tempVec, lineNum); if (checkPos==1){exitflag=1;}
+	return exitflag;
+}
+
+bool file_manager::checkPositive(std::vector<int>& tempVec, int lineNum)
+{
+	bool exitflag = 0;
+	int it = 0;
+	while (it < tempVec.size() && exitflag ==0){
+		auto tv = tempVec[it];
+		if(tv<0){
+			std::cout << "ERROR (config "<<lineNum<<"): All parameters must be positive. " << std::endl;
+			exitflag=1;
+		}
+		it++;
 	}
 	return exitflag;
 }
 
+bool file_manager::checkPositive(std::vector<double>& tempVec, int lineNum)
+{
+	bool exitflag = 0;
+	int it = 0;
+	while (it < tempVec.size() && exitflag ==0){
+		auto tv = tempVec[it];
+		if(tv<0){
+			std::cout << "ERROR (config "<<lineNum<<"): All parameters must be positive. " << std::endl;
+			exitflag=1;
+		}
+		it++;
+	}
+	return exitflag;
+}

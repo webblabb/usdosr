@@ -15,12 +15,15 @@
 // included in Grid_manager.h: grid_cell, farm, shared_functions, tuple, utility
 #include "Grid_manager.h"
 
-Grid_manager::Grid_manager(std::string &fname, bool xyswitch)
+Grid_manager::Grid_manager(std::string &fname, bool xyswitch, std::vector<std::string>& in_species,
+	std::vector<double>& in_speciesSus, std::vector<double>& in_speciesInf)
 // fills farm_map, farmList, and xylimits
 {
-	// modified from Stefan's Farm Manager
+	 speciesOnPrems = in_species;
+	 speciesSus = in_speciesSus;
+	 speciesInf = in_speciesInf;
 	// read in file of premises
-	int id, size;
+	int id, tempsize;
 	double x, y;
 	std::string fips;
 	int fcount = 0;
@@ -47,11 +50,28 @@ Grid_manager::Grid_manager(std::string &fname, bool xyswitch)
 					str_cast(line_vector[2], x);
 					str_cast(line_vector[3], y);
 				}
-				str_cast(line_vector[4], size);
-
 				// write farm pointer to private var farm_map
-				farm_map[id] = new Farm(id, fips, x, y, size, "sus"); 
+				farm_map[id] = new Farm(id, fips, x, y); 
 				fcount++;
+				// add species counts - check that number of columns is as expected
+				if(line_vector.size() < 4+speciesOnPrems.size()){
+					std::cout<<"ERROR (premises file & config 44-46) at line"<<std::endl;
+					std::cout<< line <<std::endl;
+					std::cout<< ": number of columns with animal populations don't match up with list of species provided."<<std::endl;
+					std::cout<<"Exiting..."<<std::endl;
+					exit(EXIT_FAILURE);
+				}
+				int colcount = 4; // populations should start at column 4
+				for (auto& sp:speciesOnPrems){ // for each species
+					str_cast(line_vector[colcount], tempsize); // assign number in column "colcount" to "tempsize"
+					farm_map.at(id)->Farm::set_speciesCount(sp,tempsize); // set number for species at premises
+					colcount++;
+				}
+				double premSus = getFarmSus(farm_map.at(id));
+				farm_map.at(id)->Farm::set_sus(premSus);
+				double premInf = getFarmInf(farm_map.at(id));
+				farm_map.at(id)->Farm::set_inf(premInf);
+			
 				// write farm pointer to fips map
 				FIPSmap[fips].emplace_back(farm_map.at(id));
 				
@@ -879,4 +899,32 @@ std::vector<Farm*> Grid_manager::get_infectedFarms() const
 	std::vector<Farm*> toReturn;
 	for (auto& p:infectedFarms){toReturn.emplace_back(farm_map.at(p.first));}
 	return(toReturn);	
+}
+
+double Grid_manager::getFarmSus(Farm* f)
+{
+	// calculates species-specific susceptibility for a premises
+	double premSus = 0;
+	int i = 0; // use to keep up with speciesOnPrems element
+	for (auto& sp:speciesOnPrems){
+		double count = f->get_size(sp); // i.e. get_size("Cattle") gets # of cows on premises
+		double spSus = count * speciesSus[i]; // multiply by stored susceptibility value for cows
+		premSus += spSus; // add this species to the total for this premises
+		i++;	
+	}
+	return premSus;
+}
+
+double Grid_manager::getFarmInf(Farm* f)
+{
+	// calculates species-specific infectiousness for a premises
+	double premInf = 0;
+	int i = 0; // use to keep up with speciesOnPrems element
+	for (auto& sp:speciesOnPrems){
+		double count = f->get_size(sp); // i.e. get_size("Cattle") gets # of cows on premises
+		double spInf = count * speciesInf[i]; // multiply by susceptibility value for cows
+		premInf += spInf; // add this species to the total for this premises
+		i++;	
+	}
+	return premInf;
 }

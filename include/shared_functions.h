@@ -21,12 +21,12 @@
 	std::vector<std::string> 
 		split(const std::string&, char);
 	std::string to_string(Farm*);
-	double getFarmSus(Farm*);
-	double getFarmInf(Farm*);
+// 	double getFarmSus(Farm*);
+// 	double getFarmInf(Farm*);
 	void removeFarmSubset(std::vector<Farm*>&, std::vector<Farm*>&);
-// 	std::vector<Farm*> removeFarmSubset(std::vector<Farm*>&, std::vector<Farm*>&, bool);
 	std::vector<double> stringToNumVec(std::string&);
 	std::vector<int> stringToIntVec(std::string&);
+	std::vector<std::string> stringToStringVec(std::string&);
 
 	
 	template<typename T> void str_cast(const std::string &s, T &ref)

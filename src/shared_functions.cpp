@@ -58,12 +58,11 @@ std::string to_string(Farm* farm)
 	std::string toPrint;
 	char temp[20];
 	std::vector<double> vars;
-		vars.resize(5);
 		vars[0] = farm->get_id();
 		vars[1] = farm->get_cellID();
 		vars[2] = farm->get_x();
 		vars[3] = farm->get_y();
-		vars[4] = farm->get_size();
+		vars[4] = farm->get_size("Cattle");
 
 	for(auto it:vars){ // for each element in vars (each farm variable)
 		sprintf(temp, "%f\t", it);
@@ -76,6 +75,7 @@ std::string to_string(Farm* farm)
 
 // Used by grid_cell to determine max values for inf/sus farms in cell
 // Used by Grid_manager to get individual farm sus/inf values
+/*
 double getFarmSus(Farm* f)
 {
 	// species-specific susceptibility - each element is a species
@@ -83,7 +83,7 @@ double getFarmSus(Farm* f)
 	// will be replaced by input from config file
 	speciesSus.emplace_back(10.5);
 	
-	double farmSize = f -> get_size(); // will be a vector, double for now
+	double farmSize = f -> get_size("Cattle"); // will be a vector, double for now
 	// will be sum of each species (count*transmission)
 	double farmSus = farmSize * speciesSus[0];
 	
@@ -103,7 +103,7 @@ double getFarmInf(Farm* f)
 
 	return farmInf;
 }
-
+*/
 // uses fips-indexed maps to reduce unnecessary comparisons
 void removeFarmSubset(std::vector<Farm*>& subVec, std::vector<Farm*>& fullVec)
 // remove farms in first vector from second vector
@@ -205,3 +205,27 @@ std::vector<int> stringToIntVec(std::string& toConvert)
     
     return output;
 }
+
+std::vector<std::string> stringToStringVec(std::string& toConvert)
+{
+	std::vector<std::string> output;
+    std::string delim = ",";
+    std::string substring;
+
+    auto start = 0;
+    auto end = toConvert.find(delim); // first delimiter occurrence
+    while (end != std::string::npos)
+    {
+        substring = toConvert.substr(start, end - start);
+        substring.erase(std::remove_if(substring.begin(), substring.end(), isspace), substring.end()); // remove whitespace
+        output.emplace_back(substring); // add string to vector
+        start = end + delim.length(); // set end(+delimiter) as new start point
+        end = toConvert.find(delim, start); // find new endpoint
+    }
+    substring = toConvert.substr(start, end); // last substring
+    substring.erase(std::remove_if(substring.begin(), substring.end(), isspace), substring.end()); // remove whitespace
+    output.emplace_back(substring); // add string to vector
+    
+    return output;
+}
+

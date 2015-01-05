@@ -46,6 +46,8 @@ class Grid_manager
 			kernelNeighbors; // each cell's susceptible neighbors with p>0
 		// variables for infection evaluation
 		bool infectOut; // if true, looks at transmission TO other cells, otherwise FROM other cells
+		std::vector<std::string> speciesOnPrems; // list of species on all farms provided in prem file
+		std::vector<double> speciesSus, speciesInf; // species specific susceptibility and infectiousness, in same order as speciesOnAllFarms
 		// counting variables to keep track of infection/efficiency
 		// per timestep variables
 		int farmtocellskips = 0;
@@ -79,12 +81,17 @@ class Grid_manager
 			IDsToCells(std::vector<int>); // convert vector of IDs to cell pointers
 		grid_cell* 				
 			IDsToCells(int);  // overloaded to accept single ID also
+		double getFarmSus(Farm*);
+		double getFarmInf(Farm*);
 		
 	public:
 		/////////// for grid creation ///////////
 		Grid_manager( // constructor loads premises
 			std::string &fname, // filename of premises
-			bool xyswitch = 0); // switch x/y columns
+			bool xyswitch,  // switch x/y columns
+			std::vector<std::string>&, // list of species populations provided
+			std::vector<double>&,  // list of species-specific susceptibility values
+			std::vector<double>&); // list of species-specific infectiousness values
 			
 		~Grid_manager();
 		
@@ -123,7 +130,7 @@ class Grid_manager
 			get_FIPSmap() const; //inlined
 			
 		std::vector<Farm*>
-			get_infectedFarms() const; // called from main
+			get_infectedFarms() const; // called from main, cleared at each timestep
 			
 		/////////// for infection evaluation ///////////
 		// per timestep function
@@ -154,7 +161,7 @@ inline bool sortByPop(const Farm* farm1, const Farm* farm2)
 // "compare" function to sort farms by ID
 // must be defined outside of class, or else sort doesn't work
 {
-	return (farm1 -> get_size()) < (farm2 -> get_size());
+	return (farm1 -> get_size("Cattle")) < (farm2 -> get_size("Cattle"));
 }
 
 inline void Grid_manager::set_maxFarms(unsigned int in_maxFarms)

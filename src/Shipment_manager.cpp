@@ -81,6 +81,8 @@ void Shipment_manager::countyCountyShipments(std::string& oCounty, int method)
 // tuple contains origin fips, destination fips, volume
 {
 	if (method == 0){
+		// no shipments
+	} else if (method == 1){
 	//  randomly assign destination counties with volume = 1
 		double random = unif_rand();
 		bool makeShipment = (random < 0.05); // 5% of all counties make a shipment
@@ -148,11 +150,11 @@ void Shipment_manager::farmFarmShipments(std::unordered_map<std::string, std::ve
 						std::tuple<int,int,int,bool> fShip (oFarm->get_id(),dFarm->get_id(),1,activeBan);
 						farmShips.emplace_back(fShip);
 					}
-				} else if (farmFarmMethod == 1){ // shipment probability based on relative farm size
+				} else if (farmFarmMethod == 1){ // shipment probability based on relative farm size of "Cattle"
 					// get sizes of each farm
 					std::vector<int> oFarmSizes, dFarmSizes;
-					for (auto& o1:oFarms){oFarmSizes.emplace_back(o1->get_size());}
-					for (auto& d1:dFarms){dFarmSizes.emplace_back(d1->get_size());}
+					for (auto& o1:oFarms){oFarmSizes.emplace_back(o1->get_size("Cattle"));}
+					for (auto& d1:dFarms){dFarmSizes.emplace_back(d1->get_size("Cattle"));}
 					// get cumulative sums of sizes for farms in county to distribute probabilities
 					std::vector<int> oCumSums = {0};
 					std::vector<int> dCumSums = {0};

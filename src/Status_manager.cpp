@@ -30,6 +30,7 @@ Status_manager::Status_manager(std::string fname, std::unordered_map<std::string
 	// initialize all farms as susceptible, with end time after end of run time
 	for (auto& ap:allPrems){
 		statusTimeFarms["sus"][pastEndTime].emplace_back(ap.second);
+		ap.second->set_status("sus"); // set Farm object status to sus
 		// put each under status key sus, time key 1+end
 	}
 	// read in initially infected prems from file
@@ -52,6 +53,7 @@ Status_manager::Status_manager(std::string fname, std::unordered_map<std::string
 	
 	changeTo("inf", focalFarms, 0, params["infectious"]);
 	// change focalFarms' status to inf, with durations via params, at base time 0
+	// also removes these farms from susceptible list
 	if (verbose){
 		std::cout<<focalFarms.size()<<" infectious prems initiated. End times for infectious prems: "<<std::endl;
 		for (auto&i : statusTimeFarms["inf"]){
@@ -274,3 +276,21 @@ void Status_manager::pickInfAndPrint(double propFocal,
 	}
 	printVector(focal,fname);
  }
+/*
+std::vector<Farm*> Status_manager::sumPremsWithStatus(std::string s, int t)
+{ // get all farms with status s at and before time t
+	std::vector<Farm*> output;
+
+	if (statusTimeFarms.count(s)!=0){
+	std::unordered_map< int,std::vector<Farm*> >& status_s = statusTimeFarms.at(s); 
+	// step through map of times/farms
+	for (auto& st:status_s){
+		if(t < st.first){ // st.first is time at which next stage starts
+			for (auto& f:st.second){
+			output.emplace_back(f);} // add farm* to output
+		}	
+	} // end for each time in this status
+	}
+ return output;
+}
+*/
