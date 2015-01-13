@@ -16,6 +16,7 @@
 	double unif_rand();
 	double norm_rand();
  	double kernel(double dist);
+ 	double kernelsq(double distsq);
 	std::vector<std::string>
 		split(const std::string&, char, std::vector<std::string>&);
 	std::vector<std::string> 
@@ -61,6 +62,20 @@
 		if (rUnif == 1){rUnif = 0.99999;} // avoid out-of-range problems
 	rUnif = floor(unif_rand()*maxSize);
 	return vec[rUnif];
+}
+
+// choose random elements from a vector
+template<class fwditer>
+fwditer random_unique(fwditer begin, fwditer end, size_t num_random) {
+    size_t left = std::distance(begin, end);
+    while (num_random--) {
+        fwditer r = begin;
+        std::advance(r, rand()%left);
+        std::swap(*begin, *r);
+        ++begin;
+        --left;
+    }
+    return begin;
 }
 
 // check if something is in a vector

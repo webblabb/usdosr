@@ -11,11 +11,12 @@
 #include "Status_manager.h"
 #include "shared_functions.h"
 
-Status_manager::Status_manager(std::string fname, std::unordered_map<std::string, 
+Status_manager::Status_manager(std::string fname, /*int whichSeed,*/ std::unordered_map<std::string, 
 	std::tuple<double,double>> in_params, std::unordered_map<int, Farm*>& allPrems, 
 	int endTime)
 // initialize with arguments:
 // fname: file where seed (initially infectious) farms are listed by ID
+// whichSeed: number of random farms to draw from file (0 uses all)
 // params: vector of tuples containing mean and variance of delays:
 // ...between exposure and infectiousness onset ["latency"]
 // ...between infectiousness onset and recovery ["infectious"]
@@ -50,7 +51,12 @@ Status_manager::Status_manager(std::string fname, std::unordered_map<std::string
 			} // close "while not end of file"
 		} // close "if file is open"
 		if(verbose){std::cout << "Closed seed file." << std::endl;}
-	
+/*	
+	// if choosing random farms from list
+	if (whichSeed>0){
+		if (
+	}
+*/	
 	changeTo("inf", focalFarms, 0, params["infectious"]);
 	// change focalFarms' status to inf, with durations via params, at base time 0
 	// also removes these farms from susceptible list

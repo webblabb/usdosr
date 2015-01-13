@@ -124,6 +124,8 @@ void Shipment_manager::farmFarmShipments(std::unordered_map<std::string, std::ve
 // from random destinations to biggest farm in county (method=3)
 // distribute only between biggest farms in each county (method = 4)
 // Keeps track of ban status but otherwise ignores it. Only accounted for in the changing status step in main.
+//
+// Split by production type first before size assignment
 {
 	for (auto& s:countyShipmentList){
 		std::string oFIPS = std::get<0>(s); // 1st element of tuple (origin FIPS)

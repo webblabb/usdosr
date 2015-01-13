@@ -23,18 +23,8 @@ double norm_rand()
 double kernel(double dist)
 {	
 	double usedist = dist;
-	if (usedist==0){usedist = 1;}
-	return std::min(1.0, 0.12 / (1 + pow((usedist/1000), 3)));
-}
-
-double kernelsq(double distsq)
-{	
-	double usedist = distsq;
-	if (usedist==0){usedist = 1;}
-	double k1 = 0.12;
-	double k2 = 1000;
-	double k3 = 3;
-	return std::min(1.0, k1/(1+pow(usedist,(k3/2))/pow(k2,k3)) );
+	if (usedist==0){usedist = 1;} // units assumed meters, prevents dividing by 0
+	return std::min(1.0, 0.12 / (1 + pow((usedist/4000), 3))); // fang's est of 1000 (meters) (k2) more like 3-4
 }
 
 // used in reading in files
@@ -83,37 +73,6 @@ std::string to_string(Farm* farm)
 	return toPrint;
 }
 
-// Used by grid_cell to determine max values for inf/sus farms in cell
-// Used by Grid_manager to get individual farm sus/inf values
-/*
-double getFarmSus(Farm* f)
-{
-	// species-specific susceptibility - each element is a species
-	std::vector <double> speciesSus;
-	// will be replaced by input from config file
-	speciesSus.emplace_back(10.5);
-	
-	double farmSize = f -> get_size("Cattle"); // will be a vector, double for now
-	// will be sum of each species (count*transmission)
-	double farmSus = farmSize * speciesSus[0];
-	
-	return farmSus;
-}
-
-double getFarmInf(Farm* f)
-{
-	// species-specific infectiousness - each element is a species
-	std::vector <double> speciesInf;
-	// will be replaced by input from config file
-	speciesInf.emplace_back(0.00000077);
-	
-	double farmSize = f -> get_size(); // will be a vector, double for now
-	// will be sum of each species (count*transmission)
-	double farmInf = farmSize * speciesInf[0];
-
-	return farmInf;
-}
-*/
 // uses fips-indexed maps to reduce unnecessary comparisons
 void removeFarmSubset(std::vector<Farm*>& subVec, std::vector<Farm*>& fullVec)
 // remove farms in first vector from second vector

@@ -32,12 +32,11 @@ class Status_manager
 		int pastEndTime;
 		// time past the end of the simulation, to assign to permanent status end times
 		
-//		int normDelay(double mean, double variance);
 		int normDelay(std::tuple<double,double>);
 		// tuple contains mean and variance
 		
 	public:
-		Status_manager(std::string, std::unordered_map<std::string, std::tuple<double,double>>, 
+		Status_manager(std::string, /*int,*/ std::unordered_map<std::string, std::tuple<double,double>>, 
 			std::unordered_map<int, Farm*>&, int);
 			
 		~Status_manager();		
@@ -53,12 +52,7 @@ class Status_manager
 		void printVector(std::vector<Farm*>&, std::string&) const; // print vector to named file
 		void pickInfAndPrint(double, std::unordered_map<int, Farm*>&, std::string); // randomly generate a proportion of infected farms & print to file
 
-//		std::unordered_map< int,std::vector<Farm*> > getReported() const; //not required for run, just informative
-//		std::vector<std::string> getBannedFIPS() const;
 };
 
-// inline std::unordered_map< int,std::vector<Farm*> > Status_manager::getReported() const
-// {
-// 	return statusTimeFarms.at(6);
-// }
+
 #endif

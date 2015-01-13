@@ -797,7 +797,7 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 */
 
 			// get # of eligible farms in comp cell
-			std::vector<Farm*>& compFarmList = compCellMap.at(compCellID); // added &, shaved 100s/rep
+			std::vector<Farm*>& compFarmList = compCellMap.at(compCellID); // added &, shaved 100sec/rep
 			double compNumFarms = compFarmList.size();
 			
 			// put cell IDs in order, to look up cell-cell kernel value
@@ -855,8 +855,10 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 					double f2y = f2 -> Farm::get_y();
 					double xdiff = (f1x - f2x);
 					double ydiff = (f1y - f2y);
-					double distBWfarms = sqrt(xdiff*xdiff + ydiff*ydiff);
-					double kernelBWfarms = kernel(distBWfarms);
+// 					double distBWfarms = sqrt(xdiff*xdiff + ydiff*ydiff);
+//					double kernelBWfarms = kernel(distBWfarms);
+					double distBWfarmssq = xdiff*xdiff + ydiff*ydiff;
+					double kernelBWfarms = kernelsq(distBWfarmssq); // kernelsq calculates kernel based on distance squared
 					// get individual infectiousness/susceptibility values
 					double farmComp = getFarmSus(f2); // susceptible farm in comparison cell (farmInf already defined from focal cell)
 				if (!infectOut){	
