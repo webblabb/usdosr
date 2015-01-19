@@ -13,7 +13,7 @@ Shipment_manager::Shipment_manager(
 	// copy FIPSmap
 	FIPSmap = in_FIPSmap;
 	// copy shipping settings
-	banCompliance = shipSettings[0];
+	banCompliance = (double) shipSettings[0]; // will later be compared against a double
 	banScale = shipSettings[1];
 	farmFarmMethod = shipSettings[2];
 	// record vector of all possible shipment destinations (counties)
@@ -107,8 +107,8 @@ bool Shipment_manager::banShipment(std::string& oCounty)
 		if (banCompliance == 100){
 			ban = 1;
 		} else {
-			double randDraw = unif_rand();
-			if (randDraw <= banCompliance/100){ban = 1;} // stochastic compliance
+			double randDraw = unif_rand()*100;
+			if (randDraw <= banCompliance){ban = 1;} // stochastic compliance
 		}
 	}
 	}
@@ -138,25 +138,25 @@ void Shipment_manager::farmFarmShipments(std::unordered_map<std::string, std::ve
 				int volume = std::get<2>(s);
 				// get ban status (just to copy over)
 				bool activeBan = std::get<3>(s);
-				// get farms in counties
-				std::vector<Farm*> oFarms = FIPSmap.at(oFIPS); // can be sent from any farm regardless of status
-				std::vector<Farm*> dFarms = FIPSmap.at(dFIPS); // can be sent to any farm regardless of status
+				// get all farms in counties - can be sent from any farm regardless of status
+				std::vector<Farm*> oFarms = FIPSmap.at(oFIPS); 
+				std::vector<Farm*> dFarms = FIPSmap.at(dFIPS);
 
 				// assignment
 				std::vector<std::tuple<int,int,int,bool>> farmShips;
 				
 				if (farmFarmMethod == 0){ // random
 					for (int v = 0; v!= volume; v++){ // for each shipment between these counties
-						Farm* oFarm = randomFrom(oFarms);
-						Farm* dFarm = randomFrom(dFarms);
+ 						Farm* oFarm = randomFrom(oFarms);
+ 						Farm* dFarm = randomFrom(dFarms);
 						std::tuple<int,int,int,bool> fShip (oFarm->get_id(),dFarm->get_id(),1,activeBan);
 						farmShips.emplace_back(fShip);
 					}
-				} else if (farmFarmMethod == 1){ // shipment probability based on relative farm size of "Cattle"
+				} else if (farmFarmMethod == 1){ // shipment probability based on relative farm size
 					// get sizes of each farm
 					std::vector<int> oFarmSizes, dFarmSizes;
-					for (auto& o1:oFarms){oFarmSizes.emplace_back(o1->get_size("Cattle"));}
-					for (auto& d1:dFarms){dFarmSizes.emplace_back(d1->get_size("Cattle"));}
+					for (auto& o1:oFarms){oFarmSizes.emplace_back(o1->get_size("beef"));}
+					for (auto& d1:dFarms){dFarmSizes.emplace_back(d1->get_size("beef"));}
 					// get cumulative sums of sizes for farms in county to distribute probabilities
 					std::vector<int> oCumSums = {0};
 					std::vector<int> dCumSums = {0};

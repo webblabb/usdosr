@@ -29,7 +29,8 @@ class Shipment_manager
 		std::vector<std::string> bannedStates; // states with banned fips
 		std::vector<std::string> allBannedFIPS; // list including all other fips in the same states as banned fips (if banScale=1)
 		
-		int banCompliance, banScale, farmFarmMethod;
+		double banCompliance;
+		int banScale, farmFarmMethod;
 	
 		// the following are recreated/rewritten at each timestep
 		std::vector<std::tuple<std::string,std::string,int,bool>>

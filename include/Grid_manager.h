@@ -72,9 +72,9 @@ class Grid_manager
 			std::tuple<int,double,double,double>& cellSpecs, 
 			std::stack< std::tuple<int,double,double,double> >& queue); // replaces parent cell with subdivided offspring quadrants
  		void assignCellIDtoFarms(int cellID, std::vector<Farm*>& farmsInCell);
-		double shortestCellDist(
+		double shortestCellDist2(
 			grid_cell* cell1, 
-			grid_cell* cell2); // calculates shortest distance between two cells
+			grid_cell* cell2); // calculates shortest distance^2 between two cells
 		void makeCellRefs(); // make reference matrices for distance and kernel		
 		// functions for infection evaluation
 		std::vector<grid_cell*> 

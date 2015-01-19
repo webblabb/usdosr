@@ -20,21 +20,35 @@ double norm_rand()
 
 // Used in gridding (kernel values for fixed grid distances)
 // Used in pairwise evaluations in main
-double kernel(double dist)
-{	
-	double usedist = dist;
-	if (usedist==0){usedist = 1;}
-	return std::min(1.0, 0.12 / (1 + pow((usedist/1000), 3)));
-}
+// double kernel(double dist)
+// {	
+// 	double usedist = dist;
+// 	if (usedist==0){usedist = 1;}
+// 	return std::min(1.0, 0.12 / (1 + pow((usedist/1000), 3)));
+// }
 
+// Used in gridding (kernel values for fixed grid distances)
+// Used in pairwise evaluations in main
 double kernelsq(double distsq)
+// returns kernel value as a function of distance squared
 {	
 	double usedist = distsq;
-	if (usedist==0){usedist = 1;}
+	if (usedist==0){usedist = 1;} // units assumed to be m
 	double k1 = 0.12;
 	double k2 = 1000;
 	double k3 = 3;
 	return std::min(1.0, k1/(1+pow(usedist,(k3/2))/pow(k2,k3)) );
+	
+	/* 
+	to demonstrate this is the same as kernel(dist), run in R:
+	usedist=1:2000
+	k1 = 0.12
+	k2 = 1000
+	k3 = 3
+	plot(k1 / (1 + (usedist/k2)^k3)~usedist) # original f(distance)
+	usq = usedist^2
+	points(usedist, (k1 / (1 + (usq^(k3/2))/(k2^k3))),col="blue",pch="*")
+	*/
 }
 
 // used in reading in files

@@ -57,8 +57,8 @@ Status_manager::Status_manager(std::string fname, /*int whichSeed,*/ std::unorde
 		if (
 	}
 */	
-	changeTo("inf", focalFarms, 0, params["infectious"]);
-	// change focalFarms' status to inf, with durations via params, at base time 0
+	changeTo("inf", focalFarms, 1, params["infectious"]);
+	// change focalFarms' status to inf, with durations via params, at base time 1
 	// also removes these farms from susceptible list
 	if (verbose){
 		std::cout<<focalFarms.size()<<" infectious prems initiated. End times for infectious prems: "<<std::endl;
@@ -206,7 +206,7 @@ void Status_manager::updates(int t)
 		if (rf.second == t){ // if today is the day the ban is ordered
 			int compLag = normDelay(params["complyBan"]); 
 			statusFIPSTime["banOrdered"][rf.first] = t+compLag;
-//			if(verbose){std::cout<<FIPSWithStatus("banOrdered",t).size()<<" ban-ordered FIPS. ";}
+// 			if(verbose){std::cout<<FIPSWithStatus("banOrdered",t).size()<<" ban-ordered FIPS. ";}
 		}
 	}
 	}

@@ -22,8 +22,6 @@
 	std::vector<std::string> 
 		split(const std::string&, char);
 	std::string to_string(Farm*);
-// 	double getFarmSus(Farm*);
-// 	double getFarmInf(Farm*);
 	void removeFarmSubset(std::vector<Farm*>&, std::vector<Farm*>&);
 	std::vector<double> stringToNumVec(std::string&);
 	std::vector<int> stringToIntVec(std::string&);
@@ -59,25 +57,36 @@
 {
 	int maxSize = vec.size();
 	double rUnif = unif_rand();
-		if (rUnif == 1){rUnif = 0.99999;} // avoid out-of-range problems
-	rUnif = floor(unif_rand()*maxSize);
-	return vec[rUnif];
+		if (rUnif ==1 ){rUnif=0.999;} // avoids assigning actual maxSize value (out of range)
+	int rIndex = (int) floor(rUnif*maxSize);
+	return vec[rIndex];
 }
 
-// choose random elements from a vector
-template<class fwditer>
-fwditer random_unique(fwditer begin, fwditer end, size_t num_random) {
-    size_t left = std::distance(begin, end);
-    while (num_random--) {
-        fwditer r = begin;
-        std::advance(r, rand()%left);
-        std::swap(*begin, *r);
-        ++begin;
-        --left;
-    }
-    return begin;
+// choose random elements from a vector based on the Fisher-Yates shuffling algorithm:
+// num_random selected random values are copied to output, 
+// selected values are swapped to the end of the vector so they're not selected again
+	template<typename T> std::vector<T> 
+	random_unique(std::vector<T> elements, int num_random) 
+	// elements not referenced because we're rearranging it
+{		
+	std::vector<T> output;
+	int endIndex = elements.size(); 
+	// endIndex separates non-selected values (elements [0, endIndex-1]) from selected values
+	for (auto i = 1; i<= num_random; i++){
+		// choose random number between 0 and 1
+		double rUnif = unif_rand();
+		// scale up to endIndex, so r is an index in [0, endIndex)
+		if (rUnif == 1 ){rUnif=0.999;} // avoids assigning actual endIndex value (out of range)
+		int r = (int)floor(rUnif*endIndex);
+		// copy value to output
+		output.emplace_back(elements[r]);
+		// swap r and endIndex-1 (last element of non-selected values)
+		std::swap(elements[r], elements[endIndex-1]);
+		endIndex--;
+	}
+ return output;	
 }
-
+	
 // check if something is in a vector
 	template<typename T> bool isWithin(T& target, std::vector<T>& vec)
 {
@@ -87,7 +96,6 @@ fwditer random_unique(fwditer begin, fwditer end, size_t num_random) {
 		if(*it == target){found = 1;}
 		it++;
 	}
-	
 	return found;
 }
 

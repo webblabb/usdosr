@@ -72,7 +72,7 @@ int main(int argc, char* argv[])
 	double cellSide=0;
 	std::string cellFile = pv[20]; // Grid cells filename
 	std::vector<double> gridParamsDensity = stringToNumVec(pv[21]); // Maximum farms per cell - split into ints
-	if (gridParamsDensity.size()==0){
+	if (gridParamsDensity.size()!=0){
 		maxFarms = gridParamsDensity[0];
 		kernelRadius = gridParamsDensity[1];
 	}
@@ -149,7 +149,7 @@ int main(int argc, char* argv[])
 		// initiate grid
 	 	std::clock_t grid_start = std::clock();		
 	 	// if file provided, use that
-	 	if (cellFile!=""){G.initiateGrid(cellFile);} // reading in/making cells takes ~45 sec
+	 	if (cellFile!="*"){G.initiateGrid(cellFile);} // reading in/making cells takes ~45 sec
 	 	// else use density params
 	 	else if (maxFarms>-1 && kernelRadius >-1){G.initiateGrid(maxFarms,kernelRadius);}
 	 	// else use uniform params
@@ -164,7 +164,7 @@ int main(int argc, char* argv[])
 		double gridGenTimeMS = 1000.0 * (grid_end - grid_start) / CLOCKS_PER_SEC;
 		std::cout << "CPU time for generating grid: " << gridGenTimeMS << "ms." << std::endl;
 
-// ideally start loop here
+// start loop here
 for (auto r=1; r<=reps; r++){
 		std::clock_t rep_start = std::clock();
 		// randomly pick a proportion to be focal farms and print to external file - for testing
@@ -261,7 +261,7 @@ for (auto r=1; r<=reps; r++){
  		
  		std::clock_t rep_end = std::clock();
  		double repTimeMS = 1000.0 * (rep_end - rep_start) / CLOCKS_PER_SEC;
-		std::cout << "CPU time for rep "<<r<<": " << repTimeMS << "ms." << std::endl;
+		std::cout << "CPU time for rep "<<r<<" ("<<t<<" timesteps): " << repTimeMS << "ms." << std::endl;
 	} // end "if griddingOn"
 
 } // end for loop

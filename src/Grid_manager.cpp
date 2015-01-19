@@ -313,7 +313,7 @@ void Grid_manager::initiateGrid(std::string& cname)
 	std::vector<Farm*> farmsInCell;
 
 	std::ifstream f(cname);
-	if(!f){std::cout << "Input file not found." << std::endl;}
+	if(!f){std::cout << "Input file not found. Exiting..." << std::endl; exit(EXIT_FAILURE);}
 	if(f.is_open())
 	{
 	if (verbose){std::cout << "File open" << std::endl;}
@@ -551,10 +551,10 @@ void Grid_manager::printCells(std::string& pfile) const
 // */
 // }
 
-double Grid_manager::shortestCellDist(grid_cell* cell1, grid_cell* cell2)
-// returns shortest distance between cell1 and cell2
+double Grid_manager::shortestCellDist2(grid_cell* cell1, grid_cell* cell2)
+// returns shortest distance^2 between cell1 and cell2
 {
-	double cellDist = 0;
+	double cellDist2 = 0; // squared distance between cells
  	int cell1_id = cell1->grid_cell::get_id();
  	int cell2_id = cell2->grid_cell::get_id();
   if (cell1_id != cell2_id){ // else if comparing to self, distance is already 0 	
@@ -630,14 +630,14 @@ double Grid_manager::shortestCellDist(grid_cell* cell1, grid_cell* cell2)
 	std::vector<double> orderedDiffs = orderNumbers(xDiff,yDiff); // in shared_functions.h
 	if (storedDists.count(orderedDiffs[0])==1 && 
 		storedDists.at(orderedDiffs[0]).count(orderedDiffs[1])==1){
-		cellDist = storedDists.at(orderedDiffs[0]).at(orderedDiffs[1]);
+		cellDist2 = storedDists.at(orderedDiffs[0]).at(orderedDiffs[1]);
 	} else {
-		cellDist = sqrt(xDiff*xDiff + yDiff*yDiff);
- 		storedDists[orderedDiffs[0]][orderedDiffs[1]] = cellDist;
+		cellDist2 = xDiff*xDiff + yDiff*yDiff;
+ 		storedDists[orderedDiffs[0]][orderedDiffs[1]] = cellDist2;
    	}
   } // end if cells 1 and 2 are different
 
-return cellDist;	
+return cellDist2;	
 }
 
 void Grid_manager::makeCellRefs()
@@ -649,12 +649,12 @@ void Grid_manager::makeCellRefs()
 		for (auto whichCell2 = whichCell1; whichCell2 != allCells.size(); whichCell2++){
 			// get distance between grid cells 1 and 2...
 			// if comparing to self, set distance=0
-			double shortestDist = 0; 
+			double shortestDist2 = 0; 
 			if (whichCell2 != whichCell1) {
-			shortestDist = shortestCellDist(allCells.at(whichCell1), allCells.at(whichCell2)); 
+			shortestDist2 = shortestCellDist2(allCells.at(whichCell1), allCells.at(whichCell2)); 
 			}
 			// kernel value between c1, c2
-			double gridValue = kernel(shortestDist);
+			double gridValue = kernelsq(shortestDist2);
 			
 			// if grid Value is > 0, record in gridCellKernel and as kernel neighbors
 			if (gridValue > 0){
