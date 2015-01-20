@@ -83,7 +83,7 @@ int main(int argc, char* argv[])
 	// Shipment-related settings
 	std::vector<int> coShipMethods = stringToIntVec(pv[30]); // Methods to use to ship county-county
 	std::vector<int> coShipTimes = stringToIntVec(pv[31]); // Times to start using the above methods
-		coShipTimes.emplace_back(timesteps+1); // whichElement function needs a maximum (element won't be used)
+		coShipTimes.emplace_back(timesteps+1); // add this b/c whichElement function needs a maximum (element won't be used)
 
 	int farmFarmMethod; str_cast(pv[32],farmFarmMethod); // Method to assign shipments to premises
 	// pv[33] ... pv[37]
@@ -132,9 +132,9 @@ int main(int argc, char* argv[])
   	 	// load file containing premises and related info
 		Grid_manager G(pfile,switchXY,speciesOnPrems,spSus,spInf);
 		
-		// for instantiating Shipment manager: FIPS of loaded farms
+		// for instantiating Shipment manager: FIPS of loaded farms and populations of each species/type
 		std::unordered_map<std::string, std::vector<Farm*>> fipsmap = G.get_FIPSmap();
-		
+		std::unordered_map<std::string, std::unordered_map<std::string, std::vector<Farm*> >> fipsSpeciesMap = G.get_fipsSpeciesMap();
 		// get full list of farms
 		std::unordered_map<int, Farm*> allFarms = G.get_allFarms(); 
 
@@ -173,7 +173,7 @@ for (auto r=1; r<=reps; r++){
 		// load initially infected farms and instantiate Status manager
 		// note that initial farms are started as infectious (2) rather than exposed (1)
 		Status_manager Status(seedfile, lagParams, allFarms, timesteps);	 	
-		Shipment_manager Ship(fipsmap, shipParams);
+		Shipment_manager Ship(fipsmap, shipParams, speciesOnPrems, fipsSpeciesMap);
 
  		int t=0;		
  		// set focalFarms as all farms with status inf at time 0

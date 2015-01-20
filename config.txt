@@ -22,7 +22,7 @@
 FLAPS_beefdairy_20151201_formatted.txt		#(10)~Name of file containing premises ID, FIPS, x, y, population
 randomFarms.txt 	#(11)+Name of file containing premises IDs that are infectious
 * 				#(12)+Name of file containing FIPS codes of infectious counties (not yet implemented)
-30 	#(13)~Timesteps (days) to run
+10 	#(13)~Timesteps (days) to run
 * #(14)
 1 	#(15)~Verbose option: Output extra information to console as model runs (0=off, 1=on)
 0 	#(16)~Reverse x/y option: in case input file is entered as lat/long (y/x)(set to 1) instead of long/lat (x/y)(set to 0)

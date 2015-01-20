@@ -86,6 +86,7 @@ std::string to_string(Farm* farm)
 		vars[1] = farm->get_cellID();
 		vars[2] = farm->get_x();
 		vars[3] = farm->get_y();
+		// fix for multiple species?
 		vars[4] = farm->get_size("Cattle");
 
 	for(auto it:vars){ // for each element in vars (each farm variable)
@@ -97,45 +98,13 @@ std::string to_string(Farm* farm)
 	return toPrint;
 }
 
-// Used by grid_cell to determine max values for inf/sus farms in cell
-// Used by Grid_manager to get individual farm sus/inf values
-/*
-double getFarmSus(Farm* f)
-{
-	// species-specific susceptibility - each element is a species
-	std::vector <double> speciesSus;
-	// will be replaced by input from config file
-	speciesSus.emplace_back(10.5);
-	
-	double farmSize = f -> get_size("Cattle"); // will be a vector, double for now
-	// will be sum of each species (count*transmission)
-	double farmSus = farmSize * speciesSus[0];
-	
-	return farmSus;
-}
-
-double getFarmInf(Farm* f)
-{
-	// species-specific infectiousness - each element is a species
-	std::vector <double> speciesInf;
-	// will be replaced by input from config file
-	speciesInf.emplace_back(0.00000077);
-	
-	double farmSize = f -> get_size(); // will be a vector, double for now
-	// will be sum of each species (count*transmission)
-	double farmInf = farmSize * speciesInf[0];
-
-	return farmInf;
-}
-*/
-// uses fips-indexed maps to reduce unnecessary comparisons
 void removeFarmSubset(std::vector<Farm*>& subVec, std::vector<Farm*>& fullVec)
 // remove farms in first vector from second vector
 {
 	int expectedSize = fullVec.size()-subVec.size();
 //	std::cout << "Removing "<<subVec.size()<<" farms from list of "<<fullVec.size()<<std::endl;
 
-	// put vectors into fips-indexed maps
+	// put vectors into fips-indexed maps to speed up matching
 	std::unordered_map< std::string, std::vector<Farm*> > subMap, fullMap; 
 	for (auto& sv:subVec){
 		subMap[sv->get_fips()].emplace_back(sv);}
@@ -143,17 +112,17 @@ void removeFarmSubset(std::vector<Farm*>& subVec, std::vector<Farm*>& fullVec)
 		fullMap[fv->get_fips()].emplace_back(fv);}
 
 	for (auto& sub:subMap){
-		// for each fips in sub list
+		// for each fips in subset list
 		std::string fips = sub.first;
-		// sort both lists of farms with this fips
-		std::sort(sub.second.begin(),sub.second.end(),sortByID);
-		std::sort(fullMap.at(fips).begin(),fullMap.at(fips).end(),sortByID);
+		// if needed, sort both lists of farms in this FIPS, by ID
+		if (!std::is_sorted(sub.second.begin(),sub.second.end(),sortByID)){
+			std::sort(sub.second.begin(),sub.second.end(),sortByID);}
+		if (!std::is_sorted(fullMap.at(fips).begin(),fullMap.at(fips).end(),sortByID)){
+			std::sort(fullMap.at(fips).begin(),fullMap.at(fips).end(),sortByID);}
 		// iterate through full list, erasing matching sub as found
 		auto it2 = fullMap.at(fips).begin();
-		for(auto it = sub.second.begin(); it != sub.second.end(); it++)
+		for(auto it = sub.second.begin(); it != sub.second.end(); it++){
 		// loop through each farm in this FIPS
-		{		
-			
 			while (it2 != fullMap.at(fips).end()){ // while end of full list not reached
 				if(*it2 == *it){ // finds match in farmList to farmInCell
 					fullMap.at(fips).erase(it2); // remove from farmList

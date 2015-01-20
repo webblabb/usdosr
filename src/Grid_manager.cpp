@@ -65,6 +65,8 @@ Grid_manager::Grid_manager(std::string &fname, bool xyswitch, std::vector<std::s
 				for (auto& sp:speciesOnPrems){ // for each species
 					str_cast(line_vector[colcount], tempsize); // assign number in column "colcount" to "tempsize"
 					farm_map.at(id)->Farm::set_speciesCount(sp,tempsize); // set number for species at premises
+					// if there are animals of this species, add to fips-species list to sort by population later
+					if (tempsize>0){fipsSpeciesMap[fips][sp].emplace_back(farm_map.at(id));}
 					colcount++;
 				}
 				double premSus = getFarmSus(farm_map.at(id));
@@ -104,17 +106,15 @@ Grid_manager::Grid_manager(std::string &fname, bool xyswitch, std::vector<std::s
 
 	// copy farmlist from farm_map (will be changed as grid is created)
 	if (verbose){std::cout << "Copying farms from farm_map to farmList..." << std::endl;}
-	for (auto& prem: farm_map)
-	{
-		farmList.emplace_back(prem.second); // "second" value from map is Farm pointer
-	}
+	for (auto& prem: farm_map) {farmList.emplace_back(prem.second);} // "second" value from map is Farm pointer
 	 
-	// sort farmList by ID
+	// sort farmList by ID for faster matching/subset removal
 	std::sort(farmList.begin(),farmList.end(),sortByID);
-	// sort within each FIPS map element by farm size (population)
-	for (auto& farmFIPS:FIPSmap){
-		std::sort(farmFIPS.second.begin(),farmFIPS.second.end(),sortByPop);
-	}
+	// sort within each FIPS map element by farm size (population) for each species
+	// (for use in Shipment manager, but this pre-calculates to save run time)
+	for (auto& sp:speciesOnPrems){
+		std::sort(fipsSpeciesMap[fips][sp].begin(),fipsSpeciesMap[fips][sp].end(),comparePop(sp)); // comparePop struct defined in Grid_manager.h
+	}	
 }
 
 Grid_manager::~Grid_manager()
@@ -909,8 +909,8 @@ double Grid_manager::getFarmSus(Farm* f)
 	double premSus = 0;
 	int i = 0; // use to keep up with speciesOnPrems element
 	for (auto& sp:speciesOnPrems){
-		double count = f->get_size(sp); // i.e. get_size("Cattle") gets # of cows on premises
-		double spSus = count * speciesSus[i]; // multiply by stored susceptibility value for cows
+		double count = f->get_size(sp); // i.e. get_size("beef") gets # of beef cattle on premises
+		double spSus = count * speciesSus[i]; // multiply by stored susceptibility value for this species/type
 		premSus += spSus; // add this species to the total for this premises
 		i++;	
 	}
@@ -923,8 +923,8 @@ double Grid_manager::getFarmInf(Farm* f)
 	double premInf = 0;
 	int i = 0; // use to keep up with speciesOnPrems element
 	for (auto& sp:speciesOnPrems){
-		double count = f->get_size(sp); // i.e. get_size("Cattle") gets # of cows on premises
-		double spInf = count * speciesInf[i]; // multiply by susceptibility value for cows
+		double count = f->get_size(sp); // i.e. get_size("beef") gets # of beef cattle on premises
+		double spInf = count * speciesInf[i]; // multiply by susceptibility value for this species/type
 		premInf += spInf; // add this species to the total for this premises
 		i++;	
 	}

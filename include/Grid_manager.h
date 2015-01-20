@@ -34,6 +34,10 @@ class Grid_manager
 			farm_map; // Contains all farm objects. Id as key.
 		std::unordered_map<std::string, std::vector<Farm*>>
 			FIPSmap; // key is fips code, value is vector of farms within
+		std::unordered_map<std::string, 
+			std::unordered_map< std::string, std::vector<Farm*> >> fipsSpeciesMap;
+			// key is fips code, then species name, then sorted by population size
+			
  		std::vector<Farm*> 
  			farmList; // vector of pointers to all farms (deleted in chunks as grid is created)
 		std::tuple<double,double,double,double> 
@@ -81,8 +85,8 @@ class Grid_manager
 			IDsToCells(std::vector<int>); // convert vector of IDs to cell pointers
 		grid_cell* 				
 			IDsToCells(int);  // overloaded to accept single ID also
-		double getFarmSus(Farm*);
-		double getFarmInf(Farm*);
+		double getFarmSus(Farm*); // used in precalculation and stored with Farm
+		double getFarmInf(Farm*); // used in precalculation and stored with Farm
 		
 	public:
 		/////////// for grid creation ///////////
@@ -129,6 +133,9 @@ class Grid_manager
 		std::unordered_map<std::string, std::vector<Farm*>> 
 			get_FIPSmap() const; //inlined
 			
+		std::unordered_map<std::string, std::unordered_map<std::string, std::vector<Farm*> >> 
+			get_fipsSpeciesMap() const; //inlined
+	
 		std::vector<Farm*>
 			get_infectedFarms() const; // called from main, cleared at each timestep
 			
@@ -157,12 +164,14 @@ inline bool sortByX(const Farm* farm1, const Farm* farm2)
 // {
 // 	return (farm1 -> get_id()) < (farm2 -> get_id());
 // }
-inline bool sortByPop(const Farm* farm1, const Farm* farm2)
-// "compare" function to sort farms by ID
-// must be defined outside of class, or else sort doesn't work
-{
-	return (farm1 -> get_size("Cattle")) < (farm2 -> get_size("Cattle"));
-}
+
+// modified as species-dependent struct to use with sort
+// inline bool sortByPop(const Farm* farm1, const Farm* farm2)
+// // "compare" function to sort farms by ID
+// // must be defined outside of class, or else sort doesn't work
+// {
+// 	return (farm1 -> get_size("Cattle")) < (farm2 -> get_size("Cattle"));
+// }
 
 inline void Grid_manager::set_maxFarms(unsigned int in_maxFarms)
 {
@@ -193,17 +202,27 @@ inline std::unordered_map<std::string, std::vector<Farm*>>
 	return(FIPSmap); 
 }
 
-// inline std::unordered_map<double, std::vector<double>> 
-// 	Grid_manager::get_kernelNeighbors() const
-// {
-// 	return(kernelNeighbors);
-// }
+inline std::unordered_map<std::string, std::unordered_map<std::string, std::vector<Farm*> >> 
+	Grid_manager::get_fipsSpeciesMap() const
+{
+	return(fipsSpeciesMap); 
+}
+
+// used to sort farms by population for a given species/type
+struct comparePop
+{
+	comparePop(std::string in_species) : species(in_species) {}
+	bool operator() (const Farm* farm1, const Farm* farm2){
+		return (farm1->Farm::get_size(species)) < (farm2->Farm::get_size(species));
+	}	
+	private:
+		std::string species;
+};
 
 /////////// for infection evaluation ///////////
 inline void Grid_manager::setInfectOut(bool io)
 {
 	infectOut = io;
 }
-
 
 #endif

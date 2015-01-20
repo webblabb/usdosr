@@ -23,14 +23,16 @@ class Shipment_manager
 		std::unordered_map<std::string, std::vector<Farm*>> FIPSmap;
 		// map linking fips to states for state-wide bans
 		std::unordered_map<std::string, std::vector<std::string>> stateFIPSmap;
+		std::unordered_map<std::string, std::unordered_map<std::string, std::vector<Farm*> >> fipsSpeciesMap;
 		// used to generate random shipments
 		std::vector<std::string> allFIPS; // list of all possible destination FIPS, based on premises file
+		double banCompliance;
+		int banScale, farmFarmMethod;
+		std::vector<std::string> species;
+
 		int lastNumBannedFIPS = 0; // last number of banned FIPS
 		std::vector<std::string> bannedStates; // states with banned fips
 		std::vector<std::string> allBannedFIPS; // list including all other fips in the same states as banned fips (if banScale=1)
-		
-		double banCompliance;
-		int banScale, farmFarmMethod;
 	
 		// the following are recreated/rewritten at each timestep
 		std::vector<std::tuple<std::string,std::string,int,bool>>
@@ -43,6 +45,7 @@ class Shipment_manager
 		// functions
 		void countyCountyShipments(std::string&, int); // determines county-county movements & volumes
 		bool banShipment(std::string&);
+		Farm* largestStatus(std::vector<Farm*>&, std::string&); // finds largest premises with "status", from vector sorted by population
 		void farmFarmShipments(std::unordered_map<std::string, std::vector<Farm*>>, 
 			std::unordered_map<std::string, std::vector<Farm*>>); 
 			// assigns county shipments to individual farms
@@ -52,7 +55,10 @@ class Shipment_manager
 	
 	public:
 		Shipment_manager( // construct with 
-			std::unordered_map<std::string, std::vector<Farm*>>&, std::vector<int>&); // a map of FIPS codes to farms
+			std::unordered_map<std::string, std::vector<Farm*>>&, // a map of FIPS codes to farms
+			std::vector<int>&, // list of shipping parameters
+			std::vector<std::string>&, // list of species on premises
+			std::unordered_map<std::string, std::unordered_map<std::string, std::vector<Farm*> >>&); // sorted populations of species on farms
 		
 		~Shipment_manager();
 		
