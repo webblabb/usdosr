@@ -31,6 +31,7 @@ class Status_manager
 		// ["startBan"]reported-banned, ["complyBan"]banned-compliant...
 		int pastEndTime;
 		// time past the end of the simulation, to assign to permanent status end times
+		std::vector<std::string> species; // for formatting output
 		
 		int normDelay(std::tuple<double,double>);
 		// tuple contains mean and variance
@@ -51,6 +52,7 @@ class Status_manager
 
 		void printVector(std::vector<Farm*>&, std::string&) const; // print vector to named file
 		void pickInfAndPrint(double, std::unordered_map<int, Farm*>&, std::string); // randomly generate a proportion of infected farms & print to file
+		std::string formatOutput(std::string, const int, int);
 
 };
 

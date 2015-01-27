@@ -101,8 +101,8 @@ int main(int argc, char* argv[])
 	std::vector<double> spSus = stringToNumVec(pv[45]);
 	std::vector<double> spInf = stringToNumVec(pv[46]);
 	// pv[47]
-	// std::string outStatusFile = pv[48];
-	// std::vector<double> outStatuses = stringToNumVec(pv[49]);
+	std::string outStatusFile = pv[48];
+	std::vector<std::string> outStatuses = stringToStringVec(pv[49]);
 	
 	// Control-related settings
 	std::vector<double> rp = stringToNumVec(pv[50]);
@@ -181,8 +181,7 @@ for (auto r=1; r<=reps; r++){
 		// set compFarms as all farms with status sus at time 0
 		std::vector<Farm*> compFarms = Status.premsWithStatus("sus", t);
 		int numExposed = Status.premsWithStatus("exp", t).size();
-		bool potentialTx = (focalFarms.size()!=0 && compFarms.size()!=0) || 
-			(numExposed>0 && compFarms.size()!=0);
+		bool potentialTx = (focalFarms.size()>0 && compFarms.size()>0) || (numExposed>0 && compFarms.size()>0);
 
    	   while (t<timesteps && potentialTx){ // timesteps, stop early if dies out
    	   	 t++; // starts at 1
@@ -213,8 +212,7 @@ for (auto r=1; r<=reps; r++){
  		 // determine infections that will happen from shipments	 
  		 std::clock_t ship_start = std::clock();	  
  		 std::vector<std::string> bannedFIPS = Status.FIPSWithStatus("banActive", t);
- 		 // assign county method according to time
- 		 
+ 		 // assign county-level shipment method according to time
  		 int cmElement = whichElement(t, coShipTimes); // which time span does t fall into
  		 int countyMethod = coShipMethods[cmElement]; // get matching shipment method
  		 Ship.makeShipments(focalFarms, compFarms, countyMethod, bannedFIPS);
@@ -228,9 +226,16 @@ for (auto r=1; r<=reps; r++){
  		 double shipTimeMS = 1000.0 * (ship_end - ship_start) / CLOCKS_PER_SEC;
  		 if(verbose){std::cout << "CPU time for shipping: " << shipTimeMS << "ms." << std::endl;}
  		 
- 		 // actually change statuses:
+ 		 // change statuses:
  		 // infections from local spread
  		 std::vector<Farm*> gridInf = G.get_infectedFarms();
+ 		 for (auto& gi:gridInf){ // record method of exposure for these farms
+ 		 	std::vector<int> tfm; /// tfm = time, farmID, method
+ 		 	tfm.emplace_back(t);
+ 		 	tfm.emplace_back(-1); // source farm ID in local spread currently untracked
+ 		 	tfm.emplace_back(0); // method 0 = local diffusion
+ 		 	gi->set_time_exp(tfm);
+ 		 }
 
  		 // infections from shipping (exclude banned shipments)
  		 std::vector<Farm*> shipInf; shipInf.clear();
@@ -238,6 +243,12 @@ for (auto r=1; r<=reps; r++){
  		  if (std::get<3>(is)==0){ // if this shipment was not banned
  		 	int destFarmID = std::get<1>(is); // get destination farm ID
  		 	shipInf.emplace_back(allFarms.at(destFarmID)); // add to list of farms to become exposed
+ 		 	// record method of exposure
+ 		 	std::vector<int> tfm; // tfm = time, farmID, method
+			tfm.emplace_back(t);
+			tfm.emplace_back(std::get<0>(is)); // origin farm ID
+ 		 	tfm.emplace_back(1); // method 1=shipping
+ 		 	allFarms.at(destFarmID)->set_time_exp(tfm); // record method of exposure
  		  }
  		 }
  		 
@@ -253,10 +264,20 @@ for (auto r=1; r<=reps; r++){
 		focalFarms = Status.premsWithStatus("inf", t);
 		compFarms = Status.premsWithStatus("sus", t);
 		numExposed = Status.premsWithStatus("exp", t).size();
-		potentialTx = (focalFarms.size()!=0 && compFarms.size()!=0) || 
-			(numExposed>0 && compFarms.size()!=0);
-//		std::cout<<"Retreived from statusTimeFarms: "<<focalFarms.size()<<" infectious and "<<compFarms.size()<<
-//		" susceptible and "<<expFarms.size()<<" exposed farms."<<std::endl;
+		
+		// output as specified
+		if (outStatusFile!="*"){
+			for (auto& os:outStatuses){
+				std::string printString = Status.formatOutput(os,t,0); // method 0 sums all prems for each timepoint (only enabled option)
+std::cout<<printString<<std::endl;
+				std::ofstream outfile;
+				outfile.open(outStatusFile, std::ios::app); // append to existing file
+ 				if(!outfile){std::cout<<"Status output file not open."<<std::endl;}
+				outfile << printString; 
+				outfile.close();
+			}
+		}
+		potentialTx = ((focalFarms.size()>0 && compFarms.size()>0) || (numExposed>0 && compFarms.size()>0));		
  		}  	// end "while under time and infectious and susceptible farms remain"
  		
  		std::clock_t rep_end = std::clock();

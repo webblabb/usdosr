@@ -35,22 +35,21 @@ Status_manager::Status_manager(std::string fname, /*int whichSeed,*/ std::unorde
 		// put each under status key sus, time key 1+end
 	}
 	// read in initially infected prems from file
-		std::vector<Farm*> focalFarms;
-	 	int fID;
- 		std::ifstream f(fname);
-		if(!f){std::cout << "Input file not found." << std::endl;}
-		if(f.is_open()){
-		if(verbose){std::cout << "Loading seed prems." << std::endl;}
-			while(! f.eof()){
-				std::string line;
-				getline(f, line); // get line from file "f", save as "line"			
-				if(! line.empty()){ // if line has something in it
-					str_cast(line, fID);
-					focalFarms.emplace_back(allPrems.at(fID));
-				} // close "if line_vector not empty"
-			} // close "while not end of file"
-		} // close "if file is open"
-		if(verbose){std::cout << "Closed seed file." << std::endl;}
+	std::vector<Farm*> focalFarms;
+	int fID;
+	std::ifstream f(fname);
+	if(!f){std::cout << "Input file not found. Exiting..." << std::endl; exit(EXIT_FAILURE);}
+	if(verbose){std::cout << "Loading seed prems." << std::endl;}
+		while(! f.eof()){
+			std::string line;
+			getline(f, line); // get line from file "f", save as "line"			
+			if(! line.empty()){ // if line has something in it
+				str_cast(line, fID);
+				std::cout<<fID<<", "<<std::endl;
+				focalFarms.emplace_back(allPrems.at(fID));
+			} // close "if line_vector not empty"
+		} // close "while not end of file"
+	if(verbose){std::cout << "Closed seed file." << std::endl;}
 /*	
 	// if choosing random farms from list
 	if (whichSeed>0){
@@ -65,6 +64,10 @@ Status_manager::Status_manager(std::string fname, /*int whichSeed,*/ std::unorde
 		for (auto&i : statusTimeFarms["inf"]){
 			std::cout<<i.first<<": "<<i.second.size()<<" prems, ";}
 	}
+	
+	// store species for formatting later
+	std::unordered_map< std::string, int > speciesMap = allPrems[fID]->get_spCounts();
+	for (auto& s:speciesMap){species.emplace_back(s.first);}
 }
 
 Status_manager::~Status_manager()
@@ -248,6 +251,7 @@ void Status_manager::updates(int t)
 }
 
 //not tested
+/*
 void Status_manager::printVector(std::vector<Farm*>& vec, std::string& fname) const
 // temporarily disabled due to incompatible std::to_string use
 {
@@ -278,25 +282,54 @@ void Status_manager::pickInfAndPrint(double propFocal,
 			focal.emplace_back(i.second);
 		} else {
 			comp.emplace_back(i.second);
-		}
+		}	
 	}
 	printVector(focal,fname);
  }
-/*
-std::vector<Farm*> Status_manager::sumPremsWithStatus(std::string s, int t)
-{ // get all farms with status s at and before time t
-	std::vector<Farm*> output;
-
-	if (statusTimeFarms.count(s)!=0){
-	std::unordered_map< int,std::vector<Farm*> >& status_s = statusTimeFarms.at(s); 
-	// step through map of times/farms
-	for (auto& st:status_s){
-		if(t < st.first){ // st.first is time at which next stage starts
-			for (auto& f:st.second){
-			output.emplace_back(f);} // add farm* to output
-		}	
-	} // end for each time in this status
-	}
- return output;
-}
 */
+std::string Status_manager::formatOutput(std::string status, const int t, int outputType)
+{
+// formats one line for output to existing file
+	std::string toPrint;
+	char temp[6];
+	// output type 0: sum of premises at all times
+	if (outputType==0){
+		std::vector<Farm*> statPrems = premsWithStatus(status,t);
+		if (statPrems.size()>0){
+		// print status, time, number of premises, number of each species
+		
+		if (t==1){ // additional steps to print column headings if this is first output
+			toPrint += "Status\t";
+			toPrint += "Time\t";
+			toPrint += "NumPremises\t";
+			for (auto& s:species){
+				toPrint += s;
+				toPrint +="\t";
+			}
+			toPrint.replace(toPrint.end()-1, toPrint.end(), "\n"); // add line break at end
+		}
+		
+		toPrint	+= status;
+		toPrint += "\t";
+		sprintf(temp, "%d\t", t); // time as integer, then tab
+		toPrint	+= temp;
+		sprintf(temp, "%d\t", (int)statPrems.size()); // number of premises, then tab
+		toPrint	+= temp; 
+		std::unordered_map< std::string, int > speciesSums; // sums for all premises
+		for (auto& sp:statPrems){ // for each premises
+			std::unordered_map< std::string, int > sc = sp->Farm::get_spCounts();
+			for (auto& s:sc){ // for each species
+				speciesSums[s.first] += s.second; // cumulative sum of all populations, premises
+			}			
+		}
+		for (auto& s:species){ // using species list maintains same order for all outputs
+			sprintf(temp, "%d\t", speciesSums[s]);  // total sum of this species, then tab
+			toPrint	+= temp;
+		}
+		toPrint.replace(toPrint.end()-1, toPrint.end(), "\n"); // add line break at ends
+		} // end "if there are any premises with this status"
+	}
+	
+
+	return toPrint;
+}

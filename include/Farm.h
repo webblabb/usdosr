@@ -32,67 +32,74 @@ class Farm
 		double x_coordinate, y_coordinate, sus, inf;
 		std::string fips, status;
 		std::unordered_map< std::string, int > speciesCounts;
+		std::vector< std::vector<int> > time_ExpSource; // "time-exposure source"
+		// element [0] holds time infected, following element(s) indicate(s) source premises id and method of exposure:
+		// 0: local spread, 1: shipments
+		// most will be of vector length 1, unless simultaneously infected locally and by shipments
 	
 	public:
 		Farm(int, std::string, double, double);
 		~Farm();
-		int get_id() const; //Inlined
-		int get_cellID() const; //inlined
-		double get_x() const; //Inlined
-		double get_y() const; //Inlined
-		double get_sus() const; //Inlined
-		double get_inf() const; //Inlined
- 		std::string get_status() const; //Inlined
- 		std::string get_fips() const; //Inlined
+		int get_id() const; // inlined
+		int get_cellID() const; // inlined
+		double get_x() const; // inlined
+		double get_y() const; // inlined
+		double get_sus() const; // inlined
+		double get_inf() const; // inlined
+ 		std::string get_status() const; // inlined
+ 		std::string get_fips() const; // inlined
+ 		std::unordered_map< std::string, int > get_spCounts() const; // inlined
+ 		std::vector< std::vector<int> > get_timeExp() const; // inlined
+ 		
  		int get_size(const std::string species) const;
- 		 		
+ 		
 		void set_cellID(const int cellID);
  		void set_status(const std::string);
  		void set_speciesCount(const std::string, int);
  		void set_sus(const double);
  		void set_inf(const double);
+ 		void set_time_exp(const std::vector<int>&);
 };
 
 inline int Farm::get_id() const
 {
 	return id;
 }
-
-inline std::string Farm::get_fips() const
-{
-	return fips;
-}
-
-inline double Farm::get_x() const
-{
-	return x_coordinate;
-}
-
-inline double Farm::get_y() const
-{
-	return y_coordinate;
-}
-
-inline double Farm::get_sus() const
-{
-	return sus;
-}
-
-inline double Farm::get_inf() const
-{
-	return inf;
-}
-
-
 inline int Farm::get_cellID() const
 {
 	return cellID;
 }
-
+inline double Farm::get_x() const
+{
+	return x_coordinate;
+}
+inline double Farm::get_y() const
+{
+	return y_coordinate;
+}
+inline double Farm::get_sus() const
+{
+	return sus;
+}
+inline double Farm::get_inf() const
+{
+	return inf;
+}
 inline std::string Farm::get_status() const
 {
 	return status;
 }
-
+inline std::string Farm::get_fips() const
+{
+	return fips;
+}
+inline std::unordered_map< std::string, int > Farm::get_spCounts() const
+{
+	return speciesCounts;
+}
+inline std::vector< std::vector<int> > Farm::get_timeExp() const
+{
+	return time_ExpSource;
+}
 
 #endif //FARM_H

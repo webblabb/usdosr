@@ -66,3 +66,8 @@ void Farm::set_inf(const double in_inf)
 {
 	inf = in_inf;
 }
+
+void Farm::set_time_exp(const std::vector<int>& tfm) // tfm = time, farmID, method
+{
+	time_ExpSource.emplace_back(tfm);
+}

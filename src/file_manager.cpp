@@ -107,10 +107,7 @@ void file_manager::readConfig(std::string& cfile)
 		if (pv[52]!="0" && pv[52]!="1"){std::cout << "ERROR (config 52): Shipment ban scale must be county-(0) or state-(1) level." << std::endl;  exitflag=1;}
 		checkExit = checkMeanVar(pv[53],53,"ban initiation"); if (checkExit==1){exitflag=1;} // if exit triggered by this check, set exitflag=1
 		checkExit = checkMeanVar(pv[54],54,"ban compliance"); if (checkExit==1){exitflag=1;} // if exit triggered by this check, set exitflag=1
-
-		// within class functions = if method doesn't exist, say so in output
-		// add verbose as argument to all functions called from main
-
+		
 		if (exitflag){
 			std::cout << "Exiting..." << std::endl;
 			exit(EXIT_FAILURE);
@@ -157,6 +154,7 @@ bool file_manager::checkPositive(std::vector<int>& tempVec, int lineNum)
 	return exitflag;
 }
 
+// overloaded for doubles
 bool file_manager::checkPositive(std::vector<double>& tempVec, int lineNum)
 {
 	bool exitflag = 0;
