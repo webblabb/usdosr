@@ -1,12 +1,34 @@
-// Status_manager.cpp
-// 
-// Status of all premises is susceptible by default, all statuses stored
-// in the unordered_map "statusTimeFarms": first key is status (integer), second key
-// is end time (the last day for which that status is valid), stored value is farm*
-// Statuses are also stored with the farm object (only for current timepoint) for looking
-// up the status of an individual premises.
-// [] corresponds to "reported", which is not stored with the Farm object (only actual disease states are stored with the Farm object)
-// when the corresponding time matches with the time in the simulation, the FIPS of that farm is added to the banned list (combine and unique func)
+/*
+Status_manager.cpp
+Manages, stores, and retrieves statuses for premises and counties (FIPS). Both are 
+unordered maps with the first key being the status, which is one of:
+(for premises): sus, exp, (exp2), inf, imm
+(for counties): reported, banOrdered, banActive
+
+There are two differences in the premises and county maps. Premises maps have the second key
+being the time, as that is frequently referenced in checking statuses. County maps have
+FIPS as the second key, as the identity of county statuses is less time-sensitive.
+In both maps, the value is time, but in the premises map, this is the END time for that 
+particular status. In the county map, it is the START time for that particular status.
+
+This is set up this way because premises (disease) statuses can only be one of the options
+at a time: susceptible, exposed, infectious, or immune. Conversely, the FIPS statuses are
+nested: those that have an active shipping ban had a ban ordered and those were reported 
+at some point. Thus current statuses are determined by whether the current time is BEFORE
+the premises map time, and AFTER the county map time.
+
+The link between these two maps is the exp2 status at the premises level. This is an 
+exception to the rule that a premises can only have one status at a time, but this is not
+an actual disease status. Rather, this is initiated at the same time as the exp status, 
+but with an end time of when it will be reported. At that time, the appropriate FIPS is 
+initiated as reported.
+
+Status of all premises is initially susceptible, all statuses stored
+in the unordered_map "statusTimeFarms": first key is status (integer), second key
+is end time (the last day for which that status is valid), stored value is vector of farm*.
+Statuses are also stored with the farm object (only for current timepoint) for looking
+up the status of an individual premises.
+*/
 
 #include "Status_manager.h"
 #include "shared_functions.h"
@@ -26,6 +48,8 @@ Status_manager::Status_manager(std::string fname, /*int whichSeed,*/ std::unorde
 // allPrems: reference map of all other premises
 // endTime: last timestep of the simulation (to set temporarily static statuses)
 {
+	verbose = 1;
+	
 	params = in_params;
 	pastEndTime = endTime+100;
 	// initialize all farms as susceptible, with end time after end of run time
@@ -39,17 +63,16 @@ Status_manager::Status_manager(std::string fname, /*int whichSeed,*/ std::unorde
 	int fID;
 	std::ifstream f(fname);
 	if(!f){std::cout << "Input file not found. Exiting..." << std::endl; exit(EXIT_FAILURE);}
-	if(verbose){std::cout << "Loading seed prems." << std::endl;}
+	if(verbose>0){std::cout << "Loading seed prems." << std::endl;}
 		while(! f.eof()){
 			std::string line;
 			getline(f, line); // get line from file "f", save as "line"			
 			if(! line.empty()){ // if line has something in it
 				str_cast(line, fID);
-				std::cout<<fID<<", "<<std::endl;
 				focalFarms.emplace_back(allPrems.at(fID));
 			} // close "if line_vector not empty"
 		} // close "while not end of file"
-	if(verbose){std::cout << "Closed seed file." << std::endl;}
+	if(verbose>0){std::cout << "Closed seed file." << std::endl;}
 /*	
 	// if choosing random farms from list
 	if (whichSeed>0){
@@ -59,11 +82,15 @@ Status_manager::Status_manager(std::string fname, /*int whichSeed,*/ std::unorde
 	changeTo("inf", focalFarms, 1, params["infectious"]);
 	// change focalFarms' status to inf, with durations via params, at base time 1
 	// also removes these farms from susceptible list
-	if (verbose){
+	if (verbose==2){
 		std::cout<<focalFarms.size()<<" infectious prems initiated. End times for infectious prems: "<<std::endl;
 		for (auto&i : statusTimeFarms["inf"]){
 			std::cout<<i.first<<": "<<i.second.size()<<" prems, ";}
 	}
+	// add different lag for index reports
+	int indexLag = 2;
+	for (auto& f:focalFarms){
+		statusTimeFarms["exp2"][indexLag].emplace_back(f);}
 	
 	// store species for formatting later
 	std::unordered_map< std::string, int > speciesMap = allPrems[fID]->get_spCounts();
@@ -168,10 +195,11 @@ std::vector<std::string> Status_manager::FIPSWithStatus(std::string s, int t)
 	std::vector<std::string> output;
 	
 	if (statusFIPSTime.count(s)!=0){
-	std::unordered_map< std::string,int >& status_s = statusFIPSTime.at(s); 
+	std::unordered_map< std::string,int >& status_s = statusFIPSTime.at(s); //i.e. statusFIPStime["reported"]
 	// step through map of times/farms
 	for (auto& st:status_s){
-		if(t < st.second){ // st.second is time at which next stage starts
+// 		std::cout<<"Checking FIPS: "<<s<<": "<<st.second<<std::endl;
+		if(t > st.second){ // st.second is time at which next stage starts
 			output.emplace_back(st.first); // add FIPS to output
 		}	
 	} // end for each FIPS in this status
@@ -181,13 +209,14 @@ std::vector<std::string> Status_manager::FIPSWithStatus(std::string s, int t)
 
 void Status_manager::updates(int t)
 {
-	if (verbose){std::cout<<"Updating farm statuses. ";}
+	if (verbose==2){std::cout<<"Updating farm statuses. ";}
 // i. Reported farms->FIPS are assigned a ban start time
-	if (statusTimeFarms.count("exp2")!=0){ // if there are any reported farms
 	// Check the other "exposed" list with end time being the day of reporting
+	if (statusTimeFarms.count("exp2")!=0){ // if there are any reported farms
 	std::unordered_map<int,std::vector<Farm*>>& reportedFarms = statusTimeFarms.at("exp2");
 	// if there are premises at t (t is the day they are reported)
-	if(reportedFarms.size()>0 && reportedFarms.count(t)==1){ 
+	if(reportedFarms.count(t)==1){ 
+		if (verbose==2){std::cout<<"There are reported farms at this time. ";}
 		std::vector<Farm*>& farmsToReport = reportedFarms.at(t);
 		// get FIPS for each farm that's reported at this time
 		for (auto& ftr:farmsToReport){
@@ -196,7 +225,8 @@ void Status_manager::updates(int t)
 			if (statusFIPSTime["reported"].count(farmFIPS)==0){
 				int banLag = normDelay(params["startBan"]); // time at which ban will be ordered
 				statusFIPSTime["reported"][farmFIPS] = t+banLag;
-//				if(verbose){std::cout<<FIPSWithStatus("reported",t).size()<<" reported FIPS. ";}
+				if (verbose==2){std::cout<<"Adding FIPS to ban list, time "<<t+banLag<<". ";}
+
 			} 
 		}
 	}
@@ -209,7 +239,6 @@ void Status_manager::updates(int t)
 		if (rf.second == t){ // if today is the day the ban is ordered
 			int compLag = normDelay(params["complyBan"]); 
 			statusFIPSTime["banOrdered"][rf.first] = t+compLag;
-// 			if(verbose){std::cout<<FIPSWithStatus("banOrdered",t).size()<<" ban-ordered FIPS. ";}
 		}
 	}
 	}
@@ -219,8 +248,7 @@ void Status_manager::updates(int t)
 	for (auto& bf:statusFIPSTime.at("banOrdered")){
 	// bf.first is FIPS, bf.second is first day of ban
 		if (bf.second == t){ // if today is the first day of ban compliance
-			statusFIPSTime["banActive"][bf.first] = pastEndTime;
-//			if(verbose){std::cout<<FIPSWithStatus("banCompliant",t).size()<<" ban-compliant FIPS. ";}
+			statusFIPSTime["banActive"][bf.first] = t;
 		}
 	}
 	}
@@ -233,7 +261,6 @@ void Status_manager::updates(int t)
 		std::vector<Farm*>& expToInf = expFarms.at(t);
 		changeTo("inf", expToInf, t, params["infectious"]); 
 		// change these exposed premises to infectious (status 2), with end time according to "infectious" parameters
-//	if(verbose){std::cout<<premsWithStatus("inf",t).size()<<" infectious premises. ";}
 	}
 	}
 	
@@ -245,7 +272,6 @@ void Status_manager::updates(int t)
 		std::vector<Farm*>& infToRecovered = infPrems.at(t);
 		changeTo("imm", infToRecovered, pastEndTime); 
 		// change these infectious premises to immune, with end time past end
-//		if(verbose){std::cout<<premsWithStatus("imm",t).size()<<" immune premises. ";}
 	}
 	}
 }
@@ -291,7 +317,7 @@ std::string Status_manager::formatOutput(std::string status, const int t, int ou
 {
 // formats one line for output to existing file
 	std::string toPrint;
-	char temp[6];
+	char temp[10];
 	// output type 0: sum of premises at all times
 	if (outputType==0){
 		std::vector<Farm*> statPrems = premsWithStatus(status,t);

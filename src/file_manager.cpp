@@ -8,6 +8,7 @@ Reads configuration file and checks for errors. Holds vector of all input parame
 
 file_manager::file_manager()
 {
+	verbose = verboseLevel;
 }
 
 file_manager::~file_manager()

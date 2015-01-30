@@ -45,7 +45,8 @@ double kernelsq(double distsq)
 	k1 = 0.12
 	k2 = 1000
 	k3 = 3
-	plot(k1 / (1 + (usedist/k2)^k3)~usedist) # original f(distance)
+	# original f(distance)
+	plot(k1 / (1 + (usedist/k2)^k3) ~ usedist) 
 	usq = usedist^2
 	points(usedist, (k1 / (1 + (usq^(k3/2))/(k2^k3))),col="blue",pch="*")
 	*/
@@ -75,6 +76,7 @@ std::vector<std::string>
     return elems;
 }
 
+/*
 // used to print infection results from main
 std::string to_string(Farm* farm)
 // overloaded to_string function, makes tab-delim string (one line) for farm with ID, cellID, x, y, pop
@@ -97,7 +99,7 @@ std::string to_string(Farm* farm)
 	
 	return toPrint;
 }
-
+*/
 void removeFarmSubset(std::vector<Farm*>& subVec, std::vector<Farm*>& fullVec)
 // remove farms in first vector from second vector
 {

@@ -22,11 +22,10 @@
 
 a
 
+*.r
 .Rapp.history
-
 
 *.png
 
 *.txt
-!FLAPS_beefdairy_20151201_formatted.txt
 !config.txt

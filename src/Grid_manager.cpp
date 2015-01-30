@@ -19,9 +19,11 @@ Grid_manager::Grid_manager(std::string &fname, bool xyswitch, std::vector<std::s
 	std::vector<double>& in_speciesSus, std::vector<double>& in_speciesInf)
 // fills farm_map, farmList, and xylimits
 {
-	 speciesOnPrems = in_species;
-	 speciesSus = in_speciesSus;
-	 speciesInf = in_speciesInf;
+	verbose = 0; // manual control to turn this down instead of: verboseLevel;
+
+	speciesOnPrems = in_species;
+	speciesSus = in_speciesSus;
+	speciesInf = in_speciesInf;
 	// read in file of premises
 	int id, tempsize;
 	double x, y;
@@ -32,7 +34,7 @@ Grid_manager::Grid_manager(std::string &fname, bool xyswitch, std::vector<std::s
 	if(!f){std::cout << "Premises file not found." << std::endl;}
 	if(f.is_open())
 	{
-	if (verbose){std::cout << "Premises file open." << std::endl;}
+	if (verbose>0){std::cout << "Premises file open." << std::endl;}
 		while(! f.eof())
 		{
 			std::string line;
@@ -86,7 +88,7 @@ Grid_manager::Grid_manager(std::string &fname, bool xyswitch, std::vector<std::s
 					else if (y > std::get<3>(xylimits)){std::get<3>(xylimits) = y;} // y max
 					}
 				else {
-					if (verbose){std::cout << "Initializing xy limits...";}
+					if (verbose>0){std::cout << "Initializing xy limits...";}
 					xylimits = std::make_tuple(x,x,y,y);
 					// initialize min & max x value, min & max y value
 					} 
@@ -94,18 +96,18 @@ Grid_manager::Grid_manager(std::string &fname, bool xyswitch, std::vector<std::s
 			} // close "if line_vector not empty"
 		} // close "while not end of file"
 	} // close "if file is open"
-	if (verbose){
+	if (verbose==2){
 	std::cout << "x min = " << std::get<0>(xylimits) << std::endl;
 	std::cout << "x max = " << std::get<1>(xylimits) << std::endl;
 	std::cout << "y min = " << std::get<2>(xylimits) << std::endl;
 	std::cout << "y max = " << std::get<3>(xylimits) << std::endl;}
 	
 	f.close();
-	if (verbose){std::cout << fcount << " farms in " << FIPSmap.size() 
+	if (verbose>0){std::cout << fcount << " farms in " << FIPSmap.size() 
 		<< " counties loaded. Premises file closed." << std::endl;}
 
 	// copy farmlist from farm_map (will be changed as grid is created)
-	if (verbose){std::cout << "Copying farms from farm_map to farmList..." << std::endl;}
+	if (verbose==2){std::cout << "Copying farms from farm_map to farmList..." << std::endl;}
 	for (auto& prem: farm_map) {farmList.emplace_back(prem.second);} // "second" value from map is Farm pointer
 	 
 	// sort farmList by ID for faster matching/subset removal
@@ -124,7 +126,7 @@ Grid_manager::~Grid_manager()
 std::vector<Farm*> Grid_manager::getFarms(std::tuple<int,double,double,double> cellSpecs, const unsigned int maxFarms/*=0*/)
 // based on cell specs, finds farms in cell and saves pointers to farmsInCell
 {
-	if(verbose){std::cout << "Getting farms in cell..." << std::endl;}
+	if(verbose==2){std::cout << "Getting farms in cell..." << std::endl;}
 
     // cellSpecs[0] is placeholder for ID number, added when committed
     double x = std::get<1>(cellSpecs);
@@ -217,7 +219,7 @@ void Grid_manager::initiateGrid(const unsigned int in_maxFarms, const int kernel
 {
 	set_maxFarms(in_maxFarms);
 	std::cout << "Max farms set to " << maxFarms << std::endl;
-    if(verbose){std::cout << "Splitting into grid cells..." << std::endl;}
+    if(verbose>0){std::cout << "Splitting into grid cells..." << std::endl;}
  	int cellCount = 0;
     std::stack<std::tuple<int,double,double,double>> queue;// temporary list of cells to check for meeting criteria for commitment
     std::vector<Farm*> farmsInCell; // vector of (pointers to) farms in working cell - using vector to get to specific elements
@@ -229,7 +231,7 @@ void Grid_manager::initiateGrid(const unsigned int in_maxFarms, const int kernel
     
     double side_x = max_x - min_x;
     double side_y = max_y - min_y;
-    if(verbose)
+    if(verbose==2)
     {
     	std::cout << "side_x = " << side_x << std::endl;
     	std::cout << "side_y = " << side_y << std::endl;
@@ -238,11 +240,11 @@ void Grid_manager::initiateGrid(const unsigned int in_maxFarms, const int kernel
     // use whichever diff is larger, x or y
     if (side_y > side_x)
        side_x = side_y; 
-    if(verbose){std::cout << "Using larger value " << side_x << std::endl;}
+    if(verbose==2){std::cout << "Using larger value " << side_x << std::endl;}
     
     // add cell specifications to temporary tuple
     std::tuple<int,double,double,double> cellSpecs = {cellCount, min_x, min_y, side_x};
-    if(verbose){std::cout << "cellSpecs: " << std::get<0>(cellSpecs) <<", "<< std::get<1>(cellSpecs) 
+    if(verbose==2){std::cout << "cellSpecs: " << std::get<0>(cellSpecs) <<", "<< std::get<1>(cellSpecs) 
     	<<", "<< std::get<2>(cellSpecs) <<", "<< std::get<3>(cellSpecs) << std::endl;}
 
     // add initial cell to the queue
@@ -251,11 +253,11 @@ void Grid_manager::initiateGrid(const unsigned int in_maxFarms, const int kernel
     // while there are any items in queue
     while(queue.size()>0)
     {
-    if(verbose){std::cout << std::endl << "Queue length = " << queue.size() << std::endl;}
+    if(verbose==2){std::cout << std::endl << "Queue length = " << queue.size() << std::endl;}
     
     cellSpecs = queue.top(); // set first in queue as working cell
 
-	if(verbose){
+	if(verbose==2){
     	std::cout << "Cell side length = " << std::get<3>(cellSpecs) << ". ";
     }
 
@@ -266,20 +268,20 @@ void Grid_manager::initiateGrid(const unsigned int in_maxFarms, const int kernel
         	std::get<0>(cellSpecs) = cellCount;
         	commitCell(cellSpecs,farmsInCell);
         	cellCount = cellCount+1;
-        	if (verbose){std::cout << "Side smaller than kernel diameter. Cell committed: #" << cellCount;}
+        	if (verbose==2){std::cout << "Side smaller than kernel diameter. Cell committed: #" << cellCount;}
         	removeParent(queue);
         } else { // no farms in cell, remove from queue w/o committing
         	removeParent(queue);
-            if(verbose){std::cout << "No farms, removed cell, queue length = " << queue.size() << std::endl;}
+            if(verbose==2){std::cout << "No farms, removed cell, queue length = " << queue.size() << std::endl;}
         }
     // Case B: side length of cell >= kernel diameter, check farm density and split if needed
     } else if (std::get<3>(cellSpecs) >= kernelRadius*2){ // side >= kernel diameter
-    	if(verbose){std::cout << "Side bigger than kernel, stepping in..." << std::endl;}
+    	if(verbose==2){std::cout << "Side bigger than kernel, stepping in..." << std::endl;}
     	farmsInCell = getFarms(cellSpecs, maxFarms); // copy up to maxFarms farms in cell to farmsInCell)
-    	if(verbose){std::cout << "Farms in cell = " << farmsInCell.size() << std::endl;}
+    	if(verbose==2){std::cout << "Farms in cell = " << farmsInCell.size() << std::endl;}
         if (farmsInCell.size() >= maxFarms){
         // if farm density too high, split
-			if(verbose){std::cout << "Too many farms, splitting cell..." << std::endl;}
+			if(verbose==2){std::cout << "Too many farms, splitting cell..." << std::endl;}
 			splitCell(cellSpecs,queue);
         }
         else if (farmsInCell.size() > 0 && farmsInCell.size() < maxFarms){
@@ -287,13 +289,13 @@ void Grid_manager::initiateGrid(const unsigned int in_maxFarms, const int kernel
             	std::get<0>(cellSpecs) = cellCount;
                 commitCell(cellSpecs,farmsInCell);
                 cellCount = cellCount+1;
-                if (verbose){std::cout << "Cell committed: #" << cellCount;}
+                if (verbose>0){std::cout << "Cell committed: #" << cellCount;}
                 removeParent(queue);
             }
         else if (farmsInCell.empty()){
         // cell has no farms at all - remove from queue w/o committing
             removeParent(queue);
-            if(verbose){std::cout << "No farms, removed cell, queue length = " 
+            if(verbose==2){std::cout << "No farms, removed cell, queue length = " 
             	<< queue.size() << std::endl;}
         }
     }
@@ -302,7 +304,7 @@ void Grid_manager::initiateGrid(const unsigned int in_maxFarms, const int kernel
 	std::cout << "Grid of "<< allCells.size()<<" cells created, with min side "<<kernelRadius*2<<
 	" and max "<<maxFarms<<" farms. Pre-calculating distances..." << std::endl;
 	makeCellRefs();
-	if(!verbose){std::cout << "Grid initiated using density parameters. ";}
+	if(verbose>0){std::cout << "Grid initiated using density parameters. ";}
 
 }
 
@@ -316,7 +318,7 @@ void Grid_manager::initiateGrid(std::string& cname)
 	if(!f){std::cout << "Input file not found. Exiting..." << std::endl; exit(EXIT_FAILURE);}
 	if(f.is_open())
 	{
-	if (verbose){std::cout << "File open" << std::endl;}
+	if (verbose>0){std::cout << "File open" << std::endl;}
 		while(! f.eof())
 		{
 			std::tuple<int,double,double,double> cellSpecs;
@@ -326,18 +328,18 @@ void Grid_manager::initiateGrid(std::string& cname)
 			
 			if(! line_vector.empty()) // if line_vector has something in it
 			{ // convert each string piece to double
-				if (verbose){std::cout << "Reading cell: ";}
+				if (verbose==2){std::cout << "Reading cell: ";}
 				std::get<0>(cellSpecs)=stoi(line_vector[0]); //id
-				if (verbose){std::cout << stoi(line_vector[0]) << ", ";}
+				if (verbose==2){std::cout << stoi(line_vector[0]) << ", ";}
 				std::get<1>(cellSpecs)=stod(line_vector[1]); //x
-				if (verbose){std::cout << stod(line_vector[1]) << ", ";}
+				if (verbose==2){std::cout << stod(line_vector[1]) << ", ";}
 				std::get<2>(cellSpecs)=stod(line_vector[2]); //y
-				if (verbose){std::cout << stod(line_vector[2]) << ", ";}
+				if (verbose==2){std::cout << stod(line_vector[2]) << ", ";}
 				std::get<3>(cellSpecs)=stod(line_vector[3]); //side
-				if (verbose){std::cout << stod(line_vector[3]) << ". ";}
+				if (verbose==2){std::cout << stod(line_vector[3]) << ". ";}
 				// line_vector[4] is num farms-ignored (gets reassigned)
 				farmsInCell = getFarms(cellSpecs);
-				if (verbose){std::cout << farmsInCell.size() << " farms assigned to cell." << 			
+				if (verbose==2){std::cout << farmsInCell.size() << " farms assigned to cell." << 			
 					std::endl;}
 				if(farmsInCell.empty()){
 					std::cout << "Cell " << std::get<0>(cellSpecs) << " has no farms - ignoring." << 				
@@ -355,7 +357,7 @@ void Grid_manager::initiateGrid(std::string& cname)
 		} // close "while not end of file"
 	} // close "if file is open"
 	f.close();
-	if (verbose){std::cout << "File closed" << std::endl;}
+	if (verbose>0){std::cout << "File closed" << std::endl;}
 	std::cout << allCells.size() << " cells loaded from file."<<std::endl;
 	if (!farmList.empty()){
 		Farm* f = farmList[0];
@@ -498,11 +500,10 @@ std::string Grid_manager::to_string(grid_cell& gc) const
 void Grid_manager::printCells(std::string& pfile) const
 // input is premises file, to be included in cell file name
 // temporarily disabled due to incompatible std::to_string use
-{
+{/*
 	// sort cells by ID (ensures farm reassignment will be in same order as when created)
 	std::map<double, grid_cell*> orderedCells(allCells.begin(),allCells.end());
 	double firstcell = orderedCells.begin()->first;
-	if(verbose){std::cout << "First cell: " << firstcell << std::endl;}
 
 	std::string tabdelim;
 	tabdelim.reserve(orderedCells.size() * 50);
@@ -529,6 +530,7 @@ void Grid_manager::printCells(std::string& pfile) const
 		f.close();
 	}
 	std::cout << "Cells printed to " << ofilename <<std::endl;
+*/
 }
 
 // void Grid_manager::printVector(std::vector<Farm*>& vec, std::string& fname) const
@@ -578,25 +580,25 @@ double Grid_manager::shortestCellDist2(grid_cell* cell1, grid_cell* cell2)
 	// Vertically: N of, S of, or directly beside all or part of cell2.
 	
 	// Determine horizontal relationship and set x values accordingly:
-// 	if(verbose){std::cout << "Cell " << cell1_id << " is ";}
+	if(verbose==2){std::cout << "Cell " << cell1_id << " is ";}
 	
 	if (cell1_East <= cell2_West) // cell1 west of cell2
 		{
-// 		if(verbose){std::cout << "west of and ";}
+ 		if(verbose==2){std::cout << "west of and ";}
 		cell1_x = cell1_East;
 		cell2_x = cell2_West;
 		}
 	// or cell1 is east of cell2
 	else if (cell1_West >= cell2_East)
 		{
-// 		if(verbose){std::cout << "east of and ";}
+ 		if(verbose==2){std::cout << "east of and ";}
 		cell1_x = cell1_West;
 		cell2_x = cell1_East;
 		}
 	// or cell1 is directly atop all or part of cell2
 //	else // if ((cell1_East > cell2_West) && (cell1_West < cell2_East))
 //		{
-// 		if(verbose){std::cout << "vertically aligned with and ";}
+ 		if(verbose==2){std::cout << "vertically aligned with and ";}
 		//cell1_x = 0; // already initialized as 0
 		//cell2_x = 0; // already initialized as 0
 		// only use distance between y values
@@ -605,21 +607,21 @@ double Grid_manager::shortestCellDist2(grid_cell* cell1, grid_cell* cell2)
 	// Determine vertical relationship and set y values accordingly:
 	if (cell1_South >= cell2_North) // cell1 north of cell2
 		{
-// 		if(verbose){std::cout << "north of cell "<< cell2_id << std::endl;}
+ 		if(verbose==2){std::cout << "north of cell "<< cell2_id << std::endl;}
 		cell1_y = cell1_South;
 		cell2_y = cell2_North;
 		}
 	// or cell1 is below cell2
 	else if (cell1_North <= cell2_South)
 		{
-// 		if(verbose){std::cout << "south of cell "<< cell2_id << std::endl;}
+ 		if(verbose==2){std::cout << "south of cell "<< cell2_id << std::endl;}
 		cell1_y = cell1_North;
 		cell2_y = cell2_South;
 		}
 	// or cell1 is directly beside cell2
 // 	else // if ((cell1_South < cell2_North) && (cell1_North > cell2_South))
 // 		{
-// 		if(verbose){std::cout << "horizontally aligned with cell "<< cell2_id << std::endl;}
+// 		if(verbose==2){std::cout << "horizontally aligned with cell "<< cell2_id << std::endl;}
 		//cell1_y = 0; // already initialized as 0
 		//cell2_y = 0; // already initialized as 0
 		// only use distance between x values
@@ -675,7 +677,7 @@ void Grid_manager::makeCellRefs()
 			} // end if gridValue > 0
 		} // end for each cell2
 	} // end for each cell1
- 	if (verbose){
+ 	if (verbose>0){
  		std::cout << "Kernel distances and neighbors recorded." << std::endl;
  	}
 }
@@ -761,13 +763,13 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 	for (auto& cf:in_compFarms){ // cf is Farm*
 		compCellMap[cf->Farm::get_cellID()].emplace_back(cf);
 	}
-	if(verbose){
+	if(verbose==2){
 		std::cout << compCellMap.size() << " cells contain " << in_compFarms.size() << " comparison farms: ";
 	}
 		
    for (auto& fc1:focalCellMap){ 
     int fcID = fc1.first; // cell id
-//    if(verbose){std::cout << "Focal cell set to " << fcID << std::endl;}
+    if(verbose==2){std::cout << "Focal cell set to " << fcID << std::endl;}
 	// get neighbor cells of focal cell (includes self)
 	std::vector<grid_cell*>& neighborsOfFocal = kernelNeighbors.at(fcID);
 	
@@ -776,7 +778,7 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 		if (compCellMap.count( n->grid_cell::get_id() )>0){ // if this neighbor cell has comparison farms
 			neighborsToCheck.emplace_back(n);}
 		} // end for each neighbor cell
-			if(verbose && neighborsToCheck.size()<allCells.size()){std::cout << neighborsToCheck.size() << " neighbor cells to check." << std::endl;}	
+			if(verbose==2 && neighborsToCheck.size()<allCells.size()){std::cout << neighborsToCheck.size() << " neighbor cells to check." << std::endl;}	
 
 	for (auto& f1:fc1.second){ // for each focal farm in this cell
 		double farmFoc = getFarmInf(f1); // infectiousness value for focal farm
@@ -806,8 +808,8 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 			if (gridCellKernel.at(ids[0]).count(ids[1]) == 1){ // something exists for this cell pair
 				gridKernValue = gridCellKernel.at(ids[0]).at(ids[1]);}
 			else {
-				if(verbose){std::cout << std::endl << "Neighbor " << compCellID << " of farm "<< fcID
-				<<" has no stored kernel value. ";}}
+				std::cout << std::endl << "Neighbor " << compCellID << " of farm "<< fcID
+				<<" has no stored kernel value. ";}
 
 			// maximum transmission values of cells
 			double maxComp = c2->grid_cell::get_maxSus(); // max susceptibility of any farm in comparison cell
@@ -871,7 +873,7 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 					if (random2 < betweenFarmsProb/remainingFarmsMaxProb){
 						// infect
 						int compFarmID = f2->Farm::get_id();
-//						if(verbose){std::cout << "Farm infected. ";}
+						if(verbose==2){std::cout << "Farm infected. ";}
 //						s = 0; // remainingFarmProb recalculates to 1 for remainder of loop
 						if (infectedFarms.count(compFarmID)==0){ // if this farm hasn't been infected
 							infectedFarms[compFarmID].emplace_back(1);
@@ -891,7 +893,7 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 		} // end for loop through comparison cells
 	  } // end for each focal farm
 	} // end for each focal cell
-	if(verbose){
+	if(verbose==2){
 		std::cout<<"Infections this time step (gridding): "<<infectedFarms.size()<<std::endl;
 	}
 }

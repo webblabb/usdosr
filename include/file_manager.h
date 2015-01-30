@@ -5,11 +5,12 @@
 #include "shared_functions.h"
 // shared_functions includes iostream, sstream, string, vector
 
-extern bool verbose;
+extern int verboseLevel;
 
 class file_manager
 {
 	private:
+		int verbose;
 		std::vector<std::string> pv; // parameter vector
 		
 		bool checkMeanVar(std::string&, int, std::string);

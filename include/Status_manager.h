@@ -13,15 +13,17 @@
 #include <fstream>
 #include <tuple>
 
-extern bool verbose;
+extern int verboseLevel;
 
 class Status_manager
 {
 	private:
-		// maps with nested keys: status, status end time, value: vector of Farm*s/FIPS
+		int verbose;
+		// map with nested keys: status, status END time, value: vector of Farm*s
+		// status keys: sus, exp, inf, imm, vax, cull, exp2 (to be reported)
 		// time index makes it faster to look up current statuses
 		std::unordered_map< std::string,std::unordered_map<int,std::vector<Farm*>> > statusTimeFarms;
-		// status keys: sus, exp, inf, imm, vax, cull, exp2 (to be reported)
+		// map with nested keys: status, FIPS, status START time
 		std::unordered_map< std::string,std::unordered_map<std::string, int> > statusFIPSTime;
 		// status keys: reported, banOrdered, banCompliant
 
