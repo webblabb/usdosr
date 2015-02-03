@@ -63,13 +63,9 @@ end
 Suscept=Sheep+10.5*Cows; % suscep for each farm based on cows & sheep
 Transmiss=5.1e-7*Sheep + 7.7e-7*Cows; % trans for each farm based on cows & sheep
 
-str = fprintf('Total cows: %.2f; Total sheep: %.2f.\n', sum(Cows), sum(Sheep));
-% disp('Total cows: ')
-% disp(sum(Cows))
-% disp('Total sheep: ')
-% disp(sum(Sheep))
+fprintf('Total cows: %.2f; Total sheep: %.2f.\n', sum(Cows), sum(Sheep));
 
-gridsize = 1;
+gridsize = Size; %Number of grid cells
 grid=WhichGrid(x,y,Size,Size,gridsize,gridsize); % find grid cell for this location
 [tmp,i]=sort(grid);
 x=x(i); y=y(i); Status=Status(i); grid=grid(i);
@@ -77,7 +73,12 @@ seed_loc = i(1); %Save the index of the seeded farm so that it can be reseeded l
 fprintf('Seeding farm: %d.\n', seed_loc);
 fprintf('Number of grid cells: %d.\n', max(grid))
 
+
 for i=1:max(grid) % for each grid cell
+%The commented bit is the original way of calculating cell x & y
+%coordinates, the 2 lines below is the new, possibly more correct way of
+%doing it.
+
 %     Xgrid(i)=floor((i-1)/gridsize);
 %     Ygrid(i)=mod((i-1),gridsize);
     Xgrid(i)=(mod((i-1), gridsize) / gridsize) * Size; 
@@ -94,9 +95,16 @@ for i=1:max(grid) % for each grid cell
         Max_Sus_grid(i)=0;
     end
 end
-scatter(Xgrid, Ygrid, '+r')
-hold on
-scatter(x,y, '.b')
+
+%Uncomment following to plot the farms and the grid cells. The plot won't
+%be drawn until the program returns, so ctrl-c when the first 'Gridding'
+%shows up in the command window.
+% scatter(Xgrid, Ygrid, 500, '+r', 'LineWidth', 2.5) %Marks the lower left corner of the cells
+% hold on
+% scatter(x,y, '.b') %Farms as dots.
+%Enable the following to also label farms with their grid number, just to
+%make sure everyting is working as intended.
+% text(x,y,int2str(grid), 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'right')
 
 
 %Work out grid to maximum grid transmission probabilities
@@ -114,7 +122,7 @@ end
 for r=1:100
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                            fprintf('\nGridding:')
+                            fprintf('\nGridding:\n')
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     % Susceptible, Exposed, Infectious, Reported.
@@ -124,15 +132,10 @@ for r=1:100
     i=i+1;  IterateFlag=1;
     
     
-    % The main iteration
-    all_d_g = [];
-    all_q_g = [];
-    all_d_pw = [];
-    all_q_pw = [];
-    
+    % The main iteration    
     while (t<MaxTime & IterateFlag)
         
-        [Status, all_d_g, all_q_g]=Iterate(Status, x, y, Suscept, Transmiss, RingCull, grid, first_in_grid, last_in_grid, Num, MaxRate, all_d_g, all_q_g);
+        [Status]=Iterate(Status, x, y, Suscept, Transmiss, RingCull, grid, first_in_grid, last_in_grid, Num, MaxRate);
         
         Sus=find(Status==0); Exp=find(Status>0 & Status<=5); Inf=find(Status>5 & Status<=9);
         Rep=find(Status>9); Culled=find(Status<0);
@@ -148,7 +151,6 @@ for r=1:100
         
     end
     
-    %plot(t,I)
     fprintf('Max N infected at any t: %d.\n', max(I));
     fprintf('Sheep culled: %.2f; Cattle culled: %.2f.\n', CullSheep(end), CullCattle(end));
     
@@ -158,9 +160,7 @@ for r=1:100
     fformat = '%d\t%f\t%f\t%d\n'; % format as fixed decimal, tab-separated, with line break
     fprintf(fID,fformat,temp); % print to file
     fclose(fID); % close file
-    
-    %scatter(all_d_g(1:1000), all_q_g(1:1000));
-    
+
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                     fprintf('\nPairwise:\n')
@@ -175,7 +175,7 @@ for r=1:100
     % The main iteration
     while (t<MaxTime & IterateFlag)
         
-        [Status, all_d_pw, all_q_pw]=IteratePW(Status, x, y, Suscept, Transmiss, RingCull, all_d_pw, all_q_pw);%, grid, first_in_grid, last_in_grid, Num, MaxRate);
+        [Status]=IteratePW(Status, x, y, Suscept, Transmiss, RingCull);%, grid, first_in_grid, last_in_grid, Num, MaxRate);
         
         Sus=find(Status==0); Exp=find(Status>0 & Status<=5); Inf=find(Status>5 & Status<=9);
         Rep=find(Status>9); Culled=find(Status<0);
@@ -207,7 +207,7 @@ end
 end
 
 % Iteration Space
-function [Status, all_d, all_q]=Iterate(Status, x, y, Suscept, Transmiss, RingCull, grid, first_in_grid, last_in_grid, Num, MaxRate, all_d, all_q)
+function [Status]=Iterate(Status, x, y, Suscept, Transmiss, RingCull, grid, first_in_grid, last_in_grid, Num, MaxRate)
 
 Event=0*Status;
 
@@ -226,11 +226,7 @@ for i=1:NI
         if PAB==1
             ind=first_in_grid(M):last_in_grid(M);
             sq_dist = (x(INFi)-x(ind)).^2+(y(INFi)-y(ind)).^2;
-            %disp('distance')
             Q=1-exp(-Transmiss(INFi)*Suscept(ind).*Kernel(sq_dist));
-            all_d = [all_d; sq_dist];
-            all_q = [all_q; Q];
-            %disp([Q, distance, ind'])
             Event(ind(find(rand(size(Q))-Q<0 & Status(ind)==0)))=1;
         else
             for j=1:Num(M)
@@ -241,8 +237,6 @@ for i=1:NI
                     s=0;
                     sq_dist = (x(INFi)-x(ind)).^2+(y(INFi)-y(ind)).^2;
                     Q=1-exp(-Transmiss(INFi)*Suscept(ind).*Kernel(sq_dist));
-                    all_d = [all_d; sq_dist];
-                    all_q = [all_q; Q];
                     if R<Q/P && Status(ind)==0
                         Event(ind)=1;
                     end
@@ -251,6 +245,7 @@ for i=1:NI
         end
     end
 end
+
 m=find(Status>0);
 Status(m)=Status(m)+1;
 Status=Status+Event;
@@ -265,11 +260,11 @@ end
 end
 
 % Iteration Space - pairwise
-function [Status, all_d_pw, all_q_pw]=IteratePW(Status, x, y, Suscept, Transmiss, RingCull, all_d_pw, all_q_pw)%, grid, first_in_grid, last_in_grid, Num, MaxRate)
+function [Status]=IteratePW(Status, x, y, Suscept, Transmiss, RingCull)%, grid, first_in_grid, last_in_grid, Num, MaxRate)
 Event=0*Status; % initialize with 0s
 
 INF=find(Status>5 & Status<12);  NI=length(INF); % Note reported farms still infectious
-%IGrids=grid(INF);
+
 SUS=find(Status==0); NS=length(SUS); %kt
 
 for i=1:NI
@@ -279,20 +274,18 @@ for i=1:NI
     %    m=find(MaxProb-rand(1,max(grid))>0);  % these are grids that need further consideration
     % which grids' probabilities are successful
     for i2=1:NS
-        SUSi=SUS(i2);
+        %SUSi=SUS(i); % <- Original
+        SUSi=SUS(i2); % <- New. Should be i2, right?
         
         R=rand(1,1); %kt
         sq_dist = (x(INFi)-x(SUSi)).^2+(y(INFi)-y(SUSi)).^2;
-        P=1-exp(-Transmiss(INFi)*Suscept(SUSi).*Kernel(sq_dist)); %kt
-        %fprintf('%.2f, %.2f\n', sq_dist, P)
-        all_q_pw = [all_q_pw; P];
-        all_d_pw = [all_d_pw; sq_dist];
+        P=1-exp(-Transmiss(INFi)*Suscept(SUSi).*Kernel(sq_dist)); %kt       
         if R<P
             Event(SUSi)=1;
         end
     end
-    
 end
+
 m=find(Status>0);
 Status(m)=Status(m)+1; % increase progression for non-susceptibles
 Status=Status+Event; % implement new infections
@@ -322,10 +315,7 @@ end
 
 function G=WhichGrid(x,y,XRange,YRange,XNum,YNum)
 %input args are: x,y-coordinates of points to check, XY size of whole area,
-%XY size of area covered by grid cells?!?!?
-% XRange and YRange are both 20
-% XNum and YNum are both 20
-
+%and number of grid cells in wither direction(?).
 G=floor(x*XNum/XRange)*YNum+floor(y*YNum/YRange)+1;
 % x values * number of farms/10 (grid size)
 end
