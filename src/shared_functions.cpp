@@ -224,3 +224,13 @@ std::vector<std::string> stringToStringVec(std::string& toConvert)
     return output;
 }
 
+// function for printing (adding) output to specified file
+void printLine(std::string& outputFile, std::string& printString)
+{
+	std::ofstream outfile;
+	outfile.open(outputFile, std::ios::app); // append to existing file
+	if(!outfile){std::cout<<"File "<<outputFile<<" not open."<<std::endl;}
+	outfile << printString; 
+	outfile.close();
+}
+

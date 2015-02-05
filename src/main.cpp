@@ -26,14 +26,14 @@ int verboseLevel; // global variable
 int verbose = verboseLevel;
 
 // function for printing (adding) output to specified file
-void printLine(std::string& outputFile, std::string& printString)
-{
-	std::ofstream outfile;
-	outfile.open(outputFile, std::ios::app); // append to existing file
-	if(!outfile){std::cout<<"File "<<outputFile<<" not open."<<std::endl;}
-	outfile << printString; 
-	outfile.close();
-}
+// void printLine(std::string& outputFile, std::string& printString)
+// {
+// 	std::ofstream outfile;
+// 	outfile.open(outputFile, std::ios::app); // append to existing file
+// 	if(!outfile){std::cout<<"File "<<outputFile<<" not open."<<std::endl;}
+// 	outfile << printString; 
+// 	outfile.close();
+// }
 
 int main(int argc, char* argv[])
 {
@@ -60,9 +60,8 @@ int main(int argc, char* argv[])
 	// Batch settings
 	//std::string batch_name = pv[0]; //Folder where this run will be saved. Currently win-only.
 	int reps; str_cast(pv[1],reps); // Number of replicates to run - save pv[1] as int reps.
-	bool griddingOn; str_cast(pv[2],griddingOn);
-	bool pairwiseOn; str_cast(pv[3],pairwiseOn);
-	// pv[4] ... pv[9]
+	bool pairwiseOn; str_cast(pv[2],pairwiseOn);
+	// pv[3] ... pv[9]
 
 	// General settings
 	std::string pfile = pv[10]; // All premises filename
@@ -177,7 +176,6 @@ for (auto r=1; r<=reps; r++){
 		std::clock_t rep_start = std::clock();
 		// randomly pick a proportion to be focal farms and print to external file - for testing
 //		std::string fname = "seedFarms.txt"; Status.pickInfAndPrint(0.05, allFarms, fname)
-	if(griddingOn){
 		// load initially infected farms and instantiate Status manager
 		// note that initial farms are started as infectious (2) rather than exposed (1)
 		Status_manager Status(seedfile, lagParams, allFarms, timesteps);	 	
@@ -210,8 +208,12 @@ for (auto r=1; r<=reps; r++){
    		 
    		 // determine infections that will happen from local diffusion
 		 if(verbose>0){std::cout << "Starting grid check (local spread): "<<std::endl;}
-  		 std::clock_t gridcheck_start = std::clock();	  
-		 G.stepThroughCells(focalFarms,compFarms);
+  		 std::clock_t gridcheck_start = std::clock();	 
+  		 if (!pairwiseOn){ 
+		 	G.stepThroughCells(focalFarms,compFarms);
+		 } else { // if pairwise is on
+		 	G.stepThroughCellsPW(focalFarms,compFarms);
+		 }
 			  	 
   		 std::clock_t gridcheck_end = std::clock();
   		 double gridCheckTimeMS = 1000.0 * (gridcheck_end - gridcheck_start) / CLOCKS_PER_SEC;
@@ -294,8 +296,6 @@ for (auto r=1; r<=reps; r++){
  		std::clock_t rep_end = std::clock();
  		double repTimeMS = 1000.0 * (rep_end - rep_start) / CLOCKS_PER_SEC;
 		std::cout << "CPU time for rep "<<r<<" ("<<t<<" timesteps): " << repTimeMS << "ms." << std::endl;
-	} // end "if griddingOn"
-
 } // end for loop
 
 /*

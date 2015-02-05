@@ -8,9 +8,9 @@
 
 ### Batch settings ###
 * #(0) Batch name. Output saved to a folder of this name. Only letters, numbers and underscore. If there is data in the folder already it will be deleted and overwritten. (not yet implemented)
-1 	#(1)~Number of replicates to run. (Each rep will be saved to separate file - not yet implemented)
-1 #(2)~Gridding algorithm on (1) or off (0)
-0 #(3)~Pairwise algorithm on (1) or off (0)
+10 	#(1)~Number of replicates to run. (Each rep will be saved to separate file - not yet implemented)
+1 #(2)~Pairwise algorithm on (1) or off (0) in addition to gridding
+* #(3)
 * #(4)
 * #(5)
 * #(6)
@@ -19,12 +19,12 @@
 * #(9)
 
 ### General settings ###
-FLAPS_beefdairy_20151201_formatted.txt		#(10)~Name of file containing premises ID, FIPS, x, y, population
-randomFarms.txt 	#(11)+Name of file containing premises IDs that are infectious
-* 				#(12)+Name of file containing FIPS codes of infectious counties (not yet implemented)
-10 	#(13)~Timesteps (days) to run
+TXbeefprems.txt		#(10)~Name of file containing premises ID, FIPS, x, y, population - ie FLAPS_beefdairy_20151201_formatted.txt
+randomFarmsTX.txt 	#(11)+Name of file containing premises IDs that are infectious
+* 	#(12)+Name of file containing FIPS codes of infectious counties (not yet implemented)
+1 	#(13)~Timesteps (days) to run
 * #(14)
-1 	#(15)~Verbose option: Output extra information to console as model runs (0=off, 1=on)
+1 	#(15)~Verbose level: Output extra information to console as model runs (0=off, 1=basic steps, 2=debug)
 0 	#(16)~Reverse x/y option: in case input file is entered as lat/long (y/x)(set to 1) instead of long/lat (x/y)(set to 0)
 * #(17)
 * #(18)
@@ -51,27 +51,27 @@ randomFarms.txt 	#(11)+Name of file containing premises IDs that are infectious
 * #(35)
 * #(36)
 * #(37) 
-* 	#(38) Output: name of file to write all shipments to (those stopped by the ban are flagged) (not yet implemented)
-* 	#(39) Output shipments at premises-(0), county-(1), or state-(2) level (not yet implemented)
+* 	#(38) Output: name of file to write all shipments to (those stopped by the ban are flagged)
+1 	#(39) Output shipments at premises-(0), county-(1), or state-(2) level (state level not yet implemented)
 
 ### Infection-related settings ###
-0 	#(40)~Kernel type for local (diffusion) spread
-0 	#(41)~Length of quarantine, in days, of all received shipments (not yet implemented)
-5,1 #(42)~Mean, variance (around normal) days from premises exposure to infectiousness (latency duration)
-4,1 #(43)~Mean, variance (around normal) days from premises infectiousness to immunity (infectiousness duration)
-beef,dairy #(44)~ List of species for which counts are provided in premises file, comma-separated. If "Cattle" is not one of the items, edit Shipment_manager::farmFarmShipments, method 1 
-10.5,10.5 #(45)~ Susceptibility constant values (species-specific), comma-separated in order listed in (44)
+0 			#(40)~Kernel type for local (diffusion) spread
+0 			#(41)~Length of quarantine, in days, of all received shipments (not yet implemented)
+5,1 		#(42)~Mean, variance (around normal) days from premises exposure to infectiousness (latency duration)
+4,1 		#(43)~Mean, variance (around normal) days from premises infectiousness to immunity (infectiousness duration)
+beef,dairy 	#(44)~ List of species for which counts are provided in premises file, comma-separated. If "Cattle" is not one of the items, edit Shipment_manager::farmFarmShipments, method 1 
+10.5,10.5 	#(45)~ Susceptibility constant values (species-specific), comma-separated in order listed in (44)
 0.00000077,0.00000077 #(46)	~ Infectiousness constant values (species-specific), comma-separated in order listed in (44)
 * #(47)
-* #(48) Output: filename to write statuses over time (49 must be specified) (not yet implemented)
-* #(49) Output: status(es) over time to print to file, comma-separated (48 must be specified)(not yet implemented)
+* #(48) Output: filename to write statuses over time (49 must be specified)
+inf #(49) Output: status(es) over time to print to file, comma-separated (48 must be specified)
 
 ### Control-related settings
-2,0 	#(50)~Mean, variance (around normal) days from premises exposure to reporting (add another for index case)
+1,0 	#(50)~Mean, variance (around normal) days from premises exposure to reporting (add another for index case)
 100 		#(51)~Shipment ban: Percent compliance (0=no shipment ban)
 0 		#(52)~Shipment ban: County-(0) or state-(1) level ban (state-level not yet tested)
-3,0 	#(53)~Shipment ban: Mean, variance (around normal) days from premises reported to ban initiated
-2,0  	#(54)~Shipment ban: Mean, variance of compliance time lag after ban initiated
+1,0 	#(53)~Shipment ban: Mean, variance (around normal) days from premises reported to ban initiated
+0,0  	#(54)~Shipment ban: Mean, variance of compliance time lag after ban initiated
 * #(55)
 * #(56)
 * #(57)

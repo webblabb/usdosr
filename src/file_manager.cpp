@@ -49,8 +49,7 @@ void file_manager::readConfig(std::string& cfile)
 		str_cast(pv[1],tempInt);
 		if (tempInt<1){std::cout << "Warning (config 1): Number of replications must be 1 or more. Setting number of replications to 1." << std::endl; 
 			pv[1] = "1";}
-		if (pv[2]!="0" && pv[2]!="1"){std::cout << "ERROR (config 2): Gridding algorithm must be 1 (on) or 0 (off)." << std::endl; exitflag=1;}
-		if (pv[3]!="0" && pv[3]!="1"){std::cout << "ERROR (config 3): Pairwise algorithm must be 1 (on) or 0 (off)." << std::endl; exitflag=1;}
+		if (pv[2]!="0" && pv[2]!="1"){std::cout << "ERROR (config 2): Pairwise algorithm must be 1 (on) or 0 (off)." << std::endl; exitflag=1;}
 		if (pv[10]=="*"){std::cout << "ERROR (config 10): No premises file specified." << std::endl; exitflag=1;}
 		if (pv[11]=="*" && pv[12]=="*"){std::cout << "ERROR (config 11-12): No infectious premises file specified." << std::endl; exitflag=1;}
 		str_cast(pv[13],timesteps);

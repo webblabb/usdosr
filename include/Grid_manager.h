@@ -12,6 +12,7 @@
 #include "grid_cell.h"
 #include "farm.h"
 #include "shared_functions.h"
+#include "pairwise.h"
 
 #include <algorithm> // std::sort, std::any_of
 #include <queue> // for checking neighbor cells
@@ -44,9 +45,9 @@ class Grid_manager
 		std::tuple<double,double,double,double> 
 			xylimits; // [0]x min, [1]x max, [2]y min, [3]y max
 		std::unordered_map<int, std::unordered_map<int, double>> 
-			gridCellKernel; // kernel values between cell pairs
+			gridCellKernel; // kernel values between cell pairs - use IDs to sort
 		std::unordered_map<int, std::unordered_map<int, double>> 
-			storedDists; // freq-used distances between cell pairs, used in shortestCellDist
+			storedDists; // freq-used distances between cell pairs, used in shortestCellDist - use IDs to sort
 		std::unordered_map<int, std::vector<grid_cell*>> 
 			kernelNeighbors; // each cell's susceptible neighbors with p>0
 		// variables for infection evaluation
@@ -88,6 +89,8 @@ class Grid_manager
 			IDsToCells(int);  // overloaded to accept single ID also
 		double getFarmSus(Farm*); // used in precalculation and stored with Farm
 		double getFarmInf(Farm*); // used in precalculation and stored with Farm
+		std::string formatPWOutput(std::tuple<double,double,int,int,int,int>&);
+		std::string formatAnomaly(std::tuple<int,int,bool,bool,std::string,double>&);
 		
 	public:
 		/////////// for grid creation ///////////
@@ -145,6 +148,8 @@ class Grid_manager
 			
 		void stepThroughCells(
 			std::vector<Farm*>&, std::vector<Farm*>&);
+			
+		void stepThroughCellsPW(std::vector<Farm*>&, std::vector<Farm*>&);
 		// calcs pw prob for each farm for comparison to gridding loops
 		
 // 		void setInfectOut(bool); //inlined

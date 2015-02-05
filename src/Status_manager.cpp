@@ -48,7 +48,7 @@ Status_manager::Status_manager(std::string fname, /*int whichSeed,*/ std::unorde
 // allPrems: reference map of all other premises
 // endTime: last timestep of the simulation (to set temporarily static statuses)
 {
-	verbose = 1;
+	verbose = verboseLevel;
 	
 	params = in_params;
 	pastEndTime = endTime+100;

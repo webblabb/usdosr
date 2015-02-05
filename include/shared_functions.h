@@ -4,12 +4,13 @@
 #define shared_functions_h
 
 #include <random> // for random number generator in unif_rand
+#include <chrono> // for random number gen
 #include <cmath> // for std::sqrt in gKernel, floor in randomFrom
+#include <fstream> // for printing
 #include <vector> // for str_cast
 #include <string>
 #include <sstream>
 #include <iostream> // just for troubleshooting output
-#include <chrono>
 
 #include "farm.h" // for Farm* for farm sus/inf
 
@@ -26,6 +27,7 @@
 	std::vector<double> stringToNumVec(std::string&);
 	std::vector<int> stringToIntVec(std::string&);
 	std::vector<std::string> stringToStringVec(std::string&);
+	void printLine(std::string&, std::string&);
 
 	
 	template<typename T> void str_cast(const std::string &s, T &ref)
