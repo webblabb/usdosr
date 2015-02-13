@@ -21,7 +21,7 @@ Grid_manager::Grid_manager(std::string &fname, bool xyswitch, std::vector<std::s
 	std::vector<double>& in_speciesSus, std::vector<double>& in_speciesInf)
 // fills farm_map, farmList, and xylimits
 {
-	verbose = 1; // manual control to turn this down instead of: verboseLevel;
+	verbose = verboseLevel; // manual control to turn this down instead of: verboseLevel;
 
 	speciesOnPrems = in_species;
 	speciesSus = in_speciesSus;
@@ -582,52 +582,52 @@ double Grid_manager::shortestCellDist2(grid_cell* cell1, grid_cell* cell2)
 	// Vertically: N of, S of, or directly beside all or part of cell2.
 	
 	// Determine horizontal relationship and set x values accordingly:
-	if(verbose==2){std::cout << "Cell " << cell1_id << " is ";}
+	if(verbose>1){std::cout << "Cell " << cell1_id << " is ";}
 	
 	if (cell1_East <= cell2_West) // cell1 west of cell2
 		{
- 		if(verbose==2){std::cout << "west of and ";}
+ 		if(verbose>1){std::cout << "west of and ";}
 		cell1_x = cell1_East;
 		cell2_x = cell2_West;
 		}
 	// or cell1 is east of cell2
 	else if (cell1_West >= cell2_East)
 		{
- 		if(verbose==2){std::cout << "east of and ";}
+ 		if(verbose>1){std::cout << "east of and ";}
 		cell1_x = cell1_West;
 		cell2_x = cell1_East;
 		}
 	// or cell1 is directly atop all or part of cell2
-//	else // if ((cell1_East > cell2_West) && (cell1_West < cell2_East))
-//		{
- 		if(verbose==2){std::cout << "vertically aligned with and ";}
+	else // if ((cell1_East > cell2_West) && (cell1_West < cell2_East))
+		{
+ 		if(verbose>1){std::cout << "vertically aligned with and ";}
 		//cell1_x = 0; // already initialized as 0
 		//cell2_x = 0; // already initialized as 0
 		// only use distance between y values
-//		}
+		}
 	
 	// Determine vertical relationship and set y values accordingly:
 	if (cell1_South >= cell2_North) // cell1 north of cell2
 		{
- 		if(verbose==2){std::cout << "north of cell "<< cell2_id << std::endl;}
+ 		if(verbose>1){std::cout << "north of cell "<< cell2_id << std::endl;}
 		cell1_y = cell1_South;
 		cell2_y = cell2_North;
 		}
 	// or cell1 is below cell2
 	else if (cell1_North <= cell2_South)
 		{
- 		if(verbose==2){std::cout << "south of cell "<< cell2_id << std::endl;}
+ 		if(verbose>1){std::cout << "south of cell "<< cell2_id << std::endl;}
 		cell1_y = cell1_North;
 		cell2_y = cell2_South;
 		}
 	// or cell1 is directly beside cell2
-// 	else // if ((cell1_South < cell2_North) && (cell1_North > cell2_South))
-// 		{
-// 		if(verbose==2){std::cout << "horizontally aligned with cell "<< cell2_id << std::endl;}
+ 	else // if ((cell1_South < cell2_North) && (cell1_North > cell2_South))
+		{
+ 		if(verbose>1){std::cout << "horizontally aligned with cell "<< cell2_id << std::endl;}
 		//cell1_y = 0; // already initialized as 0
 		//cell2_y = 0; // already initialized as 0
 		// only use distance between x values
-//		}	
+		}	
 	
 	double xDiff = abs(cell1_x-cell2_x);
 	double yDiff = abs(cell1_y-cell2_y);
@@ -818,14 +818,14 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 			// if calculating spread TO focal cell, reassign values
 			if (!infectOut){maxComp = c2->grid_cell::get_maxInf();}
 
-			double s = 1; // on/off switch, 1 = on (single infection hasn't happened yet)
+//			double s = 1; // on/off switch, 1 = on (single infection hasn't happened yet)
 			 // 1st "prob5" in MT's Fortran code:
 			double farmToCellProb = 1 - exp(-farmFoc * compNumFarms*maxComp * gridKernValue);
 
 			double random1 = unif_rand();
 // Grid checkpoint A
-			if (random1 < farmToCellProb){ // if farm to cell succeeds
-				int f2count = 0; // how many farms in comparison cell have been checked
+			if (random1 <= farmToCellProb){ // if farm to cell succeeds
+// 				int f2count = 0; // how many farms in comparison cell have been checked
 				// "prob6" in MT's Fortran code:
 				// focal farm inf/sus * max sus/inf in comp cell * grid kernel
 				double indivFarmMaxProb = 1 - exp(-farmFoc * maxComp * gridKernValue); 
@@ -842,16 +842,16 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 // 						compsMade[f1->get_id()].emplace_back(f2->get_id());
 // 					}
  
-				f2count++;
+// 				f2count++;
 				// 2nd "prob5" in MT's Fortran code: - replaces farmToCell while stepping through
 				// # farms left in cell * farm(a) infectiousness * farm(b) susceptibility * grid kernel
-				double remainingFarmsMaxProb =1-(s*exp(-farmFoc * (compNumFarms+1-f2count)*maxComp * gridKernValue));
+	///			double remainingFarmsMaxProb =1-(s*exp(-farmFoc * (compNumFarms+1-f2count)*maxComp * gridKernValue));
 
 				double random2 = unif_rand(); // "prob4" in MT's Fortran code
 // Grid checkpoint B
-				if (random2 < indivFarmMaxProb/remainingFarmsMaxProb){	
+				if (random2 < indivFarmMaxProb/farmToCellProb){	
 					// if (one max susceptible)/(entrance prob accounting for # of farms checked) succeeds
-					s = 0; // remainingFarmProb recalculates to 1 for remainder of loop
+//					s = 0; // remainingFarmProb recalculates to 1 for remainder of loop
 					// get actual distances between farms
 					double f1x = f1 -> Farm::get_x();
 					double f1y = f1 -> Farm::get_y();
@@ -870,15 +870,15 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 					double betweenFarmsProb = 1-exp(-farmFoc * farmComp * kernelBWfarms); // prob tx between this farm pair
 					// "prob3" in MT's Fortran code
 // Grid checkpoint C
-					if (random2 < betweenFarmsProb/remainingFarmsMaxProb){
+					if (random2 < betweenFarmsProb/farmToCellProb){
 						// infect
 						int compFarmID = f2->Farm::get_id();
-						if(verbose==2){std::cout << "Farm infected. ";}
-//						s = 0; // remainingFarmProb recalculates to 1 for remainder of loop
+						if(verbose>0){
+							std::cout << "Infection @ distance: ";
+							std::cout << std::sqrt(distBWfarmssq)/1000 << ", prob "<<betweenFarmsProb<<std::endl;
+						}
 						if (infectedFarms.count(compFarmID)==0){ // if this farm hasn't been infected
 							infectedFarms[compFarmID].emplace_back(1);
-							//infectedFarms[f2->get_id()].emplace_back(f2x);
-							//infectedFarms[f2->get_id()].emplace_back(f2y);
 						} else {
 							infectedFarms.at(compFarmID)[0]++; // would be infected again - keep count
 						} // end if farm is already on infected list
@@ -893,7 +893,7 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 		} // end for loop through comparison cells
 	  } // end for each focal farm
 	} // end for each focal cell
-	if(verbose==2){
+	if(verbose>1){
 		std::cout<<"Infections this time step (gridding): "<<infectedFarms.size()<<std::endl;
 	}
 }
@@ -1024,7 +1024,7 @@ void Grid_manager::stepThroughCellsPW(std::vector<Farm*>& in_focalFarms, std::ve
 // Grid checkpoint C
 					if (random2 <= betweenFarmsProb/farmToCellProb){
 						// infect 						
-						if(verbose==2){std::cout << "Farm infected. ";}
+						if(verbose>1){std::cout << "Farm infected. ";}
 						if (pwinf){agreeCount++;}
 						if (infectedFarms.count(compFarmID)==0){ // if this farm hasn't been infected
 							infectedFarms[compFarmID].emplace_back(1); //start the count
@@ -1124,6 +1124,10 @@ std::vector<Farm*> Grid_manager::get_infectedFarms() const
 	for (auto& p:infectedFarms){toReturn.emplace_back(farm_map.at(p.first));}
 	return(toReturn);	
 }
+
+/*
+
+*/
 
 double Grid_manager::getFarmSus(Farm* f)
 {

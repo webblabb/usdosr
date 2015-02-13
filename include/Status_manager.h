@@ -39,7 +39,7 @@ class Status_manager
 		// tuple contains mean and variance
 		
 	public:
-		Status_manager(std::string, /*int,*/ std::unordered_map<std::string, std::tuple<double,double>>, 
+		Status_manager(std::string, bool, std::unordered_map<std::string, std::tuple<double,double>>, 
 			std::unordered_map<int, Farm*>&, int);
 			
 		~Status_manager();		

@@ -12,7 +12,7 @@ Shipment_manager::Shipment_manager(
 	std::vector<std::string>& speciesOnPrems,
 	std::unordered_map<std::string, std::unordered_map<std::string, std::vector<Farm*> >>& fipsSpMap)
 {	
-	verbose = 1;
+	verbose = verboseLevel;
 	// copy FIPSmap
 	FIPSmap = in_FIPSmap;
 	fipsSpeciesMap = fipsSpMap;
@@ -70,19 +70,19 @@ void Shipment_manager::makeShipments(std::vector<Farm*>& infFarms, std::vector<F
 	for (auto& i:infFarms){
 		infFIPSmap[i->get_fips()].emplace_back(i);
 	}
-	if(verbose==2){std::cout << infFarms.size()<<" infectious farms in "<<infFIPSmap.size()<<" counties. ";}
+	if(verbose>1){std::cout << infFarms.size()<<" infectious farms in "<<infFIPSmap.size()<<" counties. ";}
 	// get counties (by FIPS codes) of susceptible farms
 	std::unordered_map<std::string, std::vector<Farm*>> suscFIPSmap;
 	for (auto& s:suscFarms){
 		suscFIPSmap[s->get_fips()].emplace_back(s);
 	}
-	if(verbose==2){std::cout << suscFarms.size()<<" susceptible farms in "<<suscFIPSmap.size()<<" counties. ";}
+	if(verbose>1){std::cout << suscFarms.size()<<" susceptible farms in "<<suscFIPSmap.size()<<" counties. ";}
 
 	// generate county-county shipments for each origin county
 	for (auto& oc:allFIPS){ // oc = origin county
 		countyCountyShipments(oc, countyMethod); // writes to countyShipmentList
 	}
-	if(verbose==2){std::cout << std::endl << countyShipmentList.size() <<" county-level shipments. Assigning to farms... "<<std::endl;}
+	if(verbose>1){std::cout << std::endl << countyShipmentList.size() <<" total shipments. Assigning to farms... "<<std::endl;}
 	farmFarmShipments(infFIPSmap, suscFIPSmap); // reads from countyShipmentList, writes to farmShipmentList
 }
 
@@ -90,19 +90,21 @@ void Shipment_manager::countyCountyShipments(std::string& oCounty, int method)
 // determines and records county-county shipments and volumes
 // tuple contains origin fips, destination fips, volume
 {
+	shipCount = 0;
 	if (method == 0){
 		// no shipments
 	} else if (method == 1){
 	//  randomly assign destination counties with volume = 1
 		double random = unif_rand();
-		bool makeShipment = (random < 1); // proportion of all counties make a shipment
+		bool makeShipment = (random < 0.5); // proportion of all counties make a shipment
 		if (makeShipment){
 			std::string dCounty = randomFrom(allFIPS);
-			//std::string sp = randomFrom(species);
+			int volume = 1;
 			std::string sp = "beef";
 			bool activeBan = banShipment(oCounty); // bool for each shipment
-			std::tuple<std::string,std::string,int,std::string,bool> countyShip (oCounty,dCounty,1,sp,activeBan);
+			auto countyShip = std::make_tuple(oCounty,dCounty,volume,sp,activeBan);
 			countyShipmentList.emplace_back(countyShip);
+			shipCount += volume;
 		}
 	}
 	else {std::cout << "Method for countyCountyShipments not recognized." << std::endl;}
@@ -110,24 +112,33 @@ void Shipment_manager::countyCountyShipments(std::string& oCounty, int method)
 }
 
 bool Shipment_manager::banShipment(std::string& oCounty)
-// determines whether or not a given shipment is banned
-// based on origin county and compliance level
+// determines whether or not a given shipment is banned based on origin county
 {
 	bool ban = 0; // initialize as no ban
 	if (banCompliance > 0){
-	if (isWithin(oCounty,allBannedFIPS)){ // if a ban is active for this FIPS
-		if (banCompliance == 100){
-			ban = 1;
-		} else {
-			double randDraw = unif_rand()*100;
-			if (randDraw <= banCompliance){ban = 1;} // stochastic compliance
-		}
-	}
+		if (isWithin(oCounty,allBannedFIPS)){ban = 1;} // if a ban is active for this FIPS
 	}
  return ban;
 }
 
+std::vector<int> Shipment_manager::banCompliant(int vol)
+// stochastically determines each shipment (of volume # of ships) will be compliant with a ban
+// a bit clumsy using int and converting, but oddly std::vector<bool> didn't support emplace_back
+{
+	std::vector<int> outvec;
+	for (auto c=0; c!=vol; c++){
+		double randCompliance = unif_rand();
+		if (randCompliance <= banCompliance){
+			outvec.emplace_back(1); // compliant
+		} else {
+			outvec.emplace_back(0); // non-compliant
+		}
+	}
+ return outvec;
+}
+
 Farm* Shipment_manager::largestStatus(std::vector<Farm*>& premVec, std::string& status)
+// return largest premises with a given status
 {
 	bool found = 0;
 	auto i = premVec.back(); // start at end of sorted vector (largest prem) and work backwards
@@ -158,13 +169,13 @@ void Shipment_manager::farmFarmShipments(std::unordered_map<std::string, std::ve
 			// get destination FIPS
 			std::string dFIPS = std::get<1>(s);
 			if (suscFIPSmap.count(dFIPS) == 1){ // if dest FIPS is in list of susceptible FIPS
-// 				std::vector<std::tuple<int,int,int,std::string,bool>> farmShips;
 				// get volume
 				int volume = std::get<2>(s);
 				// get species
 				std::string sp = std::get<3>(s);
 				// get ban status (just to copy over)
 				bool activeBan = std::get<4>(s);
+
 				// get all farms with species in counties - can be sent to/from any farm regardless of status
 				std::vector<Farm*> oPrems = fipsSpeciesMap[oFIPS][sp]; // already sorted by population
 				std::vector<Farm*> dPrems = fipsSpeciesMap[dFIPS][sp];
@@ -184,14 +195,20 @@ void Shipment_manager::farmFarmShipments(std::unordered_map<std::string, std::ve
 					std::cout<<"County without proper premises type, skipping shipment."<<std::endl;
 				} else {
 			    // assignment
-			    std::vector<std::tuple<int,int,int,std::string,bool>> farmShips;
-				
+				// if ban in effect, determine compliance for all shipments
+			    std::vector<int> comply (volume, 0); // initialize to 0 (non-compliant or no ban)
+				if(activeBan){comply = banCompliant(volume);} 
+
 				if (farmFarmMethod == 0){ // random
 					std::vector<Farm*> origPrems = random_unique(oPrems,volume); // pick v random premises
 					std::vector<Farm*> destPrems = random_unique(dPrems,volume);
 					for (int v = 0; v!= volume; v++){ // for each shipment
-						std::tuple<int,int,int,std::string,bool> fShip (origPrems[v]->get_id(),
-							destPrems[v]->get_id(),1,sp,activeBan); // # of shipments are all 1, since we loop through "volume" number of times
+						auto fShip = std::make_tuple(origPrems[v]->get_id(), // origin
+							destPrems[v]->get_id(), // destination
+							1, // # of shipments are all 1, since we loop through "volume" number of times
+							sp, // species
+							activeBan, // county-level ban true/false
+							(bool)comply[v]); // compliant 
 						farmShipmentList.emplace_back(fShip);
 						if (origPrems[v]->Farm::get_status()=="inf" && destPrems[v]->Farm::get_status()=="sus"){
 							infFarmShips.emplace_back(fShip);}
@@ -218,7 +235,7 @@ void Shipment_manager::farmFarmShipments(std::unordered_map<std::string, std::ve
 						int dElement = whichElement(dRand,dCumSums); // whichElement is in shared_functions.h
 						Farm* oPrem = oPrems[oElement];
 						Farm* dPrem = dPrems[dElement];
-						std::tuple<int,int,int,std::string,bool> fShip (oPrem->get_id(),dPrem->get_id(),1,sp,activeBan);
+						auto fShip = std::make_tuple(oPrem->get_id(),dPrem->get_id(),1,sp,activeBan,(bool)comply[v]);
 						farmShipmentList.emplace_back(fShip);
 // 						std::cout << std::endl << "Random O: " << oRand << " matches size "
 // 							<< oCumSums[oElement];
@@ -232,7 +249,7 @@ void Shipment_manager::farmFarmShipments(std::unordered_map<std::string, std::ve
 						std::string infstring = "inf";
 						Farm* oPrem = largestStatus(oPrems,infstring);
 						Farm* dPrem = randomFrom(dPrems);
-						std::tuple<int,int,int,std::string,bool> fShip (oPrem->get_id(),dPrem->get_id(),1,sp,activeBan);
+						auto fShip = std::make_tuple(oPrem->get_id(),dPrem->get_id(),1,sp,activeBan,(bool)comply[v]);
 						farmShipmentList.emplace_back(fShip);
 						if (oPrem->Farm::get_status()=="inf" && dPrem->Farm::get_status()=="sus"){
 							infFarmShips.emplace_back(fShip);}
@@ -242,7 +259,7 @@ void Shipment_manager::farmFarmShipments(std::unordered_map<std::string, std::ve
 						std::string susstring = "sus";
 						Farm* oPrem = randomFrom(oPrems);
 						Farm* dPrem = largestStatus(dPrems,susstring);
-						std::tuple<int,int,int,std::string,bool> fShip (oPrem->get_id(),dPrem->get_id(),1,sp,activeBan);
+						auto fShip = std::make_tuple(oPrem->get_id(),dPrem->get_id(),1,sp,activeBan,(bool)comply[v]);
 						farmShipmentList.emplace_back(fShip);
 						if (oPrem->Farm::get_status()=="inf" && dPrem->Farm::get_status()=="sus"){
 							infFarmShips.emplace_back(fShip);}
@@ -253,7 +270,7 @@ void Shipment_manager::farmFarmShipments(std::unordered_map<std::string, std::ve
 						std::string susstring = "sus";
 						Farm* oPrem = largestStatus(oPrems,infstring);
 						Farm* dPrem = largestStatus(dPrems,susstring);
-						std::tuple<int,int,int,std::string,bool> fShip (oPrem->get_id(),dPrem->get_id(),1,sp,activeBan);
+						auto fShip = std::make_tuple(oPrem->get_id(),dPrem->get_id(),1,sp,activeBan,(bool)comply[v]);
 						farmShipmentList.emplace_back(fShip);
 						if (oPrem->Farm::get_status()=="inf" && dPrem->Farm::get_status()=="sus"){
 							infFarmShips.emplace_back(fShip);}
@@ -266,7 +283,7 @@ void Shipment_manager::farmFarmShipments(std::unordered_map<std::string, std::ve
 	std::cout<<farmShipmentList.size()<<" total farm shipments."<<std::endl;
 }
 
-void Shipment_manager::checkShipTrans(std::vector<std::tuple<int,int,int,std::string,bool>>& farmShips, 
+void Shipment_manager::checkShipTrans(std::vector<std::tuple<int,int,int,std::string,bool,bool>>& farmShips, 
 	std::vector<Farm*>& infInoFIPS, std::vector<Farm*>& suscIndFIPS)
 // identify shipments from infectious to susceptible farms
 // input is: (1) tuple of origin farm ID, dest farm ID, volume, banStatus
@@ -303,7 +320,7 @@ std::string Shipment_manager::formatOutput(int shipRes, int t)
 				toPrint += "DestID\t";
 				toPrint += "NumShips\t";
 				toPrint += "Species\t";
-				toPrint += "Banned";
+				toPrint += "Banned\t";
 				toPrint += "Compliant";
 				toPrint.replace(toPrint.end()-1, toPrint.end(), "\n"); // add line break at end
 			}
@@ -321,8 +338,8 @@ std::string Shipment_manager::formatOutput(int shipRes, int t)
 				toPrint += "\t"; // species
 				sprintf(temp, "%d\t", std::get<4>(ships));
 				toPrint	+= temp; // banned
-// 				sprintf(temp, "%d\t", std::get<5>(ships));
-// 				toPrint	+= temp; // compliant
+				sprintf(temp, "%d\t", std::get<5>(ships));
+				toPrint	+= temp; // compliant
  				toPrint.replace(toPrint.end()-1, toPrint.end(), "\n"); // add line break at ends
 			} // end "for each shipment in list"
 		} // end "if there are any shipments"

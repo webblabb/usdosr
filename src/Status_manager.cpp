@@ -33,7 +33,7 @@ up the status of an individual premises.
 #include "Status_manager.h"
 #include "shared_functions.h"
 
-Status_manager::Status_manager(std::string fname, /*int whichSeed,*/ std::unordered_map<std::string, 
+Status_manager::Status_manager(std::string fname, bool oneRandomSeed, std::unordered_map<std::string, 
 	std::tuple<double,double>> in_params, std::unordered_map<int, Farm*>& allPrems, 
 	int endTime)
 // initialize with arguments:
@@ -54,31 +54,34 @@ Status_manager::Status_manager(std::string fname, /*int whichSeed,*/ std::unorde
 	pastEndTime = endTime+100;
 	// initialize all farms as susceptible, with end time after end of run time
 	for (auto& ap:allPrems){
-		statusTimeFarms["sus"][pastEndTime].emplace_back(ap.second);
+		statusTimeFarms["sus"][pastEndTime].emplace_back(ap.second); // put each under status key sus, time key 1+end
 		ap.second->set_status("sus"); // set Farm object status to sus
-		// put each under status key sus, time key 1+end
 	}
 	// read in initially infected prems from file
-	std::vector<Farm*> focalFarms;
+	std::vector<Farm*> seedFarms;
 	int fID;
 	std::ifstream f(fname);
 	if(!f){std::cout << "Input file not found. Exiting..." << std::endl; exit(EXIT_FAILURE);}
-	if(verbose>0){std::cout << "Loading seed prems." << std::endl;}
+	if(verbose>0){std::cout << "Loading seed prems.";}
 		while(! f.eof()){
 			std::string line;
 			getline(f, line); // get line from file "f", save as "line"			
 			if(! line.empty()){ // if line has something in it
 				str_cast(line, fID);
-				focalFarms.emplace_back(allPrems.at(fID));
+				seedFarms.emplace_back(allPrems.at(fID));
 			} // close "if line_vector not empty"
 		} // close "while not end of file"
-	if(verbose>0){std::cout << "Closed seed file." << std::endl;}
-/*	
+	if(verbose>0){std::cout << " Closed seed file." << std::endl;}
+	
+	std::vector<Farm*> focalFarms;
 	// if choosing random farms from list
-	if (whichSeed>0){
-		if (
-	}
-*/	
+	if (oneRandomSeed){
+		Farm* seed = randomFrom(seedFarms);
+		focalFarms.emplace_back(seed);
+		if (verbose>0){std::cout<<"Initial premises infection in cell "<< seed->get_cellID()<<std::endl;}
+	} else { // use all farms
+	focalFarms = seedFarms;}
+	
 	changeTo("inf", focalFarms, 1, params["infectious"]);
 	// change focalFarms' status to inf, with durations via params, at base time 1
 	// also removes these farms from susceptible list
@@ -100,15 +103,6 @@ Status_manager::Status_manager(std::string fname, /*int whichSeed,*/ std::unorde
 Status_manager::~Status_manager()
 {
 }
-
-// int Status_manager::normDelay(double mean, double var)
-// // determine length of period drawn from normal distribution
-// {
-// 	double normDraw = norm_rand()*var + mean; // scaled to # drawn from N(0,1)
-// 	int draw = (int)(normDraw+0.5); // round to nearest day
-// 	if(draw<1){draw = 1;}
-// 	return draw;
-// }
 
 int Status_manager::normDelay(std::tuple<double, double> params)
 // determine length of period drawn from normal distribution

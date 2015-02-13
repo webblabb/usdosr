@@ -36,22 +36,24 @@ class Shipment_manager
 		std::vector<std::string> allBannedFIPS; // list including all other fips in the same states as banned fips (if banScale=1)
 	
 		// the following are recreated/rewritten at each timestep
+		int shipCount;
 		std::vector<std::tuple<std::string,std::string,int,std::string,bool>>
 			countyShipmentList; // vector of tuples, each containing originFIPS, destFIPS, volume, ban true/false
-		std::vector<std::tuple<int,int,int,std::string,bool>> 
-			farmShipmentList; // 1st key: origin farm ID, 2nd key: destination farm ID, value: shipment count, ban true/false
-		std::vector<std::tuple<int,int,int,std::string,bool>>
+		std::vector<std::tuple<int,int,int,std::string,bool,bool>> 
+			farmShipmentList; // 1st key: origin farm ID, 2nd key: destination farm ID, value: shipment count, ban true/false, ban compliant true/false
+		std::vector<std::tuple<int,int,int,std::string,bool,bool>>
 			infFarmShips; // shipments that originate from infectious farms to susceptible farms
 
 		// functions
 		void countyCountyShipments(std::string&, int); // determines county-county movements & volumes
 		bool banShipment(std::string&);
+		std::vector<int> banCompliant(int);
 		Farm* largestStatus(std::vector<Farm*>&, std::string&); // finds largest premises with "status", from vector sorted by population
 		void farmFarmShipments(std::unordered_map<std::string, std::vector<Farm*>>, 
 			std::unordered_map<std::string, std::vector<Farm*>>); 
 			// assigns county shipments to individual farms
 			// input is FIPS-keyed maps of infectious farms and susceptible farms, assignment method indicator
-		void checkShipTrans(std::vector<std::tuple<int,int,int,std::string,bool>>&, 
+		void checkShipTrans(std::vector<std::tuple<int,int,int,std::string,bool,bool>>&, 
 			std::vector<Farm*>&, std::vector<Farm*>&);
 	
 	public:
@@ -69,10 +71,10 @@ class Shipment_manager
 		std::vector<std::tuple<std::string,std::string,int,std::string,bool>> // returns vector of tuples of origin FIPS, dest FIPS, volume, species, banned
 			get_countyShipments() const; // inlined
 			
-		std::vector<std::tuple<int,int,int,std::string,bool>> // returns vector of tuples of origin farm id, dest farm id, volume, species, banned
+		std::vector<std::tuple<int,int,int,std::string,bool,bool>> // returns vector of tuples of origin farm id, dest farm id, volume, species, banned, compliant
 			get_farmShipments() const; // inlined
 
-		std::vector<std::tuple<int,int,int,std::string,bool>> // returns vector of tuples of origin farm id, dest farm id, volume, species, banned
+		std::vector<std::tuple<int,int,int,std::string,bool,bool>> // returns vector of tuples of origin farm id, dest farm id, volume, species, banned, compliant
 			get_infFarmShipments() const; // inlined
 			
 		std::string formatOutput(int, int); // formats output to string
@@ -85,13 +87,13 @@ inline std::vector<std::tuple<std::string,std::string,int,std::string,bool>>
 	return(countyShipmentList);
 }
 
-inline std::vector<std::tuple<int,int,int,std::string,bool>>
+inline std::vector<std::tuple<int,int,int,std::string,bool,bool>>
 	Shipment_manager::get_farmShipments() const
 {
 	return(farmShipmentList);
 }
 
-inline std::vector<std::tuple<int,int,int,std::string,bool>>
+inline std::vector<std::tuple<int,int,int,std::string,bool,bool>>
 	Shipment_manager::get_infFarmShipments() const
 {
 	return(infFarmShips);

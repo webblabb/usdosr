@@ -8,8 +8,8 @@
 
 ### Batch settings ###
 * #(0) Batch name. Output saved to a folder of this name. Only letters, numbers and underscore. If there is data in the folder already it will be deleted and overwritten. (not yet implemented)
-10 	#(1)~Number of replicates to run. (Each rep will be saved to separate file - not yet implemented)
-1 #(2)~Pairwise algorithm on (1) or off (0) in addition to gridding
+1 	#(1)~Number of replicates to run. (Each rep will be saved to separate file - not yet implemented)
+0 #(2)~Pairwise algorithm on (1) or off (0) in addition to gridding
 * #(3)
 * #(4)
 * #(5)
@@ -21,8 +21,8 @@
 ### General settings ###
 TXbeefprems.txt		#(10)~Name of file containing premises ID, FIPS, x, y, population - ie FLAPS_beefdairy_20151201_formatted.txt
 randomFarmsTX.txt 	#(11)+Name of file containing premises IDs that are infectious
-* 	#(12)+Name of file containing FIPS codes of infectious counties (not yet implemented)
-1 	#(13)~Timesteps (days) to run
+1 	#(12)+Choose one random premises from list in (11)(1), otherwise use all (0)
+365 	#(13)~Timesteps (days) to run
 * #(14)
 1 	#(15)~Verbose level: Output extra information to console as model runs (0=off, 1=basic steps, 2=debug)
 0 	#(16)~Reverse x/y option: in case input file is entered as lat/long (y/x)(set to 1) instead of long/lat (x/y)(set to 0)
@@ -56,12 +56,12 @@ randomFarmsTX.txt 	#(11)+Name of file containing premises IDs that are infectiou
 
 ### Infection-related settings ###
 0 			#(40)~Kernel type for local (diffusion) spread
-0 			#(41)~Length of quarantine, in days, of all received shipments (not yet implemented)
+* 			#(41)
 5,1 		#(42)~Mean, variance (around normal) days from premises exposure to infectiousness (latency duration)
 4,1 		#(43)~Mean, variance (around normal) days from premises infectiousness to immunity (infectiousness duration)
-beef,dairy 	#(44)~ List of species for which counts are provided in premises file, comma-separated. If "Cattle" is not one of the items, edit Shipment_manager::farmFarmShipments, method 1 
-10.5,10.5 	#(45)~ Susceptibility constant values (species-specific), comma-separated in order listed in (44)
-0.00000077,0.00000077 #(46)	~ Infectiousness constant values (species-specific), comma-separated in order listed in (44)
+beef,dairy 	#(44)~ List of species for which counts are provided in premises file, comma-separated
+0.036846,0.036846 	#(45)~ Susceptibility constant values (species-specific), comma-separated in order listed in (44)
+0.037736,0.037736 #(46)	~ Infectiousness constant values (species-specific), comma-separated in order listed in (44)
 * #(47)
 * #(48) Output: filename to write statuses over time (49 must be specified)
 inf #(49) Output: status(es) over time to print to file, comma-separated (48 must be specified)

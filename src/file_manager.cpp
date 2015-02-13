@@ -36,7 +36,7 @@ void file_manager::readConfig(std::string& cfile)
 			if(line.size() != 0){pv.emplace_back(line);}
 		}
 		if (pv.size()!=60){std::cout<<"Warning: expected configuration file with 60 lines, loaded file with "<<pv.size()<<" lines."<<std::endl;
-		} else if (pv[15]=="1"){ // verbose option on
+		} else if (pv[15]!="0"){ // verbose option on
 		std::cout << "Configuration file loaded with "<<pv.size()<<" lines."<<std::endl;}
 
 		// Check for consistencies/requirements in parameter vectors, spit out warnings/errors and exit if needed
@@ -55,7 +55,7 @@ void file_manager::readConfig(std::string& cfile)
 		str_cast(pv[13],timesteps);
 		if (timesteps<1){std::cout << "Warning (config 13): Number of timesteps must be 1 or more. Setting number of timesteps to 1." << std::endl; 
 			pv[13] = "1";}
-		if (pv[15]!="0" && pv[15]!="1"){std::cout << "Warning (config 15): Verbose option must be 1 (on) or 0 (off). Setting option to off." << std::endl; 
+		if (pv[15]!="0" && pv[15]!="1" && pv[15]!="2"){std::cout << "Warning (config 15): Verbose option must be 0, 1 or 2. Setting option to off." << std::endl; 
 			pv[15] = "0";}
 		if (pv[16]!="0" && pv[16]!="1"){std::cout << "Warning (config 16): X-Y option must be 0 (Y first) or 1 (X first). Setting option to Y-first." << std::endl; 
 			pv[16] = "0";}
@@ -86,8 +86,8 @@ void file_manager::readConfig(std::string& cfile)
 		if (pv[38]!="*" && pv[39]=="*"){std::cout << "ERROR (config 38-39): If writing shipments to file, scale must be specified." << std::endl; exitflag=1;}
 		if (pv[40]=="*"){std::cout << "ERROR (config 40): No diffusion kernel type specified." << std::endl; exitflag=1;}
 		str_cast(pv[41],tempInt);
-		if (tempInt<0){std::cout << "Warning (config 41): Quarantine must be zero or positive number of days. Setting to 0." << std::endl; 
-			pv[41]="0";}
+// 		if (tempInt<0){std::cout << "Warning (config 41): Quarantine must be zero or positive number of days. Setting to 0." << std::endl; 
+// 			pv[41]="0";}
 		checkExit = checkMeanVar(pv[42],42,"latency"); if (checkExit==1){exitflag=1;} // if exit triggered by this check, set exitflag=1
 		checkExit = checkMeanVar(pv[43],43,"infectiousness"); if (checkExit==1){exitflag=1;} // if exit triggered by this check, set exitflag=1
 		int pv44size, pv45size, pv46size;

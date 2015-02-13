@@ -23,17 +23,7 @@
 #include "Status_manager.h"
 
 int verboseLevel; // global variable
-int verbose = verboseLevel;
-
-// function for printing (adding) output to specified file
-// void printLine(std::string& outputFile, std::string& printString)
-// {
-// 	std::ofstream outfile;
-// 	outfile.open(outputFile, std::ios::app); // append to existing file
-// 	if(!outfile){std::cout<<"File "<<outputFile<<" not open."<<std::endl;}
-// 	outfile << printString; 
-// 	outfile.close();
-// }
+int verbose = verboseLevel; // local interpretation of global verboseLevel
 
 int main(int argc, char* argv[])
 {
@@ -56,6 +46,7 @@ int main(int argc, char* argv[])
 	fm.readConfig(cfile); // reads config file, saves to pv, and checks for errors
 	std::vector<std::string> pv = fm.getPV(); // get parameter vector
 	
+//~~~~~~~ Copy/apply configuration settings
 	// Element numbers correspond to those specified in config.txt
 	// Batch settings
 	//std::string batch_name = pv[0]; //Folder where this run will be saved. Currently win-only.
@@ -66,7 +57,7 @@ int main(int argc, char* argv[])
 	// General settings
 	std::string pfile = pv[10]; // All premises filename
 	std::string seedfile = pv[11]; // Initially infected premises filename
-	//std::string seedFIPSfile = pv[12]; // Initially infected FIPS filename
+	bool oneRandomSeed; str_cast(pv[12],oneRandomSeed); // Pick one premises at random from 11 to be infected
 	int timesteps; str_cast(pv[13],timesteps); // Total timesteps to run
 	// pv[14]	//If run times for replicates should be saved (0 or 1).
 	str_cast(pv[15],verboseLevel); // set level of global variable verbose
@@ -178,7 +169,7 @@ for (auto r=1; r<=reps; r++){
 //		std::string fname = "seedFarms.txt"; Status.pickInfAndPrint(0.05, allFarms, fname)
 		// load initially infected farms and instantiate Status manager
 		// note that initial farms are started as infectious (2) rather than exposed (1)
-		Status_manager Status(seedfile, lagParams, allFarms, timesteps);	 	
+		Status_manager Status(seedfile, oneRandomSeed, lagParams, allFarms, timesteps);	 	
 		Shipment_manager Ship(fipsmap, shipParams, speciesOnPrems, fipsSpeciesMap);
 
  		int t=0;		
@@ -190,6 +181,7 @@ for (auto r=1; r<=reps; r++){
 		bool potentialTx = (focalFarms.size()>0 && compFarms.size()>0) || (numExposed>0 && compFarms.size()>0);
 
    	   while (t<timesteps && potentialTx){ // timesteps, stop early if dies out
+   	   	 std::clock_t timestep_start = std::clock();		
    	   	 t++; // starts at 1
    	   	 
    		 std::cout << std::endl<<"Timestep "<<t<<": "
@@ -226,18 +218,18 @@ for (auto r=1; r<=reps; r++){
  		 int cmElement = whichElement(t, coShipTimes); // which time span does t fall into
  		 int countyMethod = coShipMethods[cmElement]; // get matching shipment method
  		 Ship.makeShipments(focalFarms, compFarms, countyMethod, bannedFIPS);
- 		 std::vector<std::tuple<int,int,int,std::string, bool>> fs = Ship.get_farmShipments();
+ 		 auto fs = Ship.get_farmShipments();
  		 // output shipments as specified	
 		if (outShipFile!="*"){
 			std::string printString = Ship.formatOutput(outShipRes, t); // t only used if t==1, tells func to print column headings
 			printLine(outShipFile, printString);
 		}
  		  		 
- 		 std::vector<std::tuple<int,int,int,std::string,bool>> infShips = Ship.get_infFarmShipments(); // need this for later
+ 		 auto infShips = Ship.get_infFarmShipments(); // need this for later
  		 std::cout << infShips.size()<<" infectious shipments, of which "<<std::endl;
  		 int banCount = 0;
- 		 for (auto& shipment:infShips){if(std::get<4>(shipment)==1){banCount++;}}
- 		 std::cout << banCount<<" were banned."<<std::endl;
+ 		 for (auto& shipment:infShips){if(std::get<5>(shipment)==1){banCount++;}}
+ 		 std::cout << banCount<<" were ban-compliant."<<std::endl;
  		 std::clock_t ship_end = std::clock();
  		 double shipTimeMS = 1000.0 * (ship_end - ship_start) / CLOCKS_PER_SEC;
  		 if(verbose>0){std::cout << "CPU time for shipping: " << shipTimeMS << "ms." << std::endl;}
@@ -253,10 +245,10 @@ for (auto r=1; r<=reps; r++){
  		 	gi->set_time_exp(tfm);
  		 }
 
- 		 // infections from shipping (exclude banned shipments)
+ 		 // infections from shipping (exclude ban-compliant shipments)
  		 std::vector<Farm*> shipInf; shipInf.clear();
  		 for (auto& is:infShips){
- 		  if (std::get<4>(is)==0){ // if this shipment was not banned
+ 		  if (std::get<5>(is)==0){ // if this shipment was not ban-compliant (includes not banned at all)
  		 	int destFarmID = std::get<1>(is); // get destination farm ID
  		 	shipInf.emplace_back(allFarms.at(destFarmID)); // add to list of farms to become exposed
  		 	// record method of exposure
@@ -290,7 +282,10 @@ for (auto r=1; r<=reps; r++){
 			}
 		}
 		
-		potentialTx = ((focalFarms.size()>0 && compFarms.size()>0) || (numExposed>0 && compFarms.size()>0));		
+		potentialTx = ((focalFarms.size()>0 && compFarms.size()>0) || (numExposed>0 && compFarms.size()>0));
+		std::clock_t timestep_end = std::clock();				
+ 		double timestepTimeMS = 1000.0 * (timestep_end - timestep_start) / CLOCKS_PER_SEC;
+		std::cout << "CPU time for timestep "<< timestepTimeMS << "ms." << std::endl;
  		}  	// end "while under time and exposed/infectious and susceptible farms remain"
  		
  		std::clock_t rep_end = std::clock();
@@ -298,141 +293,6 @@ for (auto r=1; r<=reps; r++){
 		std::cout << "CPU time for rep "<<r<<" ("<<t<<" timesteps): " << repTimeMS << "ms." << std::endl;
 } // end for loop
 
-/*
-bool printInfFarms = 0;
-if(pairwiseOn){
-// 1,949,147,792 comparisons
-	  	// generate map of farms and xylimits
-  	 	std::clock_t loading_start = std::clock();
-		Grid_manager G(pfile,0); // reverse x/y on/offs
-		std::clock_t loading_end = std::clock();
-	
- 		std::cout << std::endl << "CPU time for loading premises: "
- 			<< 1000.0 * (loading_end - loading_start) / CLOCKS_PER_SEC
- 			<< "ms." << std::endl;
- 		
-		// pick a proportion to be focal farms and print to external file
-//		std::vector <std::vector<Farm*>> f_c_farms = G.setFarmStatuses(0.05);
-//		std::vector<Farm*> focalFarms = f_c_farms[0];
-//		std::string fname = "seedFarms.txt";
-//		G.printVector(focalFarms,fname);
-
-	// load initial farms from file
-		std::string fname = "seedFarms.txt";
-	 	std::vector<Farm*> focalFarms1, compFarms1;
-	 	std::unordered_map<int, Farm*> allFarms = G.get_allFarms(); 
-	 	for (auto x:allFarms){compFarms1.emplace_back(x.second);}
-	 	// compFarms first holds all farms for ID reference, then is pared down and used as comparison farm list
-	 	double fID;
- 		std::ifstream f(fname);
-		if(!f){std::cout << "Input file not found." << std::endl;}
-		if(f.is_open()){
-		std::cout << "Loading seed farms." << std::endl;
-			while(! f.eof()){
-				std::string line;
-				getline(f, line); // get line from file "f", save as "line"			
-				if(! line.empty()){ // if line has something in it
-					str_cast(line, fID);
-					focalFarms1.emplace_back(compFarms1.at(fID)); // using compFarms for reference here
-				} // close "if line_vector not empty"
-			} // close "while not end of file"
-		} // close "if file is open"	
- 		removeFarmSubset(focalFarms1,compFarms1); // removes focalFarms from compFarms, now compFarms only has compFarms
-
-	std::cout << "Conducting pairwise comparisons - go get a snack." << std::endl;
-	std::vector<Farm*> focalFarms = focalFarms1;
-	std::vector<Farm*> compFarms = compFarms1;
-	std::unordered_map<double, int> infectedFarms;
-	int t=0;
-
-	// write initially infected farms to file
-// 	if (printInfFarms == 1){
-// 	  for (auto fi:focalFarms){
-// 	    char temp[4];
-// 	    sprintf(temp, "%d\t", -1);
-// 		std::string toPrint	= temp; // timestep = -1
-// 		toPrint += to_string(fi); // farm info and line break
-// 		std::ofstream outfile;
-// 		outfile.open("pairwiseInfFarms.txt", std::ios_base::app); // append to existing file
-// 		outfile << toPrint;	
-// 	  }
-// 	}
-	
-  while (t!=timesteps && focalFarms.size()!=0 && compFarms.size()!=0){
-	std::cout << "Timestep " << t << ": ";
-	std::clock_t slow_start = std::clock();
-	// run this farm by farm (no gridding) for comparison
-//		int totalcomparisons = 0;
- 		int runningTotal = 0;
-		for (auto& f1:focalFarms)
-		{
-		double f1x = f1 -> Farm::get_x(); // get farm 1 x coordinate
-		double f1y = f1 -> Farm::get_y(); // get farm 1 y coordinate
-
-			for (auto& f2:compFarms)
-			{
-//				totalcomparisons++;
-				double f2x = f2 -> Farm::get_x(); // get farm 2 x coordinate
-				double f2y = f2 -> Farm::get_y(); // get farm 2 y coordinate
-				
-				double xdiff = (f1x - f2x);
-				double ydiff = (f1y - f2y);
-				double distBWfarms = sqrt(xdiff*xdiff + ydiff*ydiff);
-				double kernelBWfarms = kernel(distBWfarms);
-				// get farm infectiousness/susceptibility values 
-				// (dep on farm size), assumes infectOut is true
-				double farmInf = getFarmInf(f1);	
-				double farmSus = getFarmSus(f2);
-
-				// calculate probability between these specific farms
-				double betweenFarmsProb = 1-exp(-farmSus * farmInf * kernelBWfarms); // prob tx between this farm pair
-				// "prob3" in MT's Fortran code
-
-				double random3 = unif_rand();
-				if (random3 < betweenFarmsProb){
-					// success... infect
-					double infFarmID = f2->Farm::get_id();
-					if (infectedFarms.count(infFarmID)==0){ // if this farm hasn't been infected
-						infectedFarms[infFarmID] = 1;
-					} else {
-						infectedFarms.at(infFarmID)=infectedFarms.at(infFarmID)+1;
-					}
-					if (printInfFarms == 1){
-						char temp[4];
-	   					sprintf(temp, "%d\t", t);
-						std::string toPrint	= temp;
-						toPrint += to_string(f2); // farm info and line break
-						std::ofstream outfile;
-						outfile.open("pairwiseInfFarms.txt", std::ios_base::app); // append to existing file
-						outfile << toPrint;	
-					}
-				}
-			}
-		} // end for all farm comparisons
-			
-		std::cout << "New infections (pairwise): " << infectedFarms.size() << std::endl;
-//		<< "  Total comparisons (pairwise): " << totalcomparisons << std::endl;
-
-		std::clock_t slow_end = std::clock();
-	
-		std::cout << "CPU time for checking pairwise: "
-				  << 1000.0 * (slow_end - slow_start) / CLOCKS_PER_SEC
-				  << "ms." << std::endl << std::endl;
-
-		// reassign infected farms from comp to focal	
-		if (timesteps >1){		  
-			 runningTotal += infectedFarms.size();
-			 std::cout << "Cumulative infections: " << runningTotal <<std::endl; 
-			 std::vector<Farm*> newInfVec;
-			 for (auto y:infectedFarms){
-			 	newInfVec.emplace_back(allFarms.at(y.first)); // put new inf farms in vector
-			 	focalFarms.emplace_back(allFarms.at(y.first));} // add to infectious list
-			 removeFarmSubset(newInfVec,compFarms); // remove from comparison list
-			 t++;
-			}  // end if timesteps >1
-		} // end while spread still possible and under timesteps
-} // end if pairwiseOn
-*/
 return 0;
 }
 
