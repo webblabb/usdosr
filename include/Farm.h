@@ -21,6 +21,7 @@ set_speciesCount(std::string species, int count) sets the population for "specie
 #ifndef FARM_H
 #define FARM_H
 
+#include <cstdlib>
 #include <string>
 #include <unordered_map>
 #include <vector>

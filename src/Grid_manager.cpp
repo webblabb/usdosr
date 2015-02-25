@@ -33,7 +33,7 @@ Grid_manager::Grid_manager(std::string &fname, bool xyswitch, std::vector<std::s
 	int fcount = 0;
 
 	std::ifstream f(fname);
-	if(!f){std::cout << "Premises file not found." << std::endl;}
+	if(!f){std::cout << "Premises file not found. Exiting..." << std::endl; exit(EXIT_FAILURE);}
 	if(f.is_open())
 	{
 	if (verbose>0){std::cout << "Premises file open." << std::endl;}
@@ -245,7 +245,7 @@ void Grid_manager::initiateGrid(const unsigned int in_maxFarms, const int kernel
     if(verbose==2){std::cout << "Using larger value " << side_x << std::endl;}
     
     // add cell specifications to temporary tuple
-    std::tuple<int,double,double,double> cellSpecs = {cellCount, min_x, min_y, side_x};
+    std::tuple<int,double,double,double> cellSpecs = std::make_tuple(cellCount, min_x, min_y, side_x);
     if(verbose==2){std::cout << "cellSpecs: " << std::get<0>(cellSpecs) <<", "<< std::get<1>(cellSpecs) 
     	<<", "<< std::get<2>(cellSpecs) <<", "<< std::get<3>(cellSpecs) << std::endl;}
 
@@ -331,14 +331,14 @@ void Grid_manager::initiateGrid(std::string& cname)
 			if(! line_vector.empty()) // if line_vector has something in it
 			{ // convert each string piece to double
 				if (verbose==2){std::cout << "Reading cell: ";}
-				std::get<0>(cellSpecs)=stoi(line_vector[0]); //id
-				if (verbose==2){std::cout << stoi(line_vector[0]) << ", ";}
-				std::get<1>(cellSpecs)=stod(line_vector[1]); //x
-				if (verbose==2){std::cout << stod(line_vector[1]) << ", ";}
-				std::get<2>(cellSpecs)=stod(line_vector[2]); //y
-				if (verbose==2){std::cout << stod(line_vector[2]) << ", ";}
-				std::get<3>(cellSpecs)=stod(line_vector[3]); //side
-				if (verbose==2){std::cout << stod(line_vector[3]) << ". ";}
+				std::get<0>(cellSpecs)=stringToNum<int>(line_vector[0]); //id
+				if (verbose==2){std::cout << std::get<0>(cellSpecs) << ", ";}
+				std::get<1>(cellSpecs)=stringToNum<double>(line_vector[1]); //x
+				if (verbose==2){std::cout << std::get<1>(cellSpecs) << ", ";}
+				std::get<2>(cellSpecs)=stringToNum<double>(line_vector[2]); //y
+				if (verbose==2){std::cout << std::get<2>(cellSpecs) << ", ";}
+				std::get<3>(cellSpecs)=stringToNum<double>(line_vector[3]); //side
+				if (verbose==2){std::cout << std::get<3>(cellSpecs) << ". ";}
 				// line_vector[4] is num farms-ignored (gets reassigned)
 				farmsInCell = getFarms(cellSpecs);
 				if (verbose==2){std::cout << farmsInCell.size() << " farms assigned to cell." << 			

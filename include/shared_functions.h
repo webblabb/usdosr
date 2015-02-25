@@ -3,6 +3,7 @@
 #ifndef shared_functions_h
 #define shared_functions_h
 
+#include <algorithm>
 #include <random> // for random number generator in unif_rand
 #include <chrono> // for random number gen
 #include <cmath> // for std::sqrt in gKernel, floor in randomFrom
@@ -38,6 +39,14 @@
 	convert << s;
 	if(!(convert >> ref))
 		ref = -1;
+}
+
+	template<typename T> T stringToNum(const std::string& text)
+{
+	std::istringstream ss(text);
+	T result;
+	if (! (ss>>result)){result = -1;}
+	return result;
 }
 
 	// used in grid_manager to look up kernel values
