@@ -78,7 +78,8 @@ Status_manager::Status_manager(std::string fname, bool oneRandomSeed, std::unord
 	if (oneRandomSeed){
 		Farm* seed = randomFrom(seedFarms);
 		focalFarms.emplace_back(seed);
-		if (verbose>0){std::cout<<"Initial premises infection in cell "<< seed->get_cellID()<<std::endl;}
+		if (verbose>0){std::cout<<"Initial premises infection in premises "<< seed->get_id()<<
+		" in cell "<< seed->get_cellID()<<std::endl;}
 	} else { // use all farms
 	focalFarms = seedFarms;}
 	

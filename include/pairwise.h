@@ -33,7 +33,7 @@ class pairwise
 		std::unordered_map<Farm*,bool> infected;
 	
 	public:
-		pairwise(Farm*,std::vector<Farm*>&);
+		pairwise(Farm*,std::vector<Farm*>&, double);
 		~pairwise();
 		double get_draw(Farm*) const; // inlined
 		double get_dist(Farm*) const; // inlined

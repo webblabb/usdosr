@@ -8,7 +8,7 @@
 
 ### Batch settings ###
 * #(0) Batch name. Output saved to a folder of this name. Only letters, numbers and underscore. If there is data in the folder already it will be deleted and overwritten. (not yet implemented)
-1 	#(1)~Number of replicates to run. (Each rep will be saved to separate file - not yet implemented)
+2 	#(1)~Number of replicates to run. (Each rep will be saved to separate file - not yet implemented)
 0 #(2)~Pairwise algorithm on (1) or off (0) in addition to gridding
 * #(3)
 * #(4)
@@ -24,7 +24,7 @@ randomFarmsTX.txt 	#(11)+Name of file containing premises IDs that are infectiou
 1 	#(12)+Choose one random premises from list in (11)(1), otherwise use all (0)
 365 	#(13)~Timesteps (days) to run
 * #(14)
-1 	#(15)~Verbose level: Output extra information to console as model runs (0=off, 1=basic steps, 2=debug)
+2	#(15)~Verbose level: Output extra information to console as model runs (0=off, 1=basic steps, 2=debug)
 0 	#(16)~Reverse x/y option: in case input file is entered as lat/long (y/x)(set to 1) instead of long/lat (x/y)(set to 0)
 * #(17)
 * #(18)
@@ -60,10 +60,10 @@ randomFarmsTX.txt 	#(11)+Name of file containing premises IDs that are infectiou
 5,1 		#(42)~Mean, variance (around normal) days from premises exposure to infectiousness (latency duration)
 4,1 		#(43)~Mean, variance (around normal) days from premises infectiousness to immunity (infectiousness duration)
 beef,dairy 	#(44)~ List of species for which counts are provided in premises file, comma-separated
-0.036846,0.036846 	#(45)~ Susceptibility constant values (species-specific), comma-separated in order listed in (44)
-0.037736,0.037736 #(46)	~ Infectiousness constant values (species-specific), comma-separated in order listed in (44)
+0.414,0.414 	#(45)~ Susceptibility constant values (species-specific), comma-separated in order listed in (44)
+0.424,0.424 #(46)	~ Infectiousness constant values (species-specific), comma-separated in order listed in (44)
 * #(47)
-* #(48) Output: filename to write statuses over time (49 must be specified)
+localoutput.txt #(48) Output: filename to write statuses (49 must be specified)
 inf #(49) Output: status(es) over time to print to file, comma-separated (48 must be specified)
 
 ### Control-related settings

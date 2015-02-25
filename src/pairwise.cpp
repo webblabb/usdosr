@@ -1,6 +1,6 @@
 #include "pairwise.h"
 
-pairwise::pairwise(Farm* f,std::vector<Farm*>& comp)
+pairwise::pairwise(Farm* f,std::vector<Farm*>& comp, double maxProb)
 {
 	verbose = 1;
 	if (verbose>1){std::cout<<"Computing pairwise comparisions from focal farm "<<f->Farm::get_id()
@@ -11,26 +11,31 @@ pairwise::pairwise(Farm* f,std::vector<Farm*>& comp)
 	double fInf = f->Farm::get_inf(); // get focal infectiousness
 	
 	for (auto& c:comp){
-		double cx = c -> Farm::get_x(); // get comp x coordinate
-		double cy = c -> Farm::get_y(); // get comp y coordinate
-		
-		double xdiff = fx - cx;
-		double ydiff = fy - cy;
-		double distsq = xdiff*xdiff + ydiff*ydiff;
-			distances[c] = distsq;
-		double kernel = kernelsq(distsq);
-//			k_values[c] = kernel;
-		// get susceptibility value
-		double cSus = c->Farm::get_sus();
-
-		double prob = 1-exp(-fInf * cSus * kernel); // prob tx between this farm pair
-//			probs[c] = prob;
 		double random = unif_rand();
-			randomDraws[c] = random;
-		if (random <= prob){
-			// success... infect
-			infPrems.emplace_back(c);
-			infected[c] = 1; // store bools separately for easy infection status access
+			randomDraws[c] = random;	
+		if (random <= maxProb){ // is this random number small enough to calculate the distance for?	
+			double cx = c -> Farm::get_x(); // get comp x coordinate
+			double cy = c -> Farm::get_y(); // get comp y coordinate
+	
+			double xdiff = fx - cx;
+			double ydiff = fy - cy;
+			double distsq = xdiff*xdiff + ydiff*ydiff;
+		//		distances[c] = distsq;
+			double kernel = kernelsq(distsq);
+		//			k_values[c] = kernel;
+			// get susceptibility value
+			double cSus = c->Farm::get_sus();
+
+			double prob = 1-exp(-fInf * cSus * kernel); // prob tx between this farm pair
+		//			probs[c] = prob;
+
+			if (random <= prob){
+				// success... infect
+				infPrems.emplace_back(c);
+				infected[c] = 1; // store bools separately for easy infection status access
+			} else { // not infected
+				infected[c] = 0;
+			}
 		} else { // not infected
 			infected[c] = 0;
 		}

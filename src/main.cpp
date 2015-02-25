@@ -202,7 +202,7 @@ for (auto r=1; r<=reps; r++){
 		 if(verbose>0){std::cout << "Starting grid check (local spread): "<<std::endl;}
   		 std::clock_t gridcheck_start = std::clock();	 
   		 if (!pairwiseOn){ 
-		 	G.stepThroughCells(focalFarms,compFarms);
+		 	G.stepThroughCellsFilter(focalFarms,compFarms);
 		 } else { // if pairwise is on
 		 	G.stepThroughCellsPW(focalFarms,compFarms);
 		 }

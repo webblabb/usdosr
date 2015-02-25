@@ -148,6 +148,9 @@ class Grid_manager
 			
 		void stepThroughCells(
 			std::vector<Farm*>&, std::vector<Farm*>&);
+
+		void stepThroughCellsFilter(
+			std::vector<Farm*>&, std::vector<Farm*>&);
 			
 		void stepThroughCellsPW(std::vector<Farm*>&, std::vector<Farm*>&);
 		// calcs pw prob for each farm for comparison to gridding loops

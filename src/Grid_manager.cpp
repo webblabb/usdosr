@@ -816,9 +816,9 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 			// maximum transmission values of cells
 			double maxComp = c2->grid_cell::get_maxSus(); // max susceptibility of any farm in comparison cell
 			// if calculating spread TO focal cell, reassign values
-			if (!infectOut){maxComp = c2->grid_cell::get_maxInf();}
+//			if (!infectOut){maxComp = c2->grid_cell::get_maxInf();}
 
-//			double s = 1; // on/off switch, 1 = on (single infection hasn't happened yet)
+//			double s = 1; // on/off switch, 1 = on (single hypothetical infection hasn't happened yet)
 			 // 1st "prob5" in MT's Fortran code:
 			double farmToCellProb = 1 - exp(-farmFoc * compNumFarms*maxComp * gridKernValue);
 
@@ -898,10 +898,146 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 	}
 }
 
+void Grid_manager::stepThroughCellsFilter(std::vector<Farm*>& in_focalFarms, std::vector<Farm*>& in_compFarms)
+// in_focalFarms is either all infectious (infectOut=1) or all susceptible (infectOut=0) premises
+// in_focalFarms is either all susceptible (infectOut=1) or all infectious (infectOut=0) premises
+{
+	//compsMade and cellCompsMade keep track of what's been compared and alerts if repeats occur
+// 	std::unordered_map<double,std::vector<double>> compsMade;
+// 	std::unordered_map<double,std::vector<double>> cellCompsMade; // key farm, vector of cells
+
+	infectedFarms.clear();
+	// make map of focalp farms indexed by cells
+	std::unordered_map<double, std::vector<Farm*>> focalCellMap;
+	for (auto& ff:in_focalFarms){ // ff is Farm*
+		focalCellMap[ff->Farm::get_cellID()].emplace_back(ff);
+	}
+	// make map of comp farms indexed by cells
+	std::unordered_map<double, std::vector<Farm*>> compCellMap;
+	for (auto& cf:in_compFarms){ // cf is Farm*
+		compCellMap[cf->Farm::get_cellID()].emplace_back(cf);
+	}
+	if(verbose==2){
+		std::cout << compCellMap.size() << " cells contain " << in_compFarms.size() << " comparison farms: ";
+	}
+		
+   for (auto& fc1:focalCellMap){ 
+    int fcID = fc1.first; // cell id
+    if(verbose==2){std::cout << "Focal cell set to " << fcID << std::endl;}
+	// get neighbor cells of focal cell (includes self)
+	std::vector<grid_cell*>& neighborsOfFocal = kernelNeighbors.at(fcID);
+	
+	std::vector<grid_cell*> neighborsToCheck; neighborsToCheck.clear();
+	for (auto& n: neighborsOfFocal){
+		if (compCellMap.count( n->grid_cell::get_id() )>0){ // if this neighbor cell has comparison farms
+			neighborsToCheck.emplace_back(n);}
+		} // end for each neighbor cell
+			if(verbose==2 && neighborsToCheck.size()<allCells.size()){std::cout << neighborsToCheck.size() << " neighbor cells to check." << std::endl;}	
+
+	for (auto& f1:fc1.second){ // for each focal farm in this cell
+		double farmFoc = getFarmInf(f1); // infectiousness value for focal farm
+			if (!infectOut){farmFoc = f1->Farm::get_sus();} // susceptibility value for focal farm
+			  
+		for (auto& c2:neighborsToCheck){	// loop through each neighbor cell (c2 as in "cell 2")
+			int compCellID = c2->grid_cell::get_id();
+		
+			// get # of eligible farms in comp cell
+			std::vector<Farm*>& compFarmList = compCellMap.at(compCellID); // added &, shaved 100sec/rep
+//			double compNumFarms = compFarmList.size();
+			
+			// put cell IDs in order, to look up cell-cell kernel value
+			std::vector<int> ids = orderNumbers(fcID,compCellID); // in shared_functions.h
+			double gridKernValue = 0; // default kernel value is 0
+			if (gridCellKernel.at(ids[0]).count(ids[1]) == 1){ // something exists for this cell pair
+				gridKernValue = gridCellKernel.at(ids[0]).at(ids[1]);}
+			else {
+				std::cout << std::endl << "Neighbor " << compCellID << " of farm "<< fcID
+				<<" has no stored kernel value. ";}
+
+			// maximum transmission values of cells
+			double maxComp = c2->grid_cell::get_maxSus(); // max susceptibility of any farm in comparison cell
+//			double farmToCellProb = 1 - exp(-farmFoc * compNumFarms*maxComp * gridKernValue);
+
+//			double random1 = unif_rand();
+// Grid checkpoint A
+//			if (random1 <= farmToCellProb){ // if farm to cell succeeds
+// 				int f2count = 0; // how many farms in comparison cell have been checked
+				// "prob6" in MT's Fortran code:
+				// focal farm inf/sus * max sus/inf in comp cell * grid kernel
+				double indivFarmMaxProb = 1 - exp(-farmFoc * maxComp * gridKernValue); 
+		
+			 for (auto& f2:compFarmList){
+			
+// 					if (f1->get_id()==f2->get_id()){std::cout<< "Self comparison. ";}
+// 					if (compsMade.count(f1->get_id())>0){
+// 						std::vector<double> tempList = compsMade.at(f1->get_id());
+// 						for (auto t:tempList){
+// 						if(t==f2->get_id()){std::cout << "Repeated farm-farm comparison. ";}
+// 						}
+// 					} else {
+// 						compsMade[f1->get_id()].emplace_back(f2->get_id());
+// 					}
+ 
+// 				f2count++;
+				// 2nd "prob5" in MT's Fortran code: - replaces farmToCell while stepping through
+				// # farms left in cell * farm(a) infectiousness * farm(b) susceptibility * grid kernel
+	///			double remainingFarmsMaxProb =1-(s*exp(-farmFoc * (compNumFarms+1-f2count)*maxComp * gridKernValue));
+
+				double random2 = unif_rand(); // "prob4" in MT's Fortran code
+// Grid checkpoint B
+				if (random2 < indivFarmMaxProb){///farmToCellProb){	
+					// if (one max susceptible)/(entrance prob accounting for # of farms checked) succeeds
+//					s = 0; // remainingFarmProb recalculates to 1 for remainder of loop
+					// get actual distances between farms
+					double f1x = f1 -> Farm::get_x();
+					double f1y = f1 -> Farm::get_y();
+					double f2x = f2 -> Farm::get_x();
+					double f2y = f2 -> Farm::get_y();
+					double xdiff = (f1x - f2x);
+					double ydiff = (f1y - f2y);
+// 					double distBWfarms = sqrt(xdiff*xdiff + ydiff*ydiff);
+//					double kernelBWfarms = kernel(distBWfarms);
+					double distBWfarmssq = xdiff*xdiff + ydiff*ydiff;
+					double kernelBWfarms = kernelsq(distBWfarmssq); // kernelsq calculates kernel based on distance squared
+					// get individual infectiousness/susceptibility values
+					double farmComp = f2->Farm::get_sus(); // susceptible farm in comparison cell (farmInf already defined from focal cell)
+
+					// calculate probability between these specific farms
+					double betweenFarmsProb = 1-exp(-farmFoc * farmComp * kernelBWfarms); // prob tx between this farm pair
+					// "prob3" in MT's Fortran code
+// Grid checkpoint C
+					if (random2 < betweenFarmsProb){///farmToCellProb){
+						// infect
+						int compFarmID = f2->Farm::get_id();
+						if(verbose>1){
+							std::cout << "Infection @ distance: ";
+							std::cout << std::sqrt(distBWfarmssq)/1000 << ", prob "<<betweenFarmsProb<<std::endl;
+						}
+						if (infectedFarms.count(compFarmID)==0){ // if this farm hasn't been infected
+							infectedFarms[compFarmID].emplace_back(1);
+						} else {
+							infectedFarms.at(compFarmID)[0]++; // would be infected again - keep count
+						} // end if farm is already on infected list
+		
+					} // end "if actual tx occurs"
+				} // end "if trans between indiv farms at max"
+				} // end for each comparison cell farm
+			// } else { // otherwise if p(farm->cell) fails
+// 				farmtocellskips++;
+// 				farmsinskippedcells += compNumFarms;
+// 			} // end if p(farm->cell) fails
+		} // end for loop through comparison cells
+	  } // end for each focal farm
+	} // end for each focal cell
+	if(verbose>1){
+		std::cout<<"Infections this time step (gridding): "<<infectedFarms.size()<<std::endl;
+	}
+}
+
 void Grid_manager::stepThroughCellsPW(std::vector<Farm*>& in_focalFarms, std::vector<Farm*>& in_compFarms)
 {
-	infectedFarms.clear();
-	std::set<int> pwinflist;
+	infectedFarms.clear(); // infected via gridding
+	std::set<int> pwinflist; // infected via pairwise
 	int gridComps = 0;
 	int pwComps = 0;
 	double pwTime = 0;
@@ -960,32 +1096,33 @@ void Grid_manager::stepThroughCellsPW(std::vector<Farm*>& in_focalFarms, std::ve
 			// get # of eligible farms in comp cell
 			std::vector<Farm*>& compFarmList = compCellMap.at(compCellID); // added &, shaved 100sec/rep
 			double compNumFarms = compFarmList.size();
-			
-			pairwise pw(f1,compFarmList); // makes all pw calculations, can now retrieve calcs...
-			pwTime += pw.get_pwTime();
-			pwComps += compFarmList.size();
-			
-			std::clock_t grid_start = std::clock();
+			// calculate maximum probability of a hypothetical farm for this cell
+			double maxComp = c2->grid_cell::get_maxSus(); // max susceptibility of any farm in comparison cell			
+			double gridKernValue = 0; // default kernel value is 0
 			// put cell IDs in order, to look up cell-cell kernel value
 			std::vector<int> ids = orderNumbers(fcID,compCellID); // in shared_functions.h
-			double gridKernValue = 0; // default kernel value is 0
+			
 			if (gridCellKernel.at(ids[0]).count(ids[1]) == 1){ // something exists for this cell pair
 				gridKernValue = gridCellKernel.at(ids[0]).at(ids[1]);}
 			else {
 				std::cout << std::endl << "Neighbor " << compCellID << " of farm "<< fcID
-				<<" has no stored kernel value. ";}
-				
-		// maximum transmission values of cells
-			double maxComp = c2->grid_cell::get_maxSus(); // max susceptibility of any farm in comparison cell
+				<<" has no stored kernel value. ";}			
+			double indivFarmMaxProb = 1 - exp(-farmFoc * maxComp * gridKernValue);
+			
+			pairwise pw(f1,compFarmList, indivFarmMaxProb); // makes all pw calculations, can now retrieve calcs...
+			pwTime += pw.get_pwTime();
+			pwComps += compFarmList.size();
+			
+			std::clock_t grid_start = std::clock();
 			 // 1st "prob5" in MT's Fortran code:
-			double farmToCellProb = 1 - exp(-farmFoc * compNumFarms*maxComp * gridKernValue);
+			double farmToCellProb = (1 - pow((1-indivFarmMaxProb), compNumFarms));
 
 			double random1 = unif_rand();
 // Grid checkpoint A
 			if (random1 <= farmToCellProb){ // if farm to cell succeeds
 				// "prob6" in MT's Fortran code:
 				// focal farm inf/sus * max sus/inf in comp cell * grid kernel
-				double indivFarmMaxProb = 1 - exp(-farmFoc * maxComp * gridKernValue); 
+//				double indivFarmMaxProb = 1 - exp(-farmFoc * maxComp * gridKernValue); 
 		
 			 for (auto& f2:compFarmList){
 	// un comment to debug			
@@ -1125,18 +1262,19 @@ std::vector<Farm*> Grid_manager::get_infectedFarms() const
 	return(toReturn);	
 }
 
-/*
-
-*/
 
 double Grid_manager::getFarmSus(Farm* f)
 {
+	// used in grid initialization
 	// calculates species-specific susceptibility for a premises
+	// USDOSv1 uses scaling factor (for q, susceptibility)
+	// 2.086 x 10^-7, or that times sum of all US cattle: 19.619
+	double adjQ = 0.0000002086;
 	double premSus = 0;
 	int i = 0; // use to keep up with speciesOnPrems element
 	for (auto& sp:speciesOnPrems){
 		double count = f->get_size(sp); // i.e. get_size("beef") gets # of beef cattle on premises
-		double spSus = count * speciesSus[i]; // multiply by stored susceptibility value for this species/type
+		double spSus = adjQ*speciesSus[i]*pow(count,speciesSus[i]); // multiply by stored susceptibility value for this species/type
 		premSus += spSus; // add this species to the total for this premises
 		i++;	
 	}
@@ -1145,12 +1283,17 @@ double Grid_manager::getFarmSus(Farm* f)
 
 double Grid_manager::getFarmInf(Farm* f)
 {
+	// used in grid initialization
 	// calculates species-specific infectiousness for a premises
+	// USDOSv1 uses scaling factor (for p, transmissibility)
+	// 2.177 x 10^-7, or that times sum of all US cattle: 20.483
+	double adjP = 0.0000002177;
 	double premInf = 0;
 	int i = 0; // use to keep up with speciesOnPrems element
 	for (auto& sp:speciesOnPrems){
 		double count = f->get_size(sp); // i.e. get_size("beef") gets # of beef cattle on premises
-		double spInf = count * speciesInf[i]; // multiply by susceptibility value for this species/type
+		double spInf = adjP*speciesInf[i]*pow(count,speciesInf[i]); // susceptibility value for this species/type
+		// confirm how to combine species! temporary solution:
 		premInf += spInf; // add this species to the total for this premises
 		i++;	
 	}
