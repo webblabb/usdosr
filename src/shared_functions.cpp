@@ -17,7 +17,15 @@ double norm_rand()
 	static std::mt19937 generator(seed); //Mersenne Twister pseudo-random number generator. Generally considered research-grade.
 	return norm_dist(generator);
 }
-
+// Used in gridding (binomial method) to determing # of infected farms
+int draw_binom(int N, double prob)
+// draw from a binomial distribution based on N farms and prob (calc with focalInf & gridKern)
+{		
+	std::binomial_distribution<int> binom_dist(N,prob);
+	static unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count();
+	static std::mt19937 generator(seed); //Mersenne Twister pseudo-random number generator. Generally considered research-grade.
+	return binom_dist(generator);
+}
 // Used in gridding (kernel values for fixed grid distances)
 // Used in pairwise evaluations in main
 // double kernel(double dist)

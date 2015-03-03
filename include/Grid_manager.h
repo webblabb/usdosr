@@ -40,6 +40,10 @@ class Grid_manager
 			std::unordered_map< std::string, std::vector<Farm*> >> fipsSpeciesMap;
 			// key is fips code, then species name, then sorted by population size
 			
+		// for modified gridding using stored 2^n map
+		unsigned int maxFarmsInACell;
+		std::unordered_map<int,double> twoPower;
+		
  		std::vector<Farm*> 
  			farmList; // vector of pointers to all farms (deleted in chunks as grid is created)
 		std::tuple<double,double,double,double> 
@@ -149,7 +153,10 @@ class Grid_manager
 		void stepThroughCells(
 			std::vector<Farm*>&, std::vector<Farm*>&);
 
-		void stepThroughCellsFilter(
+//		void stepThroughCellsFilter(
+//			std::vector<Farm*>&, std::vector<Farm*>&);
+
+		void stepThroughCellsBinom(
 			std::vector<Farm*>&, std::vector<Farm*>&);
 			
 		void stepThroughCellsPW(std::vector<Farm*>&, std::vector<Farm*>&);

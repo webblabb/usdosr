@@ -15,18 +15,17 @@ grid_cell::grid_cell(const int in_id, const double in_x, const double in_y, cons
     s = in_s;
     farms = in_farms;
     
-    Point* LL = new Point(x, y);
-	Point* LR = new Point(x, y+s);
-	Point* UL = new Point(x+s, y);
-	Point* UR = new Point(x+s, y+s);
+//     Point* LL = new Point(x, y);
+// 	Point* LR = new Point(x, y+s);
+// 	Point* UL = new Point(x+s, y);
+// 	Point* UR = new Point(x+s, y+s);
 	
-	corners.emplace_back(LL);
-	corners.emplace_back(LR);
-	corners.emplace_back(UL);
-	corners.emplace_back(UR);
+// 	corners.emplace_back(LL);
+// 	corners.emplace_back(LR);
+// 	corners.emplace_back(UL);
+// 	corners.emplace_back(UR);
 		
-// calculate maximum susceptibility/infectiousness for farms within cell, after Tildesley et al 2006 Nature Letters
-// get farm sizes - to be replaced by vector of vectors
+// calculate maximum susceptibility/infectiousness for farms within cell
 	std::vector <double> allSus;
 	std::vector <double> allInf;
 	for (auto f : in_farms){
@@ -45,9 +44,8 @@ grid_cell::~grid_cell()
 	{
 		delete f;
 	}
-	for (auto c:corners)
-	{
-		delete c;
-	}
+// 	for (auto c:corners)
+// 	{
+// 		delete c;
+// 	}
 }
-

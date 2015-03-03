@@ -28,5 +28,8 @@ a
 *.png
 *.txt
 !config.txt
+!FLAPS_beefdairy_20151201_formatted.txt
+!randomFarms.txt
 *.docx
 *.pdf
+

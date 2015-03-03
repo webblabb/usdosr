@@ -17,6 +17,7 @@
 
 	double unif_rand();
 	double norm_rand();
+	int draw_binom(int, double);
  	double kernel(double dist);
  	double kernelsq(double distsq);
 	std::vector<std::string>
@@ -73,12 +74,12 @@
 	return vec[rIndex];
 }
 
-// choose random elements from a vector based on the Fisher-Yates shuffling algorithm:
+// choose multiple random elements from a vector based on the Fisher-Yates shuffling algorithm:
 // num_random selected random values are copied to output, 
 // selected values are swapped to the end of the vector so they're not selected again
 	template<typename T> std::vector<T> 
 	random_unique(std::vector<T> elements, int num_random) 
-	// elements not referenced because we're rearranging it
+	// elements not referenced (&) because we're rearranging it
 {		
 	std::vector<T> output;
 	int endIndex = elements.size(); 
