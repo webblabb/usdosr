@@ -39,31 +39,29 @@ class Grid_manager
 		std::unordered_map<std::string, 
 			std::unordered_map< std::string, std::vector<Farm*> >> fipsSpeciesMap;
 			// key is fips code, then species name, then sorted by population size
-			
-		// for modified gridding using stored 2^n map
-		unsigned int maxFarmsInACell;
-		std::unordered_map<int,double> twoPower;
-		
+		int committedFarms;
+		int txEvaluated;
+					
+		bool pairwiseOn;
  		std::vector<Farm*> 
  			farmList; // vector of pointers to all farms (deleted in chunks as grid is created)
 		std::tuple<double,double,double,double> 
 			xylimits; // [0]x min, [1]x max, [2]y min, [3]y max
 		std::unordered_map<int, std::unordered_map<int, double>> 
 			gridCellKernel; // kernel values between cell pairs - use IDs to sort
+		std::unordered_map<grid_cell*, std::unordered_map<grid_cell*, double> >
+			susxKern;
 		std::unordered_map<int, std::unordered_map<int, double>> 
 			storedDists; // freq-used distances between cell pairs, used in shortestCellDist - use IDs to sort
-		std::unordered_map<int, std::vector<grid_cell*>> 
-			kernelNeighbors; // each cell's susceptible neighbors with p>0
+		std::unordered_map<grid_cell*, std::vector<grid_cell*>> 
+			inRange; // each cell's susceptible neighbors with p>0
 		// variables for infection evaluation
-		bool infectOut; // if true, looks at transmission TO other cells, otherwise FROM other cells
+//		bool infectOut; // if true, looks at transmission TO other cells, otherwise FROM other cells
 		std::vector<std::string> speciesOnPrems; // list of species on all farms provided in prem file
 		std::vector<double> speciesSus, speciesInf; // species specific susceptibility and infectiousness, in same order as speciesOnAllFarms
-		// counting variables to keep track of infection/efficiency
 		// per timestep variables
-		int farmtocellskips = 0;
-		int farmsinskippedcells = 0;
-		std::unordered_map<int, std::vector<int>> infectedFarms; // ids (key) & counts of farms infected in a timestep - counts > 1 are post-infection exposures
-
+		std::unordered_map<Farm*, std::vector<Farm*>> exposedFarms; // farms exposed (key) & sources in a timestep
+	
 		// functions		
 		void set_maxFarms(unsigned int in_maxFarms); //inlined
 		std::string to_string(grid_cell&) const;
@@ -93,8 +91,10 @@ class Grid_manager
 			IDsToCells(int);  // overloaded to accept single ID also
 		double getFarmSus(Farm*); // used in precalculation and stored with Farm
 		double getFarmInf(Farm*); // used in precalculation and stored with Farm
-		std::string formatPWOutput(std::tuple<double,double,int,int,int,int>&);
-		std::string formatAnomaly(std::tuple<int,int,bool,bool,std::string,double>&);
+// 		std::string formatPWOutput(std::tuple<double,double,int,int,int,int>&);
+// 		std::string formatAnomaly(std::tuple<int,int,bool,bool,std::string,double>&);
+		std::vector<Farm*> binomialEval(Farm*, std::vector<Farm*>);
+		std::vector<Farm*> countdownEval(Farm*, std::vector<Farm*>);
 		
 	public:
 		/////////// for grid creation ///////////
@@ -103,15 +103,16 @@ class Grid_manager
 			bool xyswitch,  // switch x/y columns
 			std::vector<std::string>&, // list of species populations provided
 			std::vector<double>&,  // list of species-specific susceptibility values
-			std::vector<double>&); // list of species-specific infectiousness values
+			std::vector<double>&, // list of species-specific infectiousness values
+			bool in_pairwise=0); // pairwise comparisons by cell on/off
 			
 		~Grid_manager();
 		
 		// main function that splits/commits cells:
-		// 1st way to initiate a grid: specify maximum farms per cell, min size determined by kernel radius
+		// 1st way to initiate a grid: specify maximum farms per cell, min size
 		void initiateGrid(
-			const unsigned int maxFarms, 
-			const int kernelRadius); 
+			const unsigned int, 
+			const int); 
 		
 		// 2nd way to initiate a grid: specify file containing cell specs
 		void initiateGrid(
@@ -145,7 +146,7 @@ class Grid_manager
 			get_fipsSpeciesMap() const; //inlined
 	
 		std::vector<Farm*>
-			get_infectedFarms() const; // called from main, cleared at each timestep
+			get_exposedFarms() const; // called from main, cleared at each timestep
 			
 		/////////// for infection evaluation ///////////
 		// per timestep function
@@ -156,10 +157,10 @@ class Grid_manager
 //		void stepThroughCellsFilter(
 //			std::vector<Farm*>&, std::vector<Farm*>&);
 
-		void stepThroughCellsBinom(
-			std::vector<Farm*>&, std::vector<Farm*>&);
+//		void stepThroughCellsBinom(
+//			std::vector<Farm*>&, std::vector<Farm*>&);
 			
-		void stepThroughCellsPW(std::vector<Farm*>&, std::vector<Farm*>&);
+//		void stepThroughCellsPW(std::vector<Farm*>&, std::vector<Farm*>&);
 		// calcs pw prob for each farm for comparison to gridding loops
 		
 // 		void setInfectOut(bool); //inlined

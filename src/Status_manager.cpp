@@ -92,7 +92,7 @@ Status_manager::Status_manager(std::string fname, bool oneRandomSeed, std::unord
 			std::cout<<i.first<<": "<<i.second.size()<<" prems, ";}
 	}
 	// add different lag for index reports
-	int indexLag = 2;
+	int indexLag = 2; // for example (to make external)
 	for (auto& f:focalFarms){
 		statusTimeFarms["exp2"][indexLag].emplace_back(f);}
 	
@@ -263,7 +263,7 @@ void Status_manager::updates(int t)
 	if (statusTimeFarms.count("inf")!=0){ // if there are any infectious farms
 	std::unordered_map<int,std::vector<Farm*>>& infPrems = statusTimeFarms.at("inf");
 	// if there are infectious farms at t (t is their last day of infectiousness)
-	if(infPrems.size()>0 && infPrems.count(t)==1){ 
+	if(infPrems.size()>0 && infPrems.count(t)>0){ 
 		std::vector<Farm*>& infToRecovered = infPrems.at(t);
 		changeTo("imm", infToRecovered, pastEndTime); 
 		// change these infectious premises to immune, with end time past end

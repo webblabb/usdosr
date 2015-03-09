@@ -128,7 +128,7 @@ int main(int argc, char* argv[])
   		// generate map of farms and xylimits
   	 	std::clock_t loading_start = std::clock();
   	 	// load file containing premises and related info
-		Grid_manager G(pfile,switchXY,speciesOnPrems,spSus,spInf);
+		Grid_manager G(pfile,switchXY,speciesOnPrems,spSus,spInf,pairwiseOn);
 		
 		// for instantiating Shipment manager: FIPS of loaded farms and populations of each species/type
 		std::unordered_map<std::string, std::vector<Farm*>> fipsmap = G.get_FIPSmap();
@@ -201,16 +201,13 @@ for (auto r=1; r<=reps; r++){
    		 // determine infections that will happen from local diffusion
 		 if(verbose>0){std::cout << "Starting grid check (local spread): "<<std::endl;}
   		 std::clock_t gridcheck_start = std::clock();	 
-  		 if (!pairwiseOn){ 
-		 	G.stepThroughCellsBinom(focalFarms,compFarms);
-		 } else { // if pairwise is on
-		 	G.stepThroughCellsPW(focalFarms,compFarms);
-		 }
-			  	 
+		 G.stepThroughCells(focalFarms,compFarms);
+		 
   		 std::clock_t gridcheck_end = std::clock();
   		 double gridCheckTimeMS = 1000.0 * (gridcheck_end - gridcheck_start) / CLOCKS_PER_SEC;
  		 if(verbose>0){std::cout << "CPU time for checking grid: " << gridCheckTimeMS << "ms." << std::endl
  		 	<< "Starting shipments: ";		 }
+ 		 	
  		 // determine infections that will happen from shipments	 
  		 std::clock_t ship_start = std::clock();	  
  		 std::vector<std::string> bannedFIPS = Status.FIPSWithStatus("banActive", t);
@@ -236,7 +233,7 @@ for (auto r=1; r<=reps; r++){
  		 
  		 // change statuses:
  		 // infections from local spread
- 		 std::vector<Farm*> gridInf = G.get_infectedFarms();
+ 		 std::vector<Farm*> gridInf = G.get_exposedFarms();
  		 for (auto& gi:gridInf){ // record method of exposure for these farms
  		 	std::vector<int> tfm; /// tfm = time, farmID, method
  		 	tfm.emplace_back(t);
@@ -270,6 +267,7 @@ for (auto r=1; r<=reps; r++){
 		 	std::cout<<gridInf.size()<<" farms now exposed from local spread. "<<shipInf.size()
 		 	<<" farms now exposed from shipments."<<std::endl;
 		 }
+
 		focalFarms = Status.premsWithStatus("inf", t);
 		compFarms = Status.premsWithStatus("sus", t);
 		numExposed = Status.premsWithStatus("exp", t).size();
@@ -280,8 +278,7 @@ for (auto r=1; r<=reps; r++){
 				std::string printString = Status.formatOutput(os,t,0); // method 0 sums all prems for each timepoint (only enabled option)
 				printLine(outStatusFile, printString);	
 			}
-		}
-		
+		}	
 		potentialTx = ((focalFarms.size()>0 && compFarms.size()>0) || (numExposed>0 && compFarms.size()>0));
 		std::clock_t timestep_end = std::clock();				
  		double timestepTimeMS = 1000.0 * (timestep_end - timestep_start) / CLOCKS_PER_SEC;

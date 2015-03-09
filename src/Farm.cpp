@@ -10,6 +10,7 @@ Farm::Farm(int in_id, std::string in_fips, double in_x, double in_y)
 	fips = in_fips;
 	x_coordinate = in_x;
 	y_coordinate = in_y;
+	cellID = -1;
 }
 
 Farm::~Farm()

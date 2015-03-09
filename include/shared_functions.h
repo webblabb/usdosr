@@ -8,10 +8,10 @@
 #include <chrono> // for random number gen
 #include <cmath> // for std::sqrt in gKernel, floor in randomFrom
 #include <fstream> // for printing
+#include <iostream> // for troubleshooting output
 #include <vector> // for str_cast
 #include <string>
 #include <sstream>
-#include <iostream> // just for troubleshooting output
 
 #include "farm.h" // for Farm* for farm sus/inf
 
