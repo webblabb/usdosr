@@ -111,7 +111,7 @@ std::string to_string(Farm* farm)
 void removeFarmSubset(std::vector<Farm*>& subVec, std::vector<Farm*>& fullVec)
 // remove farms in first vector from second vector
 {
-	int expectedSize = fullVec.size()-subVec.size();
+	unsigned int expectedSize = fullVec.size()-subVec.size();
 //	std::cout << "Removing "<<subVec.size()<<" farms from list of "<<fullVec.size()<<std::endl;
 
 	// put vectors into fips-indexed maps to speed up matching

@@ -217,9 +217,9 @@ void Shipment_manager::farmFarmShipments(std::unordered_map<std::string, std::ve
 					// get cumulative sums of sizes for farms in county to distribute probabilities
 					std::vector<int> oCumSums = {0};
 					std::vector<int> dCumSums = {0};
-					for (int oi=0; oi!=oPremSizes.size(); oi++){ //oi = origin iterator
+					for (unsigned int oi=0; oi!=oPremSizes.size(); oi++){ //oi = origin iterator
 						oCumSums.emplace_back(oCumSums[oi-1]+oPremSizes[oi]);} 
-					for (int di=0; di!=dPremSizes.size(); di++){ //di = destination iterator
+					for (unsigned int di=0; di!=dPremSizes.size(); di++){ //di = destination iterator
 						dCumSums.emplace_back(dCumSums[di-1]+dPremSizes[di]);} 
 // 					std::cout << std::endl << "Origin county populations: ";
 // 					for (auto& ocs:oCumSums){

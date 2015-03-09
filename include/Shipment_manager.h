@@ -31,7 +31,7 @@ class Shipment_manager
 		int banScale, farmFarmMethod;
 		std::vector<std::string> species;
 
-		int lastNumBannedFIPS = 0; // last number of banned FIPS
+		unsigned int lastNumBannedFIPS = 0; // last number of banned FIPS
 		std::vector<std::string> bannedStates; // states with banned fips
 		std::vector<std::string> allBannedFIPS; // list including all other fips in the same states as banned fips (if banScale=1)
 	

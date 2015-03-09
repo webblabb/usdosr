@@ -142,7 +142,7 @@ bool file_manager::checkMeanVar(std::string& s, int lineNum, std::string paramDe
 bool file_manager::checkPositive(std::vector<int>& tempVec, int lineNum)
 {
 	bool exitflag = 0;
-	int it = 0;
+	unsigned int it = 0;
 	while (it < tempVec.size() && exitflag ==0){
 		auto tv = tempVec[it];
 		if(tv<0){
@@ -158,7 +158,7 @@ bool file_manager::checkPositive(std::vector<int>& tempVec, int lineNum)
 bool file_manager::checkPositive(std::vector<double>& tempVec, int lineNum)
 {
 	bool exitflag = 0;
-	int it = 0;
+	unsigned int it = 0;
 	while (it < tempVec.size() && exitflag ==0){
 		auto tv = tempVec[it];
 		if(tv<0){

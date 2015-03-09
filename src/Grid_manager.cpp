@@ -661,8 +661,8 @@ void Grid_manager::makeCellRefs()
 // kernelNeighbors: cells for which kernel value > 0 for cell 1.
 // Although all the ID referencing seems a bit much, this is one way to ensure the order of the cells checked
 {	
-	for (auto whichCell1=0; whichCell1 != allCells.size(); whichCell1++){		
-		for (auto whichCell2 = whichCell1; whichCell2 != allCells.size(); whichCell2++){
+	for (unsigned int whichCell1=0; whichCell1 != allCells.size(); whichCell1++){		
+		for (unsigned int whichCell2 = whichCell1; whichCell2 != allCells.size(); whichCell2++){
 			// get distance between grid cells 1 and 2...
 			// if comparing to self, distance=0
 			double shortestDist2 = 0; 

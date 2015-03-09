@@ -39,7 +39,7 @@ class Grid_manager
 		std::unordered_map<std::string, 
 			std::unordered_map< std::string, std::vector<Farm*> >> fipsSpeciesMap;
 			// key is fips code, then species name, then sorted by population size
-		int committedFarms;
+		unsigned int committedFarms;
 		int txEvaluated;
 					
 		bool pairwiseOn;
