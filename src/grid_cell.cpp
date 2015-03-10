@@ -40,12 +40,4 @@ grid_cell::grid_cell(const int in_id, const double in_x, const double in_y, cons
 
 grid_cell::~grid_cell()
 {
-	for (auto f:farms)
-	{
-		delete f;
-	}
-// 	for (auto c:corners)
-// 	{
-// 		delete c;
-// 	}
 }

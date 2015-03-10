@@ -123,14 +123,19 @@ Grid_manager::Grid_manager(std::string &fname, bool xyswitch, std::vector<std::s
 	for (auto& sp:speciesOnPrems){
 		std::sort(fipsSpeciesMap[fips][sp].begin(),fipsSpeciesMap[fips][sp].end(),comparePop(sp)); // comparePop struct defined in Grid_manager.h
 	}	
+	
+	// to do: calculate 
 }
 
 Grid_manager::~Grid_manager()
 {
+	for (auto f:farm_map){delete f.second;}
+	for (auto gc:allCells){delete gc.second;}
 }
 
 std::vector<Farm*> Grid_manager::getFarms(std::tuple<int,double,double,double> cellSpecs, const unsigned int maxFarms/*=0*/)
 // based on cell specs, finds farms in cell and saves pointers to farmsInCell
+// to do: reformat data structure to a range tree for faster point-in-range searching
 {
 	if(verbose==2){std::cout << "Getting farms in cell..." << std::endl;}
 
@@ -454,7 +459,7 @@ void Grid_manager::initiateGrid(double cellSide)
     } // end for each farm
     std::cout << "Done placing farms." << std::endl;
    
-   // write all cells with farms
+   // commit all cells with farms
    bool printNumFarms = 0;
    std::string allLinesToPrint;
    int actualCellCount = 0;

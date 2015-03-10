@@ -26,14 +26,6 @@ int draw_binom(int N, double prob)
 	static std::mt19937 generator(seed); //Mersenne Twister pseudo-random number generator. Generally considered research-grade.
 	return binom_dist(generator);
 }
-// Used in gridding (kernel values for fixed grid distances)
-// Used in pairwise evaluations in main
-// double kernel(double dist)
-// {	
-// 	double usedist = dist;
-// 	if (usedist==0){usedist = 1;}
-// 	return std::min(1.0, 0.12 / (1 + pow((usedist/1000), 3)));
-// }
 
 // Used in gridding (kernel values for fixed grid distances)
 // Used in pairwise evaluations in main

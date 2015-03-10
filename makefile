@@ -1,5 +1,5 @@
 CC        =g++
-CFLAGS    =-c -std=gnu++11 -Wall -O3
+CFLAGS    =-c -std=gnu++11 -Wall -O0 -g
 LDFLAGS   =-lstdc++
 INCLUDE   =-I./include/
 OBJDIR    =obj/

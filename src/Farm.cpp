@@ -17,20 +17,6 @@ Farm::~Farm()
 {
 }
 
-// std::string Farm::get_info() const
-// { 
-// 	char s [100];
-// 	sprintf(s, "%d\t%d\t%d\t%d\t%d\t%d", id, 
-// 										x_coordinate,
-// 										y_coordinate,
-// 										size,
-// 										status,
-// 										infected_at_timestep);
-// 	
-// 	return s;
-// }
-// 
-
 int Farm::get_size(const std::string species) const
 {
 	int count = 0;

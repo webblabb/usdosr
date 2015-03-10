@@ -183,20 +183,19 @@ for (auto r=1; r<=reps; r++){
    	   while (t<timesteps && potentialTx){ // timesteps, stop early if dies out
    	   	 std::clock_t timestep_start = std::clock();		
    	   	 t++; // starts at 1
-   	   	 
-   		 std::cout << std::endl<<"Timestep "<<t<<": "
-   		 	<<Status.premsWithStatus("sus", t).size()<<" susceptible, "
-   		 	<<Status.premsWithStatus("exp", t).size()<<" exposed, "
-   		 	<<Status.premsWithStatus("inf", t).size()<<" infectious, "
-   		 	<<Status.premsWithStatus("imm", t).size()<<" immune premises. "<<std::endl
-   		 	<<Status.FIPSWithStatus("reported", t).size()<<" FIPS reported. "
-   		 	<<Status.FIPSWithStatus("banOrdered", t).size()<<" FIPS with ban ordered. "
-   		 	<<Status.FIPSWithStatus("banActive", t).size()<<" FIPS with active shipping ban. "
-   		 	<<std::endl;
-   		 
-   		 // update all farm/FIPS statuses: at the proper times, exposed become infectious, infectious recover,
+    		 // update all farm/FIPS statuses: at the proper times, exposed become infectious, infectious recover,
    		 // exposed are reported, reported are banned, banned are compliant
-   		 Status.updates(t);
+   		 Status.updates(t);  	
+   		    	 
+		std::cout << std::endl<<"Timestep "<<t<<": "
+		<<Status.premsWithStatus("sus", t).size()<<" susceptible, "
+		<<Status.premsWithStatus("exp", t).size()<<" exposed, "
+		<<Status.premsWithStatus("inf", t).size()<<" infectious, "
+		<<Status.premsWithStatus("imm", t).size()<<" immune premises. "<<std::endl
+		<<Status.FIPSWithStatus("reported", t).size()<<" FIPS reported. "
+		<<Status.FIPSWithStatus("banOrdered", t).size()<<" FIPS with ban ordered. "
+		<<Status.FIPSWithStatus("banActive", t).size()<<" FIPS with active shipping ban. "
+		<<std::endl;
    		 
    		 // determine infections that will happen from local diffusion
 		 if(verbose>0){std::cout << "Starting grid check (local spread): "<<std::endl;}
