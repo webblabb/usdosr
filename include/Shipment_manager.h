@@ -49,8 +49,8 @@ class Shipment_manager
 		bool banShipment(std::string&);
 		std::vector<int> banCompliant(int);
 		Farm* largestStatus(std::vector<Farm*>&, std::string&); // finds largest premises with "status", from vector sorted by population
-		void farmFarmShipments(std::unordered_map<std::string, std::vector<Farm*>>, 
-			std::unordered_map<std::string, std::vector<Farm*>>); 
+		void farmFarmShipments(std::unordered_map<std::string, std::vector<Farm*>>&, 
+			std::unordered_map<std::string, std::vector<Farm*>>&); 
 			// assigns county shipments to individual farms
 			// input is FIPS-keyed maps of infectious farms and susceptible farms, assignment method indicator
 		void checkShipTrans(std::vector<std::tuple<int,int,int,std::string,bool,bool>>&, 

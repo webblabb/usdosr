@@ -126,24 +126,21 @@ class Grid_manager
 			std::string& pfile) const;
 			
 		void printGridKernel() const;
-		
-// 		void printVector(
-// 			std::vector<Farm*>&, std::string&) const;
-			
+
 		std::unordered_map<int, grid_cell*> 
 			get_allCells() const; //inlined	
 			
 		std::unordered_map<int, std::unordered_map<int, double>> 
 			get_gridCellKernel() const; // inlined
 			
-		std::unordered_map<int, Farm*> 
-			get_allFarms() const; //inlined
+		std::unordered_map<int, Farm*>* 
+			get_allFarms(); //inlined
 			
-		std::unordered_map<std::string, std::vector<Farm*>> 
-			get_FIPSmap() const; //inlined
+		std::unordered_map<std::string, std::vector<Farm*>>* 
+			get_FIPSmap(); //inlined
 			
-		std::unordered_map<std::string, std::unordered_map<std::string, std::vector<Farm*> >> 
-			get_fipsSpeciesMap() const; //inlined
+		std::unordered_map<std::string, std::unordered_map<std::string, std::vector<Farm*> >>* 
+			get_fipsSpeciesMap(); //inlined
 	
 		std::vector<Farm*>
 			get_exposedFarms() const; // called from main, cleared at each timestep
@@ -153,17 +150,6 @@ class Grid_manager
 			
 		void stepThroughCells(
 			std::vector<Farm*>&, std::vector<Farm*>&);
-
-//		void stepThroughCellsFilter(
-//			std::vector<Farm*>&, std::vector<Farm*>&);
-
-//		void stepThroughCellsBinom(
-//			std::vector<Farm*>&, std::vector<Farm*>&);
-			
-//		void stepThroughCellsPW(std::vector<Farm*>&, std::vector<Farm*>&);
-		// calcs pw prob for each farm for comparison to gridding loops
-		
-// 		void setInfectOut(bool); //inlined
 
 };
 
@@ -193,22 +179,22 @@ inline std::unordered_map<int, std::unordered_map<int, double>>
 	return(gridCellKernel);
 }
 
-inline std::unordered_map<int, Farm*> 
-	Grid_manager::get_allFarms() const
+inline std::unordered_map<int, Farm*> *
+	Grid_manager::get_allFarms()
 {
-	return(farm_map);
+	return &farm_map;
 }
 
-inline std::unordered_map<std::string, std::vector<Farm*>> 
-	Grid_manager::get_FIPSmap() const
+inline std::unordered_map<std::string, std::vector<Farm*>>* 
+	Grid_manager::get_FIPSmap()
 {
-	return(FIPSmap); 
+	return &FIPSmap; 
 }
 
-inline std::unordered_map<std::string, std::unordered_map<std::string, std::vector<Farm*> >> 
-	Grid_manager::get_fipsSpeciesMap() const
+inline std::unordered_map<std::string, std::unordered_map<std::string, std::vector<Farm*> >>* 
+	Grid_manager::get_fipsSpeciesMap()
 {
-	return(fipsSpeciesMap); 
+	return &fipsSpeciesMap; 
 }
 
 // used to sort farms by population for a given species/type

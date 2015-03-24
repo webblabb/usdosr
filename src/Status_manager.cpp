@@ -54,8 +54,9 @@ Status_manager::Status_manager(std::string fname, bool oneRandomSeed, std::unord
 	pastEndTime = endTime+100;
 	// initialize all farms as susceptible, with end time after end of run time
 	for (auto& ap:allPrems){
-		statusTimeFarms["sus"][pastEndTime].emplace_back(ap.second); // put each under status key sus, time key 1+end
-		ap.second->set_status("sus"); // set Farm object status to sus
+//		statusTimeFarms["sus"][pastEndTime].emplace_back(ap.second); // put each under status key sus, time key 1+end
+		susMap[ap.second->Farm::get_fips()].emplace_back(ap.second);
+		ap.second->Farm::set_status("sus"); // set Farm object status to sus
 	}
 	// read in initially infected prems from file
 	std::vector<Farm*> seedFarms;
@@ -125,10 +126,10 @@ void Status_manager::changeTo(std::string status, std::vector<Farm*>& toChange, 
 // if changing to exposed, adds to countdown for reporting
 {
 	// for each farm to be exposed, draw an end time (last day this status is valid)
-	std::vector<Farm*> toRemoveFromSus;
+	std::unordered_map<std::string,std::vector<Farm*>> toRemoveFromSus;
 	for (auto& f:toChange){
 	// Change status in Farm object
-		if(f->get_status()=="sus"){toRemoveFromSus.emplace_back(f);}
+		if(f->get_status()=="sus"){toRemoveFromSus[f->Farm::get_fips()].emplace_back(f);}
 		f->set_status(status);
 	// Add to status map		
 		int draw = normDelay(delayParams);  
@@ -143,8 +144,7 @@ void Status_manager::changeTo(std::string status, std::vector<Farm*>& toChange, 
 	}
 	// if any farms were susceptible before the change, remove them from susceptible list
 	if (toRemoveFromSus.size()>0){ 
-		removeFarmSubset(toRemoveFromSus,(statusTimeFarms.at("sus").at(pastEndTime)));
-		// statusTimeFarms["sus"] should only have one map, all with the same end time (1+ the total runtime).
+		removeFarmSubset(toRemoveFromSus,susMap);
 	}
 }
 
@@ -155,24 +155,29 @@ void Status_manager::changeTo(std::string status, std::vector<Farm*>& toChange, 
 	if (status=="sus" || status =="exp"){
 		std::cout<<"Warning: using fixed end time for non-permanent status "<<status<<std::endl;}
 	// warning output if status is not one of the permanent ones
-	std::vector<Farm*> toRemoveFromSus;
+	std::unordered_map<std::string,std::vector<Farm*>> toRemoveFromSus;
 	for (auto& f:toChange){
-		if(f->get_status()=="sus"){toRemoveFromSus.emplace_back(f);}
+		if(f->get_status()=="sus"){toRemoveFromSus[f->Farm::get_fips()].emplace_back(f);}
 		f->set_status(status);
 		statusTimeFarms[status][endTime].emplace_back(f);
 	}
 	// if any farms were susceptible before the change, remove them from susceptible list
 	if (toRemoveFromSus.size()>0){ 
-		removeFarmSubset(toRemoveFromSus,(statusTimeFarms.at("sus").at(pastEndTime)));
-		// statusTimeFarms["sus"] should only have one map, all with the same end time (1+ the total runtime).
+		removeFarmSubset(toRemoveFromSus,susMap);
 	}
 }
 
-std::vector<Farm*> Status_manager::premsWithStatus(std::string s, int t)
+void Status_manager::premsWithStatus(std::string s, int t, std::vector<Farm*>& output1)
 { // get all farms with status s at time t
 	std::vector<Farm*> output;
 
-	if (statusTimeFarms.count(s)!=0){
+	if (s=="sus"){
+		for (auto& sfips:susMap){
+			for (auto& sfarm:sfips.second){
+				output.emplace_back(sfarm);
+			}
+		}
+	} else if (statusTimeFarms.count(s)!=0){
 	std::unordered_map< int,std::vector<Farm*> >& status_s = statusTimeFarms.at(s); 
 	// step through map of times/farms
 	for (auto& st:status_s){
@@ -182,24 +187,61 @@ std::vector<Farm*> Status_manager::premsWithStatus(std::string s, int t)
 		}	
 	} // end for each time in this status
 	}
- return output;
+ output.swap(output1);
 }
 
-std::vector<std::string> Status_manager::FIPSWithStatus(std::string s, int t)
+int Status_manager::numPremsWithStatus(std::string s, int t)
+{ // get # farms with status s at time t
+	int total = 0;
+
+	if (s=="sus"){
+		for (auto& sfips:susMap){
+			total += sfips.second.size();
+		}
+	} else if (statusTimeFarms.count(s)!=0){
+	std::unordered_map< int,std::vector<Farm*> >& status_s = statusTimeFarms.at(s); 
+	// step through map of times/farms
+	for (auto& st:status_s){
+		if(t < st.first){ // st.first is time at which next stage starts
+			total += st.second.size();
+		}	
+	} // end for each time in this status
+	}
+ return total;
+}
+
+void Status_manager::FIPSWithStatus(std::string s, int t, std::vector<std::string>& output1)
 { // get all FIPS with status s at time t
 	std::vector<std::string> output;
 	
-	if (statusFIPSTime.count(s)!=0){
+	if (s=="sus"){
+		for (auto& fips:susMap){output.emplace_back(fips.first);}
+	} else if (statusFIPSTime.count(s)!=0){
 	std::unordered_map< std::string,int >& status_s = statusFIPSTime.at(s); //i.e. statusFIPStime["reported"]
 	// step through map of times/farms
 	for (auto& st:status_s){
-// 		std::cout<<"Checking FIPS: "<<s<<": "<<st.second<<std::endl;
 		if(t > st.second){ // st.second is time at which next stage starts
 			output.emplace_back(st.first); // add FIPS to output
 		}	
 	} // end for each FIPS in this status
 	}
- return output;
+output.swap(output1);
+}
+
+int Status_manager::numFIPSWithStatus(std::string s, int t)
+{ // get all FIPS with status s at time t
+	int total = 0;
+	
+	if (s=="sus"){
+		total = susMap.size();
+	} else if (statusFIPSTime.count(s)!=0){
+		std::unordered_map< std::string,int >& status_s = statusFIPSTime.at(s); //i.e. statusFIPStime["reported"]
+		// step through map of times/farms
+		for (auto& st:status_s){
+			if(t > st.second){total++;}	
+		} // end for each FIPS in this status
+	}
+ return total;
 }
 
 void Status_manager::updates(int t)
@@ -315,7 +357,8 @@ std::string Status_manager::formatOutput(std::string status, const int t, int ou
 	char temp[10];
 	// output type 0: sum of premises at all times
 	if (outputType==0){
-		std::vector<Farm*> statPrems = premsWithStatus(status,t);
+		std::vector<Farm*> statPrems;
+		premsWithStatus(status,t,statPrems);
 		if (statPrems.size()>0){
 		// print status, time, number of premises, number of each species
 		

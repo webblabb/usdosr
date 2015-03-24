@@ -29,6 +29,8 @@ Grid_manager::Grid_manager(std::string &fname, bool xyswitch, std::vector<std::s
 	pairwiseOn = in_pairwise;
 	committedFarms = 0;
 	txEvaluated = 0;
+	farm_map.reserve(850000);
+	allCells.reserve(800);
 	
 	// read in file of premises
 	int id, tempsize;
@@ -144,7 +146,7 @@ std::vector<Farm*> Grid_manager::getFarms(std::tuple<int,double,double,double> c
     double y = std::get<2>(cellSpecs);
     double s = std::get<3>(cellSpecs);
     std::vector<Farm*> inCell;
-        
+    inCell.reserve(2001);
     // look for farms in cell, those falling on grid boundaries are included, will be removed from list when cell is committed to avoid double counting
     
     for (auto i:farmList){
@@ -200,9 +202,8 @@ void Grid_manager::commitCell(std::tuple<int,double,double,double> cellSpecs, st
     x = std::get<1>(cellSpecs);
     y = std::get<2>(cellSpecs);
     s = std::get<3>(cellSpecs);
-    std::vector<Farm*> farms = farmsInCell;
     
-    grid_cell* cellToAdd = new grid_cell(id, x, y, s, farms);
+    grid_cell* cellToAdd = new grid_cell(id, x, y, s, farmsInCell);
     
     allCells.emplace(id,cellToAdd); // add to map of all committed cells, with id as key
     committedFarms += farmsInCell.size();
@@ -213,14 +214,14 @@ void Grid_manager::commitCell(std::tuple<int,double,double,double> cellSpecs, st
 void Grid_manager::splitCell(std::tuple<int,double,double,double>& cellSpecs, 
 	std::stack< std::tuple<int,double,double,double> >& queue)
 {
-    removeParent(queue);
+    queue.pop();
     addOffspring(cellSpecs,queue);
 }
 
 void Grid_manager::assignCellIDtoFarms(int cellID, std::vector<Farm*>& farmsInCell)
 {
 	for (auto& f:farmsInCell){
-		f->set_cellID(cellID);
+		f->Farm::set_cellID(cellID);
 	}
 }
 
@@ -551,26 +552,6 @@ void Grid_manager::printCells(std::string& pfile) const
 */
 }
 
-// void Grid_manager::printVector(std::vector<Farm*>& vec, std::string& fname) const
-// // temporarily disabled due to incompatible std::to_string use
-// {
-// /*
-// 	std::string tabdelim;
-// 	for(auto& it:vec){
-// 		double fid = it->Farm::get_id();
-// 		tabdelim += std::to_string(fid);
-// 		tabdelim += "\n";
-// 	}
-// 	
-// 	std::ofstream f(fname); 
-// 	if(f.is_open()){
-// 		f << tabdelim;
-// 		f.close();
-// 	}
-// 	std::cout << "Vector printed to " << fname <<std::endl;
-// */
-// }
-
 double Grid_manager::shortestCellDist2(grid_cell* cell1, grid_cell* cell2)
 // returns shortest distance^2 between cell1 and cell2
 {
@@ -791,6 +772,7 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 // 	std::unordered_map<double,std::vector<double>> cellCompsMade; // key farm, vector of cells
 
 	exposedFarms.clear();
+	exposedFarms.reserve(in_compFarms.size());
 	// make map of focal farms indexed by cells
 	std::unordered_map<grid_cell*, std::vector<Farm*>> focalCellMap;
 	for (auto& ff:in_focalFarms){ // ff is Farm*
@@ -825,14 +807,14 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 			}
 		}
 		} else if ( inRangeOfFocal.size()==allCells.size() ){
-			cellsToCheck = compCellMap;
+			cellsToCheck.swap(compCellMap);
 		}
 		if(verbose==2 && cellsToCheck.size()<allCells.size()){std::cout << cellsToCheck.size() << " neighbor cells to check." << std::endl;}	
 
 	// for each focal farm
 	for (auto& f1:in_focalFarms){ 
 		for (auto& c2:cellsToCheck){
-			std::vector<Farm*> farmsToCheck = c2.second;
+			std::vector<Farm*>& farmsToCheck = c2.second;
 			txEvaluated += farmsToCheck.size();
 			// Evaluation via gridding
 //			std::vector<Farm*> farmToCellExposures = countdownEval(f1,farmsToCheck);
@@ -864,6 +846,7 @@ void Grid_manager::stepThroughCells(std::vector<Farm*>& in_focalFarms, std::vect
 std::vector<Farm*> Grid_manager::countdownEval(Farm* focalFarm, std::vector<Farm*> compFarms)
 {
 	std::vector<Farm*> exposedFarmsInCell;
+	exposedFarmsInCell.reserve(compFarms.size());
 	
 	double focalInf = focalFarm->Farm::get_inf();
 	grid_cell* focalCell = allCells.at(focalFarm->Farm::get_cellID());
@@ -922,6 +905,7 @@ std::vector<Farm*> Grid_manager::binomialEval(Farm* focalFarm, std::vector<Farm*
 	// randomly choose that many farms
 	// evaluate adjusted probs
 	std::vector<Farm*> exposedFarmsInCell;
+	exposedFarmsInCell.reserve(compFarms.size());
 	
 	double focalInf = focalFarm->Farm::get_inf();
 	grid_cell* focalCell = allCells.at(focalFarm->Farm::get_cellID());
@@ -968,6 +952,7 @@ std::vector<Farm*> Grid_manager::binomialEval(Farm* focalFarm, std::vector<Farm*
 std::vector<Farm*> Grid_manager::get_exposedFarms() const
 {
 	std::vector<Farm*> toReturn;
+	toReturn.reserve(exposedFarms.size());
 	for (auto& p:exposedFarms){toReturn.emplace_back(p.first);}
 	return(toReturn);	
 }
@@ -1008,53 +993,3 @@ double Grid_manager::getFarmInf(Farm* f)
 	}
 	return premInf;
 }
-/*
-std::string Grid_manager::formatPWOutput(std::vector<int>& line)
-// tuple contains // # agreed infections, # gridding only infections, # pw only infections
-{
-	// formats one line for output to existing file
-	std::string toPrint;
-	char temp[10];
-	
-	sprintf(temp, "%d\t", (int)std::get<0>(line)); // runtime as integer, then tab
-	toPrint	+= temp;
-	sprintf(temp, "%d\t", (int)std::get<1>(line)); // runtime as integer, then tab
-	toPrint	+= temp;
-	sprintf(temp, "%d\t", std::get<2>(line)); // # pairwise comparisons, then tab
-	toPrint	+= temp;
-	sprintf(temp, "%d\t", std::get<3>(line)); // # gridding comparisons, then tab
-	toPrint	+= temp;
-	sprintf(temp, "%d\t", std::get<4>(line)); // # agreed infections, then tab
-	toPrint	+= temp;
-	sprintf(temp, "%d\t", std::get<5>(line)); // # gridding comparisons, then tab
-	toPrint	+= temp;
-	
-	toPrint.replace(toPrint.end()-1, toPrint.end(), "\n"); // add line break at end
-
-	return toPrint;
-}
-
-std::string Grid_manager::formatAnomaly(std::tuple<int,int,bool,bool,std::string,double>& line)
-// tuple contains exposed ID, source ID, pw infect, grid infect, checkpoint, distance
-{
-	// formats one line for output to existing file
-	std::string toPrint;
-	char temp[10];
-	
-	sprintf(temp, "%d\t", std::get<0>(line)); // infected ID as integer, then tab
-	toPrint	+= temp;
-	sprintf(temp, "%d\t", std::get<1>(line)); // source ID as integer, then tab
-	toPrint	+= temp;
-	sprintf(temp, "%d\t", std::get<2>(line)); // # pairwise T/F, then tab
-	toPrint	+= temp;
-	sprintf(temp, "%d\t", std::get<3>(line)); // # gridding T/F, then tab
-	toPrint	+= temp;
-	toPrint	+= std::get<4>(line); // checkpoint, then tab
-	sprintf(temp, "%.2f\t", std::get<5>(line)/1000); // # distance in km, then tab
-	toPrint	+= temp;
-	
-	toPrint.replace(toPrint.end()-1, toPrint.end(), "\n"); // add line break at end
-
-	return toPrint;
-}
-*/

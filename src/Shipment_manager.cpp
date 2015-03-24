@@ -20,6 +20,10 @@ Shipment_manager::Shipment_manager(
 	banCompliance = (double) shipSettings[0]; // will later be compared against a double
 	banScale = shipSettings[1];
 	farmFarmMethod = shipSettings[2];
+	
+	allFIPS.reserve(FIPSmap.size());
+	stateFIPSmap.reserve(50);
+	
 	// copy species
 	species = speciesOnPrems;
 	// record vector of all possible shipment destinations (counties)
@@ -96,7 +100,7 @@ void Shipment_manager::countyCountyShipments(std::string& oCounty, int method)
 	} else if (method == 1){
 	//  randomly assign destination counties with volume = 1
 		double random = unif_rand();
-		bool makeShipment = (random < 0.5); // proportion of all counties make a shipment
+		bool makeShipment = (random < 0.05); // proportion of all counties make a shipment
 		if (makeShipment){
 			std::string dCounty = randomFrom(allFIPS);
 			int volume = 1;
@@ -151,8 +155,8 @@ Farm* Shipment_manager::largestStatus(std::vector<Farm*>& premVec, std::string& 
 	return i;
 }
 
-void Shipment_manager::farmFarmShipments(std::unordered_map<std::string, std::vector<Farm*>> infFIPSmap,
-	std::unordered_map<std::string, std::vector<Farm*>> suscFIPSmap)
+void Shipment_manager::farmFarmShipments(std::unordered_map<std::string, std::vector<Farm*>>& infFIPSmap,
+	std::unordered_map<std::string, std::vector<Farm*>>& suscFIPSmap)
 // assigns shipments to farms from one county to another, distributed:
 // randomly (method=0), 
 // with probability related to farm size (method=1)
