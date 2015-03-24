@@ -9,7 +9,6 @@
 #include <cmath> // for std::sqrt in gKernel, floor in randomFrom
 #include <fstream> // for printing
 #include <iostream> // for troubleshooting output
-#include <unordered_set> // for unique_from
 #include <vector> // for str_cast
 #include <string>
 #include <sstream>
@@ -25,14 +24,13 @@
 	std::vector<std::string> 
 		split(const std::string&, char);
 	std::string to_string(Farm*);
- 	void removeFarmSubset(std::vector<Farm*>&, std::vector<Farm*>&);
-	void removeFarmSubset(std::unordered_map<std::string,std::vector<Farm*>>&, 
-		std::unordered_map<std::string,std::vector<Farm*>>&);
+	void removeFarmSubset(std::vector<Farm*>&, std::vector<Farm*>&);
 	std::vector<double> stringToNumVec(std::string&);
 	std::vector<int> stringToIntVec(std::string&);
 	std::vector<std::string> stringToStringVec(std::string&);
 	void printLine(std::string&, std::string&);
 
+	
 	template<typename T> void str_cast(const std::string &s, T &ref)
 	// str_cast(s, v) casts a number represented as a string and stores it in v,
 	// v can be any type that can store numericals such as int, double etc.
@@ -82,9 +80,9 @@
 // Used in Shipping_manager to select random premises in counties
 	template<typename T> std::vector<T> 
 	random_unique(std::vector<T> elements, int num_random) 
+	// elements not referenced (&) because we're rearranging it
 {		
 	std::vector<T> output;
-	output.reserve(num_random);
 	int endIndex = elements.size(); 
 	// endIndex separates non-selected values (elements [0, endIndex-1]) from selected values
 	for (auto i = 1; i<= num_random; i++){
@@ -118,16 +116,19 @@
 // input is vector of vectors to combine
 	template<typename T> std::vector<T> uniqueFrom(std::vector<std::vector<T>>& vec)
 {
-	int totalSize = 0;
-	for (auto& v:vec){totalSize+=v.size();}
-	
-	std::unordered_set<T> combinedSet;
-	combinedSet.reserve(totalSize);
-	for (auto& v1:vec){ // for each vector
-		combinedSet.insert(v1.begin(),v1.end()); // only unique values are inserted
+	int totalElements = 0;
+	std::unordered_map<T,int> combinedMap;
+	for (auto& v1:vec){
+		for (auto& v2:v1){
+			totalElements++;
+			if (combinedMap.count(v2)==0){combinedMap[v2]=1;}
+		}
 	}
-	std::vector<T> toReturn(combinedSet.begin(),combinedSet.end());
-	
+	std::vector<T> toReturn;
+	for (auto& cm:combinedMap){
+		toReturn.emplace_back(cm.first);
+	}
+// 	std::cout << totalElements-combinedMap.size() <<" duplicate elements removed. ";
 	return toReturn;
 }
 

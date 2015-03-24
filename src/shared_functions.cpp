@@ -76,18 +76,37 @@ std::vector<std::string>
     return elems;
 }
 
+/*
+// used to print infection results from main
+std::string to_string(Farm* farm)
+// overloaded to_string function, makes tab-delim string (one line) for farm with ID, cellID, x, y, pop
+{
+	std::string toPrint;
+	char temp[20];
+	std::vector<double> vars;
+		vars[0] = farm->get_id();
+		vars[1] = farm->get_cellID();
+		vars[2] = farm->get_x();
+		vars[3] = farm->get_y();
+		// fix for multiple species?
+		vars[4] = farm->get_size("Cattle");
+
+	for(auto it:vars){ // for each element in vars (each farm variable)
+		sprintf(temp, "%f\t", it);
+		toPrint += temp;
+	}
+	toPrint.replace(toPrint.end()-1, toPrint.end(), "\n");
+	
+	return toPrint;
+}
+*/
 void removeFarmSubset(std::vector<Farm*>& subVec, std::vector<Farm*>& fullVec)
 // remove farms in first vector from second vector
 {
 	unsigned int expectedSize = fullVec.size()-subVec.size();
 //	std::cout << "Removing "<<subVec.size()<<" farms from list of "<<fullVec.size()<<std::endl;
 
-// 	std::vector<Farm*> truncated(expectedSize);
-// 	std::remove_copy_if(fullVec.begin(),fullVec.end(),truncated.begin(),isWithin);
-// 	fullVec.clear();
-// 	fullVec = std::copy(truncated.begin(),truncated.end(),;
-
-		// put vectors into fips-indexed maps to speed up matching
+	// put vectors into fips-indexed maps to speed up matching
 	std::unordered_map< std::string, std::vector<Farm*> > subMap, fullMap; 
 	for (auto& sv:subVec){
 		subMap[sv->get_fips()].emplace_back(sv);}
@@ -120,57 +139,14 @@ void removeFarmSubset(std::vector<Farm*>& subVec, std::vector<Farm*>& fullVec)
 	for (auto& f1:fullMap){
 	  for (auto& f2:f1.second){
 		temp.emplace_back(f2);}}
-	fullVec.swap(temp);
-
-// 	std::unordered_set<Farm*> fullMap(fullVec.begin(), fullVec.end());
-// 	for (auto& s:subVec){fullMap.erase(fullMap.find(s));}
-	
-// rewrite fullVec
-// 	std::vector<Farm*> temp(fullMap.begin(),fullMap.end());
-// 	fullVec = temp;
-			
+	fullVec = temp;
+		
 	if (expectedSize != fullVec.size()){
-		std::cout << "Error in removeFarmSubset (vector version): expected size: "<< expectedSize <<
+		std::cout << "Error in removeFarmSubset: expected size"<< expectedSize <<
 		", actual size: "<< fullVec.size() <<". Exiting...";
 		exit(EXIT_FAILURE);
 	}
 
-// 	if (expectedSize != truncated.size()){
-// 		std::cout << "Error in removeFarmSubset: expected size: "<< expectedSize <<
-// 		", actual size: "<< fullVec.size() <<". Exiting...";
-// 		exit(EXIT_FAILURE);
-// 	}
-}
-
-
-void removeFarmSubset(std::unordered_map<std::string,std::vector<Farm*>>& subMap, 
-	std::unordered_map<std::string,std::vector<Farm*>>& fullMap)
-// remove farms in first map from second map
-{
-	int subCount = 0;
-	for (auto& sm:subMap){subCount += sm.second.size();}
-	int fullCount = 0;
-	for (auto& fm:fullMap){fullCount += fm.second.size();}
-	int expectedSize = fullCount-subCount;
-
-	for (auto& sub:subMap){
-		// for each fips in subset list
-		std::string fips = sub.first;
-		std::sort(sub.second.begin(),sub.second.end());
-		for(auto it = sub.second.begin(); it != sub.second.end(); it++){
-		// for each farm in this FIPS
-			fullMap[fips].erase(std::find(fullMap[fips].begin(),fullMap[fips].end(),*it));
-		}
-	}
-
-	fullCount = 0;
-	for (auto& fm:fullMap){fullCount += fm.second.size();}
-	
-	if (expectedSize != fullCount){
-		std::cout << "Error in removeFarmSubset (map version): expected size: "<< expectedSize <<
-		", actual size: "<< fullCount <<". Exiting...";
-		exit(EXIT_FAILURE);
-	}
 }
 
 std::vector<double> stringToNumVec(std::string& toConvert)

@@ -1,0 +1,79 @@
+## One variable per row, comments start with #
+## Empty rows ignored. Rows without descriptions are placeholders for future variables.
+## Arguments not provided should be replaced with '*'.
+## Values in parentheses are the index in the vector where value is stored.
+## '~' after the value indicates that this value is required
+## '+' after the value indicates that one of these options must have a value
+
+
+### Batch settings ###
+* #(0) Batch name. Output saved to a folder of this name. Only letters, numbers and underscore. If there is data in the folder already it will be deleted and overwritten. (not yet implemented)
+1 	#(1)~Number of replicates to run. (Each rep will be saved to separate file - not yet implemented)
+0 #(2)~Pairwise algorithm on (1) or off (0) in addition to gridding
+* #(3)
+* #(4)
+* #(5)
+* #(6)
+* #(7)
+* #(8)
+* #(9)
+
+### General settings ###
+TXbeefprems.txt		#(10)~Name of file containing premises ID, FIPS, x, y, population - ie FLAPS_beefdairy_20151201_formatted.txt
+randomFarmsTX.txt 	#(11)+Name of file containing premises IDs that are infectious
+0 	#(12)+Choose one random premises from list in (11)(1), otherwise use all (0)
+365 	#(13)~Timesteps (days) to run
+* #(14)
+1	#(15)~Verbose level: Output extra information to console as model runs (0=off, 1=basic steps, 2=debug)
+0 	#(16)~Reverse x/y option: in case input file is entered as lat/long (y/x)(set to 1) instead of long/lat (x/y)(set to 0)
+* #(17)
+* #(18)
+* #(19)
+
+### Grid-related settings ###
+* #(20)+Filename containing grid cells (will override 21 and 22)
+2000,100000 #(21)+Max farms per cell, cell size minimum radius in m (20 should be blank, will override 22)
+* #(22)+Length of cell side for uniform cells (20 and 21 should be blank)
+* #(23)
+* #(24)
+* #(25) 
+* #(26)
+* #(27)
+* #(28)
+* 	#(29) Output: name of file to write all grid cells to if (21) or (22) is used
+
+### Shipment-related settings ###
+1 	#(30)~Method(s) to generate county-county shipments (USAMM), comma-separated (0= shipments off, 1=random)
+1 	#(31)~Timepoints at which to begin using each of the methods above (first timepoint must be 1), comma-separated
+0 	#(32)~Method to assign shipments to premises within counties (farmFarmMethod): 0: random, 1: like-size to like-size, 2: largest inf to random, 3: random to largest sus, 4: largest inf to largest sus
+* #(33)
+* #(34)
+* #(35)
+* #(36)
+* #(37) 
+* 	#(38) Output: name of file to write all shipments to (those stopped by the ban are flagged)
+1 	#(39) Output shipments at premises-(0), county-(1), or state-(2) level (state level not yet implemented)
+
+### Infection-related settings ###
+0 			#(40)~Kernel type for local (diffusion) spread
+* 			#(41)
+5,1 		#(42)~Mean, variance (around normal) days from premises exposure to infectiousness (latency duration)
+4,1 		#(43)~Mean, variance (around normal) days from premises infectiousness to immunity (infectiousness duration)
+beef,dairy 	#(44)~ List of species for which counts are provided in premises file, comma-separated
+0.414,0.414 	#(45)~ Susceptibility constant values (species-specific), comma-separated in order listed in (44)
+0.424,0.424 #(46)	~ Infectiousness constant values (species-specific), comma-separated in order listed in (44)
+* #(47)
+* #(48) Output: filename to write statuses (49 must be specified)
+inf #(49) Output: status(es) over time to print to file, comma-separated (48 must be specified)
+
+### Control-related settings
+1,0 	#(50)~Mean, variance (around normal) days from premises exposure to reporting (add another for index case)
+100 		#(51)~Shipment ban: Percent compliance (0=no shipment ban)
+0 		#(52)~Shipment ban: County-(0) or state-(1) level ban (state-level not yet tested)
+1,0 	#(53)~Shipment ban: Mean, variance (around normal) days from premises reported to ban initiated
+0,0  	#(54)~Shipment ban: Mean, variance of compliance time lag after ban initiated
+* #(55)
+* #(56)
+* #(57)
+* #(58)
+* #(59)

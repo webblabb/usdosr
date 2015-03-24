@@ -131,10 +131,10 @@ int main(int argc, char* argv[])
 		Grid_manager G(pfile,switchXY,speciesOnPrems,spSus,spInf,pairwiseOn);
 		
 		// for instantiating Shipment manager: FIPS of loaded farms and populations of each species/type
-		std::unordered_map<std::string, std::vector<Farm*>>* fipsmap = G.get_FIPSmap();
-		std::unordered_map<std::string, std::unordered_map<std::string, std::vector<Farm*> >>* fipsSpeciesMap = G.get_fipsSpeciesMap();
+		std::unordered_map<std::string, std::vector<Farm*>> fipsmap = G.get_FIPSmap();
+		std::unordered_map<std::string, std::unordered_map<std::string, std::vector<Farm*> >> fipsSpeciesMap = G.get_fipsSpeciesMap();
 		// get full list of farms
-		std::unordered_map<int, Farm*>* allFarms = G.get_allFarms(); 
+		std::unordered_map<int, Farm*> allFarms = G.get_allFarms(); 
 
 		std::clock_t loading_end = std::clock();
 	
@@ -169,16 +169,15 @@ for (auto r=1; r<=reps; r++){
 //		std::string fname = "seedFarms.txt"; Status.pickInfAndPrint(0.05, allFarms, fname)
 		// load initially infected farms and instantiate Status manager
 		// note that initial farms are started as infectious (2) rather than exposed (1)
-		Status_manager Status(seedfile, oneRandomSeed, lagParams, *allFarms, timesteps);	 	
-		Shipment_manager Ship(*fipsmap, shipParams, speciesOnPrems, *fipsSpeciesMap);
+		Status_manager Status(seedfile, oneRandomSeed, lagParams, allFarms, timesteps);	 	
+		Shipment_manager Ship(fipsmap, shipParams, speciesOnPrems, fipsSpeciesMap);
 
  		int t=0;		
- 		std::vector<Farm*> focalFarms, compFarms;
  		// set focalFarms as all farms with status inf at time 0
-		Status.premsWithStatus("inf", t, focalFarms);
+		std::vector<Farm*> focalFarms = Status.premsWithStatus("inf", t);
 		// set compFarms as all farms with status sus at time 0
-		Status.premsWithStatus("sus", t, compFarms);
-		int numExposed = Status.numPremsWithStatus("exp", t);
+		std::vector<Farm*> compFarms = Status.premsWithStatus("sus", t);
+		int numExposed = Status.premsWithStatus("exp", t).size();
 		bool potentialTx = (focalFarms.size()>0 && compFarms.size()>0) || (numExposed>0 && compFarms.size()>0);
 
    	   while (t<timesteps && potentialTx){ // timesteps, stop early if dies out
@@ -187,15 +186,15 @@ for (auto r=1; r<=reps; r++){
     		 // update all farm/FIPS statuses: at the proper times, exposed become infectious, infectious recover,
    		 // exposed are reported, reported are banned, banned are compliant
    		 Status.updates(t);  	
-   
-   		std::cout << std::endl<<"Timestep "<<t<<": "
-		<<Status.numPremsWithStatus("sus", t)<<" susceptible, "
-		<<Status.numPremsWithStatus("exp", t)<<" exposed, "
-		<<Status.numPremsWithStatus("inf", t)<<" infectious, "
-		<<Status.numPremsWithStatus("imm", t)<<" immune premises. "<<std::endl
-		<<Status.numFIPSWithStatus("reported", t)<<" FIPS reported. "
-		<<Status.numFIPSWithStatus("banOrdered", t)<<" FIPS with ban ordered. "
-		<<Status.numFIPSWithStatus("banActive", t)<<" FIPS with active shipping ban. "
+   		    	 
+		std::cout << std::endl<<"Timestep "<<t<<": "
+		<<Status.premsWithStatus("sus", t).size()<<" susceptible, "
+		<<Status.premsWithStatus("exp", t).size()<<" exposed, "
+		<<Status.premsWithStatus("inf", t).size()<<" infectious, "
+		<<Status.premsWithStatus("imm", t).size()<<" immune premises. "<<std::endl
+		<<Status.FIPSWithStatus("reported", t).size()<<" FIPS reported. "
+		<<Status.FIPSWithStatus("banOrdered", t).size()<<" FIPS with ban ordered. "
+		<<Status.FIPSWithStatus("banActive", t).size()<<" FIPS with active shipping ban. "
 		<<std::endl;
    		 
    		 // determine infections that will happen from local diffusion
@@ -210,8 +209,7 @@ for (auto r=1; r<=reps; r++){
  		 	
  		 // determine infections that will happen from shipments	 
  		 std::clock_t ship_start = std::clock();	  
- 		 std::vector<std::string> bannedFIPS;
- 		 Status.FIPSWithStatus("banActive", t, bannedFIPS);
+ 		 std::vector<std::string> bannedFIPS = Status.FIPSWithStatus("banActive", t);
  		 // assign county-level shipment method according to time
  		 int cmElement = whichElement(t, coShipTimes); // which time span does t fall into
  		 int countyMethod = coShipMethods[cmElement]; // get matching shipment method
@@ -248,13 +246,13 @@ for (auto r=1; r<=reps; r++){
  		 for (auto& is:infShips){
  		  if (std::get<5>(is)==0){ // if this shipment was not ban-compliant (includes not banned at all)
  		 	int destFarmID = std::get<1>(is); // get destination farm ID
- 		 	shipInf.emplace_back((*allFarms).at(destFarmID)); // add to list of farms to become exposed
+ 		 	shipInf.emplace_back(allFarms.at(destFarmID)); // add to list of farms to become exposed
  		 	// record method of exposure
  		 	std::vector<int> tfm; // tfm = time, farmID, method
 			tfm.emplace_back(t);
 			tfm.emplace_back(std::get<0>(is)); // origin farm ID
  		 	tfm.emplace_back(1); // method 1=shipping
- 		 	(*allFarms).at(destFarmID)->set_time_exp(tfm); // record method of exposure
+ 		 	allFarms.at(destFarmID)->set_time_exp(tfm); // record method of exposure
  		  }
  		 }
  		 
@@ -269,9 +267,9 @@ for (auto r=1; r<=reps; r++){
 		 	<<" farms now exposed from shipments."<<std::endl;
 		 }
 
-		Status.premsWithStatus("inf", t, focalFarms);
-		Status.premsWithStatus("sus", t, compFarms);
-		numExposed = Status.numPremsWithStatus("exp", t);
+		focalFarms = Status.premsWithStatus("inf", t);
+		compFarms = Status.premsWithStatus("sus", t);
+		numExposed = Status.premsWithStatus("exp", t).size();
 		
 		// output status as specified	
 		if (outStatusFile!="*"){
