@@ -44,7 +44,7 @@ double kernelsq(double distsq)
 {	
 	double usedist = distsq;
 	if (usedist==0){usedist = 1;} // units assumed to be m
-	double k1 = 0.0083;//*0.089; // use xi*beta (0.089*0.0003508) from table s3
+	double k1 = 0.12*0.0083;//*0.089; // use xi*beta (0.089*0.0003508) from table s3
 	double k2 = 1600; // directly from Table S3
 	double k3 = 4.6; // directly from Table S3
 	return std::min(1.0, k1/(1+pow(usedist,(k3/2))/pow(k2,k3)) );

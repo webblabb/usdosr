@@ -111,7 +111,7 @@ Grid_manager::Grid_manager(std::string &fname, bool xyswitch, std::vector<std::s
 		<< " counties loaded. Premises file closed." << std::endl;}
 
 	// copy farmlist from farm_map (will be changed as grid is created)
-	if (verbose==2){std::cout << "Copying farms from farm_map to farmList..." << std::endl;}
+	if (verbose>1){std::cout << "Copying farms from farm_map to farmList..." << std::endl;}
 	for (auto& prem: farm_map) {farmList.emplace_back(prem.second);} // "second" value from map is Farm pointer
 	 
 	// sort farmList by ID for faster matching/subset removal
@@ -127,9 +127,10 @@ Grid_manager::Grid_manager(std::string &fname, bool xyswitch, std::vector<std::s
 	xiQ = 0.0000002086;
 
 	// calculate and store farm susceptibility and infectiousness
-	set_FarmSus(farm_map.at(id));
-	set_FarmInf(farm_map.at(id));
-
+	for (auto& f:farm_map){
+		set_FarmSus(f.second);
+		set_FarmInf(f.second);
+	}
 }
 
 Grid_manager::~Grid_manager()
@@ -754,6 +755,7 @@ void Grid_manager::set_FarmSus(Farm* f)
 		i++;	
 	}
 	f->set_sus(premSus);
+if (verbose>2){std::cout<<"Farm "<<f->get_id()<<" sus set to "<<premSus<<std::endl;}
 }
 
 void Grid_manager::set_FarmInf(Farm* f)
@@ -772,4 +774,5 @@ void Grid_manager::set_FarmInf(Farm* f)
 		i++;	
 	}
 	f->set_inf(premInf);
+if (verbose>2){std::cout<<"Farm "<<f->get_id()<<" inf set to "<<premInf<<std::endl;}
 }

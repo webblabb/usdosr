@@ -76,9 +76,17 @@ if (verbose>2){std::cout<<"Focal farm "<<f1->Farm::get_id()<<" in cell "<<fcID<<
 			if (fc->canInfect(ccID)){ // check if cell-cell tx possible
 if (verbose>2){std::cout<<"Checking in-range comparison cell "<<ccID<<std::endl;}
 			// Evaluation via gridding
-			binomialEval(f1,fc,c2,ccID,exposed);
-			for (auto& exp:exposed){ // add to infections from other farm-cell comparisons
-				(*sources)[exp].emplace_back(std::make_tuple(f1,0)); // exposed farm is key, value is exposure source (0=local)
+			std::vector<Farm*> fToCellExp;
+			binomialEval(f1,fc,c2,ccID,fToCellExp);
+			// record sources of infection
+			for (auto& exp1:fToCellExp){ 
+				(*sources)[exp1].emplace_back(std::make_tuple(f1,0)); // exposed farm is key, value is exposure source (0=local)
+			}
+			// add to exposed list from other farm-cell comparisons if not already present
+			for (auto& exp2:fToCellExp){
+				if (!isWithin<Farm*>(exp2,exposed)){
+					exposed.emplace_back(exp2);
+				}
 			}
 			
 /*			if (pairwiseOn){

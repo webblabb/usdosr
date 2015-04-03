@@ -202,7 +202,7 @@ for (auto r=1; r<=reps; r++){
 		 gridCheck.stepThroughCells(focalFarms,notSus);
 		 std::vector<Farm*> gridInf;
 		 gridInf.reserve(840000);
- 		 gridCheck.take_exposed(gridInf); // simultaneously takes values and clears in gridCheck
+ 		 gridCheck.take_exposed(gridInf); // simultaneously takes values and clears in gridCheck, resetting with reserve of 840k
 		 
   		 std::clock_t gridcheck_end = std::clock();
   		 double gridCheckTimeMS = 1000.0 * (gridcheck_end - gridcheck_start) / CLOCKS_PER_SEC;
