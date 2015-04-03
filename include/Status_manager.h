@@ -26,21 +26,32 @@ class Status_manager
 		// map with nested keys: status, FIPS, status START time
 		std::unordered_map< std::string,std::unordered_map<std::string, int> > statusFIPSTime;
 		// status keys: reported, banOrdered, banCompliant
+		std::vector<Farm*> notSus;
+		// all farms that are not susceptible as of last status update
+		std::vector<Farm*> allNotSus;
+		// all farms that are not susceptible in this replicate
+
 
 		std::unordered_map<std::string, std::tuple<double,double>> params;
 		// map of mean/variance of lag times for ["latency"]exposed-infectious, 
 		// ["infectious"]infectious-recovered, ["report"]exposed-reported, 
 		// ["startBan"]reported-banned, ["complyBan"]banned-compliant...
-		int pastEndTime;
 		// time past the end of the simulation, to assign to permanent status end times
 		std::vector<std::string> species; // for formatting output
 		
 		int normDelay(std::tuple<double,double>);
 		// tuple contains mean and variance
 		
+		int pastEndTime;
+		int totalNotSus;
+		int nPrems;
+		
+		std::vector<Farm*> seededFarms;
+		std::unordered_map< Farm*, std::vector<std::tuple<Farm*, int>> > sources;
+		
 	public:
-		Status_manager(std::string, bool, std::unordered_map<std::string, std::tuple<double,double>>, 
-			std::unordered_map<int, Farm*>&, int);
+		Status_manager(std::string, int, std::unordered_map<std::string, std::tuple<double,double>>&, 
+			const std::unordered_map<int, Farm*>*, int);
 			
 		~Status_manager();		
 		
@@ -49,12 +60,9 @@ class Status_manager
 
 		void updates(int t);
 		
-		std::vector<Farm*> premsWithStatus(std::string, int); // get vector of Farm*s with status @ time
-		std::vector<std::string> FIPSWithStatus(std::string, int); // get vector of FIPS with status @ time
-
-		void printVector(std::vector<Farm*>&, std::string&) const; // print vector to named file
-		void pickInfAndPrint(double, std::unordered_map<int, Farm*>&, std::string); // randomly generate a proportion of infected farms & print to file
-		std::string formatOutput(std::string, const int, int);
+		void premsWithStatus(std::string, int, std::vector<Farm*>&); // get vector of Farm*s with status @ time
+		int numpremsWithStatus(std::string, int); // get number of Farm*s with status @ time
+		int numFIPSWithStatus(std::string, int); // get number of FIPS with status @ time
 
 };
 

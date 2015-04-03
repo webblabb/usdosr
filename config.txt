@@ -19,8 +19,8 @@
 * #(9)
 
 ### General settings ###
-TXbeefprems.txt		#(10)~Name of file containing premises ID, FIPS, x, y, population - ie FLAPS_beefdairy_20151201_formatted.txt
-randomFarmsTX.txt 	#(11)+Name of file containing premises IDs that are infectious
+FLAPS_beefdairy_20151201_formatted.txt.txt		#(10)~Name of file containing premises ID, FIPS, x, y, population - ie FLAPS_beefdairy_20151201_formatted.txt
+randomFarms.txt 	#(11)+Name of file containing premises IDs that are infectious
 0 	#(12)+Choose one random premises from list in (11)(1), otherwise use all (0)
 365 	#(13)~Timesteps (days) to run
 * #(14)
@@ -32,7 +32,7 @@ randomFarmsTX.txt 	#(11)+Name of file containing premises IDs that are infectiou
 
 ### Grid-related settings ###
 * #(20)+Filename containing grid cells (will override 21 and 22)
-2000,100000 #(21)+Max farms per cell, cell size minimum radius in m (20 should be blank, will override 22)
+150000,100000 #(21)+Max farms per cell, cell size minimum radius in m (20 should be blank, will override 22)
 * #(22)+Length of cell side for uniform cells (20 and 21 should be blank)
 * #(23)
 * #(24)
