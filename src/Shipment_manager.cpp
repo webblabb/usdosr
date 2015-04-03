@@ -4,32 +4,34 @@
 
 #include <cmath> // floor
 #include <iostream> // for error-checking output
-// included in Shipment_manager.h: Farm, shared_functions
-#include "Shipment_manager.h"
+#include "Shipment_manager.h" // includes Farm, shared_functions
 
 Shipment_manager::Shipment_manager(
-	std::unordered_map<std::string, std::vector<Farm*>>& in_FIPSmap, std::vector<int>& shipSettings,
+	const std::unordered_map<std::string, std::vector<Farm*>>* in_FIPSmap, std::vector<int>& shipSettings,
 	std::vector<std::string>& speciesOnPrems,
-	std::unordered_map<std::string, std::unordered_map<std::string, std::vector<Farm*> >>& fipsSpMap)
+	const std::unordered_map<std::string, std::unordered_map<std::string, std::vector<Farm*> >>* fipsSpMap)
+	:
+	FIPSmap(in_FIPSmap),
+	fipsSpeciesMap(fipsSpMap),
+	banCompliance((double) shipSettings[0]), // will later be compared against a double
+	banScale(shipSettings[1]),
+	farmFarmMethod(shipSettings[2]),
+	species(speciesOnPrems)
 {	
 	verbose = verboseLevel;
-	// copy FIPSmap
-	FIPSmap = in_FIPSmap;
-	fipsSpeciesMap = fipsSpMap;
-	// copy shipping settings
-	banCompliance = (double) shipSettings[0]; // will later be compared against a double
-	banScale = shipSettings[1];
-	farmFarmMethod = shipSettings[2];
+	
+	allFIPS.reserve(FIPSmap->size());
+	stateFIPSmap.reserve(50);
+	
 	// copy species
-	species = speciesOnPrems;
 	// record vector of all possible shipment destinations (counties)
-	// allFIPS used in generating random shipments
-	for (auto& f:FIPSmap){
+	// allFIPS used in generating random shipments, also record state
+	for (auto& f:(*FIPSmap)){
 		allFIPS.emplace_back(f.first);
 		std::string statecode = f.first.substr(0,2); // get first two characters (substring starting at 0, length of 2)
 		stateFIPSmap[statecode].emplace_back(f.first); // add to map where index is state, value is vector of counties
 	}
-	if(verbose>0){std::cout << "Shipment manager constructed: "<<FIPSmap.size()<<" counties with premises." << std::endl;}
+	if(verbose>0){std::cout << "Shipment manager constructed: "<<FIPSmap->size()<<" counties with premises." << std::endl;}
 }
 
 Shipment_manager::~Shipment_manager()
@@ -177,8 +179,8 @@ void Shipment_manager::farmFarmShipments(std::unordered_map<std::string, std::ve
 				bool activeBan = std::get<4>(s);
 
 				// get all farms with species in counties - can be sent to/from any farm regardless of status
-				std::vector<Farm*> oPrems = fipsSpeciesMap[oFIPS][sp]; // already sorted by population
-				std::vector<Farm*> dPrems = fipsSpeciesMap[dFIPS][sp];
+				std::vector<Farm*> oPrems = fipsSpeciesMap->at(oFIPS)[sp]; // already sorted by population
+				std::vector<Farm*> dPrems = fipsSpeciesMap->at(dFIPS)[sp];
  				if(verbose==2){std::cout<<"Origin FIPS: "<<oFIPS<<" has "<<oPrems.size()<<
  				" prems, destination FIPS: "<<dFIPS<<" has "<<dPrems.size()<<std::endl;}
 

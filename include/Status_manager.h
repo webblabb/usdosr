@@ -27,10 +27,9 @@ class Status_manager
 		std::unordered_map< std::string,std::unordered_map<std::string, int> > statusFIPSTime;
 		// status keys: reported, banOrdered, banCompliant
 		std::vector<Farm*> notSus;
-		// all farms that are not susceptible as of last status update
+		// all farms that are not susceptible as of last status update - cleared at each timestep
 		std::vector<Farm*> allNotSus;
 		// all farms that are not susceptible in this replicate
-
 
 		std::unordered_map<std::string, std::tuple<double,double>> params;
 		// map of mean/variance of lag times for ["latency"]exposed-infectious, 
@@ -39,11 +38,10 @@ class Status_manager
 		// time past the end of the simulation, to assign to permanent status end times
 		std::vector<std::string> species; // for formatting output
 		
-		int normDelay(std::tuple<double,double>);
+		int normDelay(std::tuple<double,double>&);
 		// tuple contains mean and variance
 		
 		int pastEndTime;
-		int totalNotSus;
 		int nPrems;
 		
 		std::vector<Farm*> seededFarms;
@@ -61,10 +59,16 @@ class Status_manager
 		void updates(int t);
 		
 		void premsWithStatus(std::string, int, std::vector<Farm*>&); // get vector of Farm*s with status @ time
-		int numpremsWithStatus(std::string, int); // get number of Farm*s with status @ time
+		int numPremsWithStatus(std::string, int); // get number of Farm*s with status @ time
 		int numFIPSWithStatus(std::string, int); // get number of FIPS with status @ time
 
+		void take_notSus(std::vector<Farm*>&); //inlined
+		std::unordered_map< Farm*, std::vector<std::tuple<Farm*, int>> >* get_sources(); // inlined
 };
 
-
+inline void Status_manager::take_notSus(std::vector<Farm*>& output){
+	notSus.swap(output);}
+	
+inline std::unordered_map< Farm*, std::vector<std::tuple<Farm*, int>> >* Status_manager::get_sources(){
+	return &sources;}
 #endif

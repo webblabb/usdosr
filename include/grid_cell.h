@@ -37,7 +37,7 @@ class grid_cell
         double get_y() const; // inlined
         double kernelTo(int) const; //inlined
         void removeFarmSubset(std::vector<Farm*>&);
-		void setKernelValues(std::unordered_map<int, double>&);
+		void take_KernelValues(std::unordered_map<int, double>&);
 
 };
 

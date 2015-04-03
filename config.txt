@@ -19,12 +19,12 @@
 * #(9)
 
 ### General settings ###
-FLAPS_beefdairy_20151201_formatted.txt.txt		#(10)~Name of file containing premises ID, FIPS, x, y, population - ie FLAPS_beefdairy_20151201_formatted.txt
+FLAPS_beefdairy_20151201_formatted.txt		#(10)~Name of file containing premises ID, FIPS, x, y, population - ie FLAPS_beefdairy_20151201_formatted.txt
 randomFarms.txt 	#(11)+Name of file containing premises IDs that are infectious
 0 	#(12)+Choose one random premises from list in (11)(1), otherwise use all (0)
 365 	#(13)~Timesteps (days) to run
 * #(14)
-1	#(15)~Verbose level: Output extra information to console as model runs (0=off, 1=basic steps, 2=debug)
+2	#(15)~Verbose level: Output extra information to console as model runs (0=off, 1=basic steps, 2=debug)
 0 	#(16)~Reverse x/y option: in case input file is entered as lat/long (y/x)(set to 1) instead of long/lat (x/y)(set to 0)
 * #(17)
 * #(18)

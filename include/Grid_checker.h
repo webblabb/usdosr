@@ -32,10 +32,10 @@ class Grid_checker
 			std::vector<Farm*>&, // infectious
 			std::vector<Farm*>&); //non-susceptible
 			
-		void get_exposed(std::vector<Farm*>&); //inlined
+		void take_exposed(std::vector<Farm*>&); //inlined - called from main and cleared each timestep
 };
 
-inline void Grid_checker::get_exposed(std::vector<Farm*>& output){
+inline void Grid_checker::take_exposed(std::vector<Farm*>& output){
 	exposed.swap(output);}
 
 #endif

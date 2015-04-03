@@ -5,7 +5,7 @@
 #include <vector>
 #include <algorithm> // for std::max_element (susceptibility/infectiousness)
 
-#include "grid_cell.h" // Point defined here
+#include "grid_cell.h"
 
 grid_cell::grid_cell(const int in_id, const double in_x, const double in_y, 
 	const double in_s, const std::vector<Farm*> in_farms)
@@ -38,7 +38,7 @@ void grid_cell::addNeighbor(grid_cell* in_neighbor)
 	neighbors.emplace_back(in_neighbor);
 }
 
-void grid_cell::setKernelValues(std::unordered_map<int, double>& in_kern)
+void grid_cell::take_KernelValues(std::unordered_map<int, double>& in_kern)
 {
 	susxKern.swap(in_kern);
 }

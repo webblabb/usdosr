@@ -27,6 +27,16 @@ int draw_binom(int N, double prob)
 	return binom_dist(generator);
 }
 
+double oneMinusExp(double x)
+// based on algo found at http://www.johndcook.com/blog/cpp_expm1/
+{
+	if (fabs(x) < 1e-5){
+			return -(x + 0.5*x*x); // two-term Taylor approx for x<1e-5
+	} else {
+			return -(exp(x) - 1.0);
+	}
+}
+
 // Used in gridding (kernel values for fixed grid distances)
 // Used in pairwise evaluations in main
 double kernelsq(double distsq)
@@ -34,7 +44,7 @@ double kernelsq(double distsq)
 {	
 	double usedist = distsq;
 	if (usedist==0){usedist = 1;} // units assumed to be m
-	double k1 = 0.0003508;//*0.089; // use xi*beta (0.089*0.0003508) from table s3
+	double k1 = 0.0083;//*0.089; // use xi*beta (0.089*0.0003508) from table s3
 	double k2 = 1600; // directly from Table S3
 	double k3 = 4.6; // directly from Table S3
 	return std::min(1.0, k1/(1+pow(usedist,(k3/2))/pow(k2,k3)) );
@@ -76,30 +86,7 @@ std::vector<std::string>
     return elems;
 }
 
-/*
-// used to print infection results from main
-std::string to_string(Farm* farm)
-// overloaded to_string function, makes tab-delim string (one line) for farm with ID, cellID, x, y, pop
-{
-	std::string toPrint;
-	char temp[20];
-	std::vector<double> vars;
-		vars[0] = farm->get_id();
-		vars[1] = farm->get_cellID();
-		vars[2] = farm->get_x();
-		vars[3] = farm->get_y();
-		// fix for multiple species?
-		vars[4] = farm->get_size("Cattle");
-
-	for(auto it:vars){ // for each element in vars (each farm variable)
-		sprintf(temp, "%f\t", it);
-		toPrint += temp;
-	}
-	toPrint.replace(toPrint.end()-1, toPrint.end(), "\n");
-	
-	return toPrint;
-}
-*/
+// used in commitCell in grid initiation
 void removeFarmSubset(std::vector<Farm*>& subVec, std::vector<Farm*>& fullVec)
 // remove farms in first vector from second vector
 {
@@ -117,10 +104,8 @@ void removeFarmSubset(std::vector<Farm*>& subVec, std::vector<Farm*>& fullVec)
 		// for each fips in subset list
 		std::string fips = sub.first;
 		// if needed, sort both lists of farms in this FIPS, by ID
-		if (!std::is_sorted(sub.second.begin(),sub.second.end(),sortByID)){
-			std::sort(sub.second.begin(),sub.second.end(),sortByID);}
-		if (!std::is_sorted(fullMap.at(fips).begin(),fullMap.at(fips).end(),sortByID)){
-			std::sort(fullMap.at(fips).begin(),fullMap.at(fips).end(),sortByID);}
+		std::sort(sub.second.begin(),sub.second.end(),sortByID<Farm*>);
+		std::sort(fullMap.at(fips).begin(),fullMap.at(fips).end(),sortByID<Farm*>);
 		// iterate through full list, erasing matching sub as found
 		auto it2 = fullMap.at(fips).begin();
 		for(auto it = sub.second.begin(); it != sub.second.end(); it++){

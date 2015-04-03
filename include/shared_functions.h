@@ -9,8 +9,6 @@
 #include <cmath> // for std::sqrt in gKernel, floor in randomFrom
 #include <fstream> // for printing
 #include <iostream> // for troubleshooting output
-#include <vector> // for str_cast
-#include <string>
 #include <sstream>
 
 #include "farm.h" // for Farm* for farm sus/inf
@@ -18,20 +16,22 @@
 	double unif_rand();
 	double norm_rand();
 	int draw_binom(int, double);
+	double oneMinusExp(double);
  	double kernelsq(double distsq);
 	std::vector<std::string>
 		split(const std::string&, char, std::vector<std::string>&);
 	std::vector<std::string> 
 		split(const std::string&, char);
 	std::string to_string(Farm*);
-	void removeFarmSubset(std::vector<Farm*>&, std::vector<Farm*>&);
+ 	void removeFarmSubset(std::vector<Farm*>&, std::vector<Farm*>&);
 	std::vector<double> stringToNumVec(std::string&);
 	std::vector<int> stringToIntVec(std::string&);
 	std::vector<std::string> stringToStringVec(std::string&);
 	void printLine(std::string&, std::string&);
 
 	
-	template<typename T> void str_cast(const std::string &s, T &ref)
+template<typename T> 
+void str_cast(const std::string &s, T &ref)
 	// str_cast(s, v) casts a number represented as a string and stores it in v,
 	// v can be any type that can store numericals such as int, double etc.
 {
@@ -41,7 +41,8 @@
 		ref = -1;
 }
 
-	template<typename T> T stringToNum(const std::string& text)
+template<typename T> 
+T stringToNum(const std::string& text)
 {
 	std::istringstream ss(text);
 	T result;
@@ -49,22 +50,9 @@
 	return result;
 }
 
-	// used in grid_manager to look up kernel values
-	template<typename T> std::vector<T> orderNumbers(T& number1, T& number2)
-	// order number1 and number2 from lowest to highest
-{
-	std::vector<T> ordered;
-	ordered.emplace_back(number1);
-	if (number2 < number1){
-		ordered.insert(ordered.begin(),number2);
-	} else {
-		ordered.emplace_back(number2); // if number2 is larger or equal to number1
-	}
-	return ordered;
-}
-
 // choose a random element from a vector
-	template<typename T> T randomFrom(std::vector<T>& vec)
+template<typename T> 
+T randomFrom(std::vector<T>& vec)
 {
 	int maxSize = vec.size();
 	double rUnif = unif_rand();
@@ -78,8 +66,8 @@
 // selected values are swapped to the end of the vector so they're not selected again
 // Used in Grid_manager to select binomial-success farms
 // Used in Shipping_manager to select random premises in counties
-	template<typename T> std::vector<T> 
-	random_unique(std::vector<T> elements, int num_random) 
+template<typename T> 
+void random_unique(std::vector<T> elements, int num_random, std::vector<T>& output1) 
 	// elements not referenced (&) because we're rearranging it
 {		
 	std::vector<T> output;
@@ -97,11 +85,12 @@
 		std::swap(elements[r], elements[endIndex-1]);
 		endIndex--;
 	}
- return output;	
+ output.swap(output1);	
 }
 	
 // check if something is in a vector
-	template<typename T> bool isWithin(T& target, std::vector<T>& vec)
+template<typename T> 
+bool isWithin(const T target, const std::vector<T> vec)
 {
 	auto it = vec.begin();
 	bool found = 0;
@@ -114,7 +103,8 @@
 
 // combine multiple vectors and remove any duplicates
 // input is vector of vectors to combine
-	template<typename T> std::vector<T> uniqueFrom(std::vector<std::vector<T>>& vec)
+template<typename T> 
+std::vector<T> uniqueFrom(std::vector<std::vector<T>>& vec)
 {
 	int totalElements = 0;
 	std::unordered_map<T,int> combinedMap;
@@ -135,7 +125,8 @@
 // determine which element's range a number falls into
 // arguments are the number to match and vector of ordered maximums for each element
 // returns largest element of elementMaxes that is less than or = toMatch
-	template<typename T> int whichElement(T& toMatch, std::vector<T>& elementMaxes)
+template<typename T> 
+int whichElement(T& toMatch, std::vector<T>& elementMaxes)
 {
 	int match = -1; // the element that will be returned
 	if (toMatch > elementMaxes.back()){
@@ -163,11 +154,23 @@
 	return match;
 }
 
-inline bool sortByID(const Farm* farm1, const Farm* farm2)
+template<typename T> 
+inline bool sortByID(const T item1, const T item2)
 // "compare" function to sort farms by ID
+//  used with grid_cell*s in grid checker: stepThroughCells
 // must be defined outside of class, or else sort doesn't work
 {
-	return (farm1 -> get_id()) < (farm2 -> get_id());
-}	
+	return (item1 -> get_id()) < (item2 -> get_id());
+}
 
+template<typename T> 
+struct isInList // used in removeFarmSubset function for Farm* and grid checker for grid_cell*
+{
+	isInList(const std::vector<T> in_list) : itemList(in_list) {} // constructor
+	bool operator() (const T item){ // overload operator function
+		return (isWithin(item,itemList));
+	}	
+	private:
+		std::vector<T> itemList; // member
+};
 #endif
