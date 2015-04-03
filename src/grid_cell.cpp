@@ -3,32 +3,23 @@
 //
 #include <iostream>
 #include <vector>
-#include <algorithm> // for maximum (susceptibility/infectiousness)
+#include <algorithm> // for std::max_element (susceptibility/infectiousness)
 
 #include "grid_cell.h" // Point defined here
 
-grid_cell::grid_cell(const int in_id, const double in_x, const double in_y, const double in_s, const std::vector<Farm*> in_farms)
+grid_cell::grid_cell(const int in_id, const double in_x, const double in_y, 
+	const double in_s, const std::vector<Farm*> in_farms)
+	:
+	id(in_id),
+	x(in_x),
+	y(in_y),
+	s(in_s),
+	farms(in_farms)
 {
-    id = in_id;
-    x = in_x;
-    y = in_y;
-    s = in_s;
-    farms = in_farms;
-    
-//     Point* LL = new Point(x, y);
-// 	Point* LR = new Point(x, y+s);
-// 	Point* UL = new Point(x+s, y);
-// 	Point* UR = new Point(x+s, y+s);
-	
-// 	corners.emplace_back(LL);
-// 	corners.emplace_back(LR);
-// 	corners.emplace_back(UL);
-// 	corners.emplace_back(UR);
-		
 // calculate maximum susceptibility/infectiousness for farms within cell
 	std::vector <double> allSus;
 	std::vector <double> allInf;
-	for (auto f : in_farms){
+	for (auto& f:in_farms){
 		allSus.emplace_back(f->Farm::get_sus()); // get farm's susceptibility and add to vector
 		allInf.emplace_back(f->Farm::get_inf()); // get farm's infectiousness and add to vector		
 		}
@@ -40,4 +31,20 @@ grid_cell::grid_cell(const int in_id, const double in_x, const double in_y, cons
 
 grid_cell::~grid_cell()
 {
+}
+
+void grid_cell::addNeighbor(grid_cell* in_neighbor)
+{
+	neighbors.emplace_back(in_neighbor);
+}
+
+void grid_cell::setKernelValues(std::unordered_map<int, double>& in_kern)
+{
+	susxKern.swap(in_kern);
+}
+
+void grid_cell::removeFarmSubset(std::vector<Farm*>& toRemove)
+{
+	auto newEnd = std::remove_if(farms.begin(),farms.end(),isInList<Farm*>(toRemove));
+	farms.erase(newEnd, farms.end());
 }

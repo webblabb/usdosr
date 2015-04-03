@@ -4,13 +4,14 @@
 // #include "Live_transport.h"
 // #include "Slaughter_transport.h"
 
-Farm::Farm(int in_id, std::string in_fips, double in_x, double in_y)
+Farm::Farm(int in_id, double in_x, double in_y, std::string in_fips)
+	:
+	id(in_id),
+	cellID(-1),
+	x_coordinate(in_x),
+	y_coordinate(in_y),
+	fips(in_fips)
 {
-	id = in_id;
-	fips = in_fips;
-	x_coordinate = in_x;
-	y_coordinate = in_y;
-	cellID = -1;
 }
 
 Farm::~Farm()

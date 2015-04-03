@@ -20,11 +20,12 @@ class Shipment_manager
 {
 	private:
 		int verbose; 
-		// the following are constant through simulation:
-		std::unordered_map<std::string, std::vector<Farm*>> FIPSmap;
+		
+		// const pointers to Grid_manager objects:
+		const std::unordered_map<std::string, std::vector<Farm*>>* FIPSmap;
+		const std::unordered_map<std::string, std::unordered_map<std::string, std::vector<Farm*> >>* fipsSpeciesMap;
 		// map linking fips to states for state-wide bans
 		std::unordered_map<std::string, std::vector<std::string>> stateFIPSmap;
-		std::unordered_map<std::string, std::unordered_map<std::string, std::vector<Farm*> >> fipsSpeciesMap;
 		// used to generate random shipments
 		std::vector<std::string> allFIPS; // list of all possible destination FIPS, based on premises file
 		double banCompliance;
@@ -58,10 +59,10 @@ class Shipment_manager
 	
 	public:
 		Shipment_manager( // construct with 
-			std::unordered_map<std::string, std::vector<Farm*>>&, // a map of FIPS codes to farms
+			const std::unordered_map<std::string, std::vector<Farm*>>*, // a map of FIPS codes to farms
 			std::vector<int>&, // list of shipping parameters
 			std::vector<std::string>&, // list of species on premises
-			std::unordered_map<std::string, std::unordered_map<std::string, std::vector<Farm*> >>&); // sorted populations of species on farms
+			const std::unordered_map<std::string, std::unordered_map<std::string, std::vector<Farm*> >>*); // sorted populations of species on farms
 		
 		~Shipment_manager();
 		
