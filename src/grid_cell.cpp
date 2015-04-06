@@ -46,5 +46,6 @@ void grid_cell::take_KernelValues(std::unordered_map<int, double>& in_kern)
 void grid_cell::removeFarmSubset(std::vector<Farm*>& toRemove)
 {
 	auto newEnd = std::remove_if(farms.begin(),farms.end(),isInList<Farm*>(toRemove));
-	farms.erase(newEnd, farms.end());
+	std::vector<Farm*> newFarms(farms.begin(),newEnd);
+	farms.swap(newFarms);
 }

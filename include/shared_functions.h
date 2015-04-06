@@ -71,6 +71,7 @@ void random_unique(std::vector<T> elements, int num_random, std::vector<T>& outp
 	// elements not referenced (&) because we're rearranging it
 {		
 	std::vector<T> output;
+	output.reserve(num_random);
 	int endIndex = elements.size(); 
 	// endIndex separates non-selected values (elements [0, endIndex-1]) from selected values
 	for (auto i = 1; i<= num_random; i++){

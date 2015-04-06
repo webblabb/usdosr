@@ -54,7 +54,7 @@ int main(int argc, char* argv[])
 	// General settings
 	std::string pfile = pv[10]; // All premises filename
 	std::string seedfile = pv[11]; // Initially infected premises filename
-	int numRandomSeed; str_cast(pv[12],numRandomSeed); // Pick one premises at random from 11 to be infected
+	int numRandomSeed; str_cast(pv[12],numRandomSeed); // Pick this many premises at random from 11 to be infected, or if -1, pick one from ea county
 	int timesteps; str_cast(pv[13],timesteps); // Total timesteps to run
 	// pv[14]	//If run times for replicates should be saved (0 or 1).
 	str_cast(pv[15],verboseLevel); // set level of global variable verbose
@@ -127,12 +127,11 @@ int main(int argc, char* argv[])
   	 	// load file containing premises and related info
 		Grid_manager G(pfile,switchXY,speciesOnPrems,spSus,spInf);
 		
-		// for instantiating Shipment manager: FIPS of loaded farms and populations of each species/type
-// 		auto fipsmap = G.get_FIPSmap();
-// 		auto fipsSpeciesMap = G.get_fipsSpeciesMap();
-		// get full list of farms & cells
-		auto allFarms = G.get_allFarms(); 
+		// get pointers to full list of farms & cells
+		auto allPrems = G.get_allFarms(); 
 		auto allCells = G.get_allCells(); 
+ 		auto fipsmap = G.get_FIPSmap();
+// 		auto fipsSpeciesMap = G.get_fipsSpeciesMap();
 
 		std::clock_t loading_end = std::clock();
 	
@@ -145,7 +144,7 @@ int main(int argc, char* argv[])
 		// initiate grid
 	 	std::clock_t grid_start = std::clock();		
 	 	// if file provided, use that
-	 	if (cellFile!="*"){G.initiateGrid(cellFile);} // reading in/making cells takes ~45 sec
+	 	if (cellFile!="*"){G.initiateGrid(cellFile);} // reading in 730 cells takes ~45 sec
 	 	// else use density params
 	 	else if (maxFarms>-1 && kernelRadius >-1){G.initiateGrid(maxFarms,kernelRadius);}
 	 	// else use uniform params
@@ -159,13 +158,46 @@ int main(int argc, char* argv[])
  		std::clock_t grid_end = std::clock();
 		double gridGenTimeMS = 1000.0 * (grid_end - grid_start) / CLOCKS_PER_SEC;
 		std::cout << "CPU time for generating grid: " << gridGenTimeMS << "ms." << std::endl;
-
+		
+		std::vector<Farm*> seedFarms;
+		std::unordered_map<int, std::string> FIPSlist; // used if numRandomSeed < 0
+		if (numRandomSeed >= 0){
+			// read in initially infected prems from file
+			int fID;
+			std::ifstream f(seedfile);
+			if(!f){std::cout << "Seed input file not found. Exiting..." << std::endl; exit(EXIT_FAILURE);}
+			if(verbose>0){std::cout << "Loading seed prems.";}
+				while(! f.eof()){
+					std::string line;
+					getline(f, line); // get line from file "f", save as "line"			
+					if(! line.empty()){ // if line has something in it
+						str_cast(line, fID);
+						seedFarms.emplace_back(allPrems->at(fID));
+					} // close "if line_vector not empty"
+				} // close "while not end of file"
+			if(verbose>0){std::cout << " Closed seed file." << std::endl;}
+		} // otherwise, seedFarms will be drawn from FIPSmap
+		else if (numRandomSeed < 0){
+			// change number of reps to # of counties (1 per county)
+			reps = fipsmap->size();
+			// make a map of numbers and FIPS, to match up in rep-loops
+			FIPSlist.reserve(fipsmap->size());
+			int fipscount = 1;
+			for (auto& fm:(*fipsmap)){
+				FIPSlist[fipscount] = fm.first;
+				fipscount++;
+			}
+		}
 // start loop here
-for (auto r=1; r<=reps; r++){
+for (int r=1; r<=reps; r++){
 		std::clock_t rep_start = std::clock();
 		// load initially infected farms and instantiate Status manager
 		// note that initial farms are started as infectious rather than exposed
-		Status_manager Status(seedfile, numRandomSeed, lagParams, allFarms, timesteps);
+		if (numRandomSeed < 0){
+			std::string FIPS = FIPSlist.at(r);
+			seedFarms = fipsmap->at(FIPS);
+		}
+		Status_manager Status(seedFarms, numRandomSeed, lagParams, allPrems, timesteps);
 //		Shipment_manager Ship(fipsmap, shipParams, speciesOnPrems, fipsSpeciesMap);
 		Grid_checker gridCheck(allCells, Status.get_sources());
 

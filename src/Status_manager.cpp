@@ -33,7 +33,7 @@ up the status of an individual premises.
 #include "Status_manager.h"
 #include "shared_functions.h"
 
-Status_manager::Status_manager(std::string fname, int numRandomSeed, 
+Status_manager::Status_manager(std::vector<Farm*>& seedPool, int numRandomSeed, 
 	std::unordered_map<std::string, std::tuple<double,double>>& in_params, 
 	const std::unordered_map<int, Farm*>* allPrems, int endTime)
 	:
@@ -54,31 +54,17 @@ Status_manager::Status_manager(std::string fname, int numRandomSeed,
 {
 	verbose = verboseLevel;
 	
-	// read in initially infected prems from file
-	std::vector<Farm*> seedFarms;
-	int fID;
-	std::ifstream f(fname);
-	if(!f){std::cout << "Input file not found. Exiting..." << std::endl; exit(EXIT_FAILURE);}
-	if(verbose>0){std::cout << "Loading seed prems.";}
-		while(! f.eof()){
-			std::string line;
-			getline(f, line); // get line from file "f", save as "line"			
-			if(! line.empty()){ // if line has something in it
-				str_cast(line, fID);
-				seedFarms.emplace_back(allPrems->at(fID));
-			} // close "if line_vector not empty"
-		} // close "while not end of file"
-	if(verbose>0){std::cout << " Closed seed file." << std::endl;}
-	
 	std::vector<Farm*> focalFarms;
-	// if choosing random farms from list
+	focalFarms.reserve(seedPool.size());
+	
 	if (numRandomSeed!=0){
-		random_unique(seedFarms, numRandomSeed, focalFarms);
+		random_unique(seedPool, abs(numRandomSeed), focalFarms);
 		if (verbose>0){std::cout<<focalFarms.size()<<" initial premises infections."<<std::endl;}
 	} else {
-		focalFarms.swap(seedFarms);
+		focalFarms.swap(seedPool);
 	}
-	seededFarms = focalFarms;
+	
+	seededFarms = focalFarms; // saved for output
 	
 	changeTo("inf", focalFarms, 1, params["infectious"]);
 	// change focalFarms' status to inf, with durations via params, at base time 1
@@ -94,7 +80,7 @@ Status_manager::Status_manager(std::string fname, int numRandomSeed,
 		statusTimeFarms["exp2"][indexLag].emplace_back(f);}
 	
 	// store species for formatting later
-	auto speciesMap = allPrems->at(fID)->get_spCounts(); // just get species list from last seed farm accessed
+	auto speciesMap = (*focalFarms.begin())->get_spCounts(); // just get species list from first focal farm
 	for (auto& s:(*speciesMap)){species.emplace_back(s.first);}
 }
 

@@ -8,7 +8,7 @@
 
 ### Batch settings ###
 * #(0) Batch name. Output saved to a folder of this name. Only letters, numbers and underscore. If there is data in the folder already it will be deleted and overwritten. (not yet implemented)
-1 	#(1)~Number of replicates to run. (Each rep will be saved to separate file - not yet implemented)
+1 	#(1)~Number of replicates to run. Ignored if (12) is negative (one rep per county run)
 0 #(2)~Pairwise algorithm on (1) or off (0) in addition to gridding
 * #(3)
 * #(4)
@@ -21,7 +21,7 @@
 ### General settings ###
 FLAPS_beefdairy_20151201_formatted.txt		#(10)~Name of file containing premises ID, FIPS, x, y, population - ie FLAPS_beefdairy_20151201_formatted.txt
 randomFarms.txt 	#(11)+Name of file containing premises IDs that are infectious
-0 	#(12)+Choose one random premises from list in (11)(1), otherwise use all (0)
+-1 	#(12)+(0) use all of list in #11 to seed, (>0) choose this many random seeds from #11, (<0) choose this many seeds _per FIPS_ (# of reps changed to # of FIPS)
 365 	#(13)~Timesteps (days) to run
 * #(14)
 2	#(15)~Verbose level: Output extra information to console as model runs (0=off, 1=basic steps, 2=debug)
@@ -32,7 +32,7 @@ randomFarms.txt 	#(11)+Name of file containing premises IDs that are infectious
 
 ### Grid-related settings ###
 * #(20)+Filename containing grid cells (will override 21 and 22)
-150000,100000 #(21)+Max farms per cell, cell size minimum radius in m (20 should be blank, will override 22)
+15000,100000 #(21)+Max farms per cell, cell size minimum radius in m (20 should be blank, will override 22)
 * #(22)+Length of cell side for uniform cells (20 and 21 should be blank)
 * #(23)
 * #(24)

@@ -700,14 +700,14 @@ if(verbose>1){std::cout << "Kernel between "<<whichCell1<<"&"<<whichCell2<<": "<
 				// store kernel * max sus (part of all prob calculations)
 				double maxS2 = cell2->grid_cell::get_maxSus();
 				susxKern[cell1][whichCell2] = maxS2 * gridValue;
-if(verbose>1){std::cout << "Stored in-range sus*kernel: cells "<<whichCell1<<" & "<<whichCell2<<", susxkern: "<<
+if(verbose>1){std::cout << "Stored in-range sus*kernel: cells "<<whichCell1<<" & "<<whichCell2<<", susxKern: "<<
 	maxS2 * gridValue<<std::endl;}
 
 				// if not comparing to self, calc/store other direction (this was a big bug - double counting self as neighbor)	
 				if (whichCell1 != whichCell2){ 
 					double maxS1 = cell1->grid_cell::get_maxSus();
  					susxKern[cell2][whichCell1] = maxS1 * gridValue;
- if(verbose>1){std::cout << "Stored as in range: cells "<<whichCell2<<" & "<<whichCell1<<", susxKern: "<<
+ if(verbose>1){std::cout << "Stored in-range sus*kernel: cells "<<whichCell2<<" & "<<whichCell1<<", susxKern: "<<
  	maxS1 * gridValue<<std::endl;}
 				}
 			} // end if gridValue > 0

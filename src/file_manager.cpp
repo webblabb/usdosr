@@ -51,7 +51,7 @@ void file_manager::readConfig(std::string& cfile)
 			pv[1] = "1";}
 		if (pv[2]!="0" && pv[2]!="1"){std::cout << "ERROR (config 2): Pairwise algorithm must be 1 (on) or 0 (off)." << std::endl; exitflag=1;}
 		if (pv[10]=="*"){std::cout << "ERROR (config 10): No premises file specified." << std::endl; exitflag=1;}
-		if (pv[11]=="*" && pv[12]=="*"){std::cout << "ERROR (config 11-12): No infectious premises file specified." << std::endl; exitflag=1;}
+		if (pv[11]=="*" && pv[12]=="*"){std::cout << "ERROR (config 11-12): No infectious premises file/seed option specified." << std::endl; exitflag=1;}
 		str_cast(pv[13],timesteps);
 		if (timesteps<1){std::cout << "Warning (config 13): Number of timesteps must be 1 or more. Setting number of timesteps to 1." << std::endl; 
 			pv[13] = "1";}

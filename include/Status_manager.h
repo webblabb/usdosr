@@ -48,7 +48,7 @@ class Status_manager
 		std::unordered_map< Farm*, std::vector<std::tuple<Farm*, int>> > sources;
 		
 	public:
-		Status_manager(std::string, int, std::unordered_map<std::string, std::tuple<double,double>>&, 
+		Status_manager(std::vector<Farm*>&, int, std::unordered_map<std::string, std::tuple<double,double>>&, 
 			const std::unordered_map<int, Farm*>*, int);
 			
 		~Status_manager();		
