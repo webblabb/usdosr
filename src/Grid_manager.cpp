@@ -37,12 +37,18 @@ Grid_manager::Grid_manager(std::string &fname, bool xyswitch, std::vector<std::s
 	double x, y;
 	std::string fips;
 	int fcount = 0;
+	std::unordered_map<std::string,double> sumP, sumQ;
+	// initialize each species sum to 0
+	for (auto& s:speciesOnPrems){
+		sumP[s] = 0.0;
+		sumQ[s] = 0.0;
+	}
 
 	std::ifstream f(fname);
 	if(!f){std::cout << "Premises file not found. Exiting..." << std::endl; exit(EXIT_FAILURE);}
 	if(f.is_open())
 	{
-	if (verbose>0){std::cout << "Premises file open." << std::endl;}
+if (verbose>0){std::cout << "Premises file open." << std::endl;}
 		while(! f.eof())
 		{
 			std::string line;
@@ -73,8 +79,14 @@ Grid_manager::Grid_manager(std::string &fname, bool xyswitch, std::vector<std::s
 				}
 				int colcount = 4; // populations should start at column 4
 				for (auto& sp:speciesOnPrems){ // for each species
-					str_cast(line_vector[colcount], tempsize); // assign number in column "colcount" to "tempsize"
+					tempsize = stringToNum<int>(line_vector[colcount]); // assign value in column "colcount" to "tempsize"
 					farm_map.at(id)->Farm::set_speciesCount(sp,tempsize); // set number for species at premises
+					// get infectiousness ("p") for this species (column 4 aligns with param index 0 for species 1, hence -4)
+					double p = speciesInf.at(colcount-4);
+					sumP[sp] += pow(double(tempsize),p);
+					// get susceptibility ("q") for this species
+					double q = speciesSus.at(colcount-4);
+					sumQ[sp] += pow(double(tempsize),q);					
 					// if there are animals of this species, add to fips-species list to sort by population later
 					if (tempsize>0){fipsSpeciesMap[fips][sp].emplace_back(farm_map.at(id));}
 					colcount++;
@@ -92,7 +104,7 @@ Grid_manager::Grid_manager(std::string &fname, bool xyswitch, std::vector<std::s
 					else if (y > std::get<3>(xylimits)){std::get<3>(xylimits) = y;} // y max
 					}
 				else {
-					if (verbose>0){std::cout << "Initializing xy limits...";}
+if (verbose>0){std::cout << "Initializing xy limits...";}
 					xylimits = std::make_tuple(x,x,y,y);
 					// initialize min & max x value, min & max y value
 					} 
@@ -100,18 +112,20 @@ Grid_manager::Grid_manager(std::string &fname, bool xyswitch, std::vector<std::s
 			} // close "if line_vector not empty"
 		} // close "while not end of file"
 	} // close "if file is open"
-	if (verbose==2){
+if (verbose>1){
 	std::cout << "x min = " << std::get<0>(xylimits) << std::endl;
 	std::cout << "x max = " << std::get<1>(xylimits) << std::endl;
 	std::cout << "y min = " << std::get<2>(xylimits) << std::endl;
-	std::cout << "y max = " << std::get<3>(xylimits) << std::endl;}
+	std::cout << "y max = " << std::get<3>(xylimits) << std::endl;
+}
 	
 	f.close();
-	if (verbose>0){std::cout << fcount << " farms in " << FIPSmap.size() 
-		<< " counties loaded. Premises file closed." << std::endl;}
+if (verbose>0){std::cout << fcount << " farms in " << FIPSmap.size() 
+	<< " counties loaded. Premises file closed." << std::endl;
+}
 
 	// copy farmlist from farm_map (will be changed as grid is created)
-	if (verbose>1){std::cout << "Copying farms from farm_map to farmList..." << std::endl;}
+if (verbose>1){std::cout << "Copying farms from farm_map to farmList..." << std::endl;}
 	for (auto& prem: farm_map) {farmList.emplace_back(prem.second);} // "second" value from map is Farm pointer
 	 
 	// sort farmList by ID for faster matching/subset removal
@@ -123,9 +137,17 @@ Grid_manager::Grid_manager(std::string &fname, bool xyswitch, std::vector<std::s
 	}	
 	
 	// calculate xiP and xiQ
-	xiP = 0.0000002177;
-	xiQ = 0.0000002086;
-
+//	xiP.emplace_back(0.0000002177,0.0000002177); // from USDOSv1
+//	xiQ.emplace_back(0.0000002086,0.0000002086); // from USDOSv1
+	for (auto& sp:sumP){
+		xiP[sp.first] = 1/(double(fcount)*sp.second); // infectiousness normalizer
+if (verbose>1){std::cout<<"xi_p for "<<sp.first<<": "<<xiP.at(sp.first)<<std::endl;}
+	}
+	for (auto& sp:sumQ){
+		xiQ[sp.first] = 1/(double(fcount)*sp.second); // susceptibility normalizer
+if (verbose>1){std::cout<<"xi_q for "<<sp.first<<": "<<xiQ.at(sp.first)<<std::endl;}
+	}
+	
 	// calculate and store farm susceptibility and infectiousness
 	for (auto& f:farm_map){
 		set_FarmSus(f.second);
@@ -143,7 +165,7 @@ std::vector<Farm*> Grid_manager::getFarms(std::tuple<int,double,double,double> c
 // based on cell specs, finds farms in cell and saves pointers to farmsInCell
 // to do: reformat data structure to a range tree for faster point-in-range searching
 {
-	if(verbose==2){std::cout << "Getting farms in cell..." << std::endl;}
+if(verbose==2){std::cout << "Getting farms in cell..." << std::endl;}
 
     // cellSpecs[0] is placeholder for ID number, added when committed
     double x = std::get<1>(cellSpecs);
@@ -750,7 +772,7 @@ void Grid_manager::set_FarmSus(Farm* f)
 	int i = 0; // use to keep up with speciesOnPrems element
 	for (auto& sp:speciesOnPrems){
 		double count = f->get_size(sp); // i.e. get_size("beef") gets # of beef cattle on premises
-		double spSus = xiQ*pow(count,speciesSus[i]); // multiply by stored susceptibility value for this species/type		
+		double spSus = xiQ.at(sp)*pow(count,speciesSus[i]); // multiply by stored susceptibility value for this species/type		
 		premSus += spSus; // add this species to the total for this premises
 		i++;	
 	}
@@ -768,7 +790,7 @@ void Grid_manager::set_FarmInf(Farm* f)
 	int i = 0; // use to keep up with speciesOnPrems element
 	for (auto& sp:speciesOnPrems){
 		double count = f->get_size(sp); // i.e. get_size("beef") gets # of beef cattle on premises
-		double spInf = xiP*pow(count,speciesInf[i]); // susceptibility value for this species/type
+		double spInf = xiP.at(sp)*pow(count,speciesInf[i]); // susceptibility value for this species/type
 		// confirm how to combine species! temporary solution:
 		premInf += spInf; // add this species to the total for this premises
 		i++;	

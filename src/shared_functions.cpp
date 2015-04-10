@@ -209,6 +209,48 @@ std::vector<std::string> stringToStringVec(std::string& toConvert)
     return output;
 }
 
+// convert vector of one type (int) to comma-separated string
+std::string vecToCommaSepString(const std::vector<int> vecToPaste)
+{
+	std::string output;
+	char temp[10];
+	for (auto& v:vecToPaste){
+		sprintf(temp, "%d,", v);
+		output += temp;
+	}
+	output.pop_back(); // remove last comma
+	return output;
+}
+
+// overload for vector of strings
+std::string vecToCommaSepString(const std::vector<std::string> vecToPaste)
+{
+	std::string output;
+	for (auto& v:vecToPaste){
+		output += v;
+		output += ",";
+	}
+	output.pop_back();  // remove last comma
+	return output;
+}
+
+void addItemTab(std::string& outString, int toAdd){
+	char temp[10];
+	sprintf(temp, "%d\t", toAdd);
+	outString += temp;
+}
+
+void addItemTab(std::string& outString, double toAdd){
+	char temp[10];
+	sprintf(temp, "%.2f\t", toAdd);
+	outString += temp;
+}
+
+void addItemTab(std::string& outString, std::string toAdd){
+	outString += toAdd;
+	outString +="\t";
+}
+
 // function for printing (adding) output to specified file
 void printLine(std::string& outputFile, std::string& printString)
 {

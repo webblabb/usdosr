@@ -50,6 +50,10 @@ void file_manager::readConfig(std::string& cfile)
 		if (tempInt<1){std::cout << "Warning (config 1): Number of replications must be 1 or more. Setting number of replications to 1." << std::endl; 
 			pv[1] = "1";}
 		if (pv[2]!="0" && pv[2]!="1"){std::cout << "ERROR (config 2): Pairwise algorithm must be 1 (on) or 0 (off)." << std::endl; exitflag=1;}
+
+		if (pv[5]=="*" || pv[6]=="*"){std::cout << "Warning: (config 5-6): Output must be set to 1 or 0 - setting to 0 (off)." << std::endl;
+			pv[5] = "0"; pv[6] = "0";}
+
 		if (pv[10]=="*"){std::cout << "ERROR (config 10): No premises file specified." << std::endl; exitflag=1;}
 		if (pv[11]=="*" && pv[12]=="*"){std::cout << "ERROR (config 11-12): No infectious premises file/seed option specified." << std::endl; exitflag=1;}
 		str_cast(pv[13],timesteps);
@@ -85,9 +89,7 @@ void file_manager::readConfig(std::string& cfile)
 		if (pv[32]=="*"){std::cout << "ERROR (config 32): No premises-level shipment assignment method specified." << std::endl; exitflag=1;}
 		if (pv[38]!="*" && pv[39]=="*"){std::cout << "ERROR (config 38-39): If writing shipments to file, scale must be specified." << std::endl; exitflag=1;}
 		if (pv[40]=="*"){std::cout << "ERROR (config 40): No diffusion kernel type specified." << std::endl; exitflag=1;}
-		str_cast(pv[41],tempInt);
-// 		if (tempInt<0){std::cout << "Warning (config 41): Quarantine must be zero or positive number of days. Setting to 0." << std::endl; 
-// 			pv[41]="0";}
+	
 		checkExit = checkMeanVar(pv[42],42,"latency"); if (checkExit==1){exitflag=1;} // if exit triggered by this check, set exitflag=1
 		checkExit = checkMeanVar(pv[43],43,"infectiousness"); if (checkExit==1){exitflag=1;} // if exit triggered by this check, set exitflag=1
 		int pv44size, pv45size, pv46size;
@@ -99,7 +101,7 @@ void file_manager::readConfig(std::string& cfile)
 			checkExit = checkPositive(tempVec, 46); if (checkExit==1){exitflag=1;}
 		if (!(pv44size == pv45size && pv44size == pv46size)){
 			std::cout<<"ERROR (config 44-46): Same number of arguments must be provided for species, susceptibility, and infectiousness."<<std::endl; exitflag=1;}
-		if (pv[48]!="*" && pv[49]=="*"){std::cout << "ERROR (config 48-49): If writing statuses to file, statuses must be specified." << std::endl; exitflag=1;}
+
 		checkExit = checkMeanVar(pv[50],50,"reporting"); if (checkExit==1){exitflag=1;} // if exit triggered by this check, set exitflag=1
 		str_cast(pv[51],tempInt);
 		if (tempInt<0 || tempInt>100){std::cout << "ERROR (config 51): Shipment ban compliance must be specified as percentage. Setting to 0% (no ban)." << std::endl; 

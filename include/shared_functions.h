@@ -27,6 +27,11 @@
 	std::vector<double> stringToNumVec(std::string&);
 	std::vector<int> stringToIntVec(std::string&);
 	std::vector<std::string> stringToStringVec(std::string&);
+	std::string vecToCommaSepString(const std::vector<int> vecToPaste);
+	std::string vecToCommaSepString(const std::vector<std::string> vecToPaste);
+	void addItemTab(std::string&, int);
+	void addItemTab(std::string&, double);
+	void addItemTab(std::string&, std::string);
 	void printLine(std::string&, std::string&);
 
 	

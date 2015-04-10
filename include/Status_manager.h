@@ -7,11 +7,7 @@
 #ifndef Status_manager_h
 #define Status_manager_h
 
-// included in Farm.h: string, unordered map, vector
-#include "Farm.h"
-
-#include <fstream>
-#include <tuple>
+#include "shared_functions.h"
 
 extern int verboseLevel;
 
@@ -47,6 +43,9 @@ class Status_manager
 		std::vector<Farm*> seededFarms;
 		std::unordered_map< Farm*, std::vector<std::tuple<Farm*, int>> > sources;
 		
+		int get_totalOf(const std::string status);
+		void get_seedCos(std::vector<std::string>&);
+
 	public:
 		Status_manager(std::vector<Farm*>&, int, std::unordered_map<std::string, std::tuple<double,double>>&, 
 			const std::unordered_map<int, Farm*>*, int);
@@ -64,6 +63,9 @@ class Status_manager
 
 		void take_notSus(std::vector<Farm*>&); //inlined
 		std::unordered_map< Farm*, std::vector<std::tuple<Farm*, int>> >* get_sources(); // inlined
+		const std::vector<Farm*>* get_seededFarms(); //inlined
+		std::string formatRepSummary(int, int, double);
+		std::string formatDetails(int, int, std::vector<Farm*>&);
 };
 
 inline void Status_manager::take_notSus(std::vector<Farm*>& output){
@@ -71,4 +73,8 @@ inline void Status_manager::take_notSus(std::vector<Farm*>& output){
 	
 inline std::unordered_map< Farm*, std::vector<std::tuple<Farm*, int>> >* Status_manager::get_sources(){
 	return &sources;}
+	
+inline const std::vector<Farm*>* Status_manager::get_seededFarms(){
+	return &seededFarms;}
+
 #endif

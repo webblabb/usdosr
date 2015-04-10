@@ -7,13 +7,15 @@
 
 
 ### Batch settings ###
-* #(0) Batch name. Output saved to a folder of this name. Only letters, numbers and underscore. If there is data in the folder already it will be deleted and overwritten. (not yet implemented)
-1 	#(1)~Number of replicates to run. Ignored if (12) is negative (one rep per county run)
+testApr6 #(0) Batch name. Output written to file with a prefix of this name. Only letters, numbers and underscore.
+1 	#(1)~Number of replicates to run. Ignored if (12) is negative (one rep per county)
 0 #(2)~Pairwise algorithm on (1) or off (0) in addition to gridding
 * #(3)
 * #(4)
-* #(5)
-* #(6)
+
+## Output settings
+0 #(5)~Summary output on/off (1/0) - one line per replicate with # infected, duration, seed info
+0 #(6)~Detailed output on/off (1/0) - one line per exposed premises with time, source of infection, route of infection
 * #(7)
 * #(8)
 * #(9)
@@ -21,7 +23,7 @@
 ### General settings ###
 FLAPS_beefdairy_20151201_formatted.txt		#(10)~Name of file containing premises ID, FIPS, x, y, population - ie FLAPS_beefdairy_20151201_formatted.txt
 randomFarms.txt 	#(11)+Name of file containing premises IDs that are infectious
--1 	#(12)+(0) use all of list in #11 to seed, (>0) choose this many random seeds from #11, (<0) choose this many seeds _per FIPS_ (# of reps changed to # of FIPS)
+0 	#(12)+(0) use all of list in #11 to seed, (>0) choose this many random seeds from #11, (<0) choose this many seeds _per FIPS_ (# of reps changed to # of FIPS)
 365 	#(13)~Timesteps (days) to run
 * #(14)
 2	#(15)~Verbose level: Output extra information to console as model runs (0=off, 1=basic steps, 2=debug)
@@ -63,8 +65,8 @@ beef,dairy 	#(44)~ List of species for which counts are provided in premises fil
 0.414,0.414 	#(45)~ Susceptibility constant values (species-specific), comma-separated in order listed in (44)
 0.424,0.424 #(46)	~ Infectiousness constant values (species-specific), comma-separated in order listed in (44)
 * #(47)
-* #(48) Output: filename to write statuses (49 must be specified)
-inf #(49) Output: status(es) over time to print to file, comma-separated (48 must be specified)
+* #(48)
+* #(49)
 
 ### Control-related settings
 1,0 	#(50)~Mean, variance (around normal) days from premises exposure to reporting (add another for index case)

@@ -267,3 +267,77 @@ void Status_manager::updates(int t)
 	}
 	}
 }
+
+int Status_manager::get_totalOf(const std::string status)
+{
+	if (status=="sus"){
+		std::cout<<"Cannot retrieve total susceptible FIPS via Status Manager. Exiting..."<<std::endl; exit(EXIT_FAILURE);}
+	int nStatPrems = 0;
+	auto statPrems = statusTimeFarms.at(status);
+	for (auto& sp:statPrems){
+		nStatPrems += sp.second.size();
+	}
+	return nStatPrems;
+}
+
+void Status_manager::get_seedCos(std::vector<std::string>& output)
+{
+	std::vector<std::string> fips;
+	fips.reserve(3000);
+	for (auto& s:seededFarms){
+		fips.emplace_back(s->get_fips());
+	}
+	fips.swap(output);
+}
+
+std::string Status_manager::formatRepSummary(int rep, int duration, double repTimeMS)
+{
+	int nInf = get_totalOf("inf") - seededFarms.size();
+	std::vector<int> seedIDs; seedIDs.reserve(seededFarms.size());
+	for (auto& sf:seededFarms){
+		seedIDs.emplace_back(sf->Farm::get_id());
+	}
+	std::string seeds = vecToCommaSepString(seedIDs);
+	
+	std::vector<std::string> seedFips;
+	get_seedCos(seedFips);
+	std::string seedCos = vecToCommaSepString(seedFips);
+
+	std::string toPrint;
+	addItemTab(toPrint, rep); // rep #
+	addItemTab(toPrint, nInf); // # total infectious (includes seeds)
+	addItemTab(toPrint, duration); // duration of epidemic	
+	addItemTab(toPrint, seeds); // seed farm(s)
+	addItemTab(toPrint, seedCos); // seed county(s)
+	addItemTab(toPrint, repTimeMS); // runtime
+	toPrint.replace(toPrint.end()-1, toPrint.end(), "\n"); // add line break at end
+	
+	return toPrint;
+}
+
+std::string Status_manager::formatDetails(int rep, int t, std::vector<Farm*>& newExp)
+// rep, ID, time, sourceID, method - not including initial seeds
+{
+	std::string toPrint;
+	
+	for (auto& e:newExp){
+		int expPrem = e->Farm::get_id();
+		auto sourceInfo = sources.at(e);
+		std::vector<int> sourceIDs; sourceIDs.reserve(sourceInfo.size());
+		std::vector<int> routes; routes.reserve(sourceInfo.size());
+		for (auto& si:sourceInfo){
+			sourceIDs.emplace_back(std::get<0>(si)->Farm::get_id()); // source premises ID
+			routes.emplace_back(std::get<1>(si)); // route of exposure
+		}
+		std::string sourceIDs_str = vecToCommaSepString(sourceIDs);
+		std::string routes_str = vecToCommaSepString(routes);
+
+		addItemTab(toPrint, rep); // rep #
+		addItemTab(toPrint, expPrem); // exposed prem ID
+		addItemTab(toPrint, t); // time
+		addItemTab(toPrint, sourceIDs_str); // source prem ID(s)
+		addItemTab(toPrint, routes_str); // route(s) of exposure: 0=local, 1=shipment
+		toPrint.replace(toPrint.end()-1, toPrint.end(), "\n"); // add line break at end
+	}
+	return toPrint;
+}

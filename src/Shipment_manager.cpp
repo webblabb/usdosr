@@ -329,7 +329,7 @@ std::string Shipment_manager::formatOutput(int shipRes, int t)
 		
 			for (auto& ships:farmShipmentList){
 				sprintf(temp, "%d\t", t);
-				toPrint += "\t";
+				toPrint += temp;
 				sprintf(temp, "%d\t", std::get<0>(ships));
 				toPrint	+= temp; // origin ID
 				sprintf(temp, "%d\t", std::get<1>(ships));

@@ -46,32 +46,35 @@ int main(int argc, char* argv[])
 //~~~~~~~ Copy/apply configuration settings
 	// Element numbers correspond to those specified in config.txt
 	// Batch settings
-	//std::string batch_name = pv[0]; //Folder where this run will be saved. Currently win-only.
-	int reps; str_cast(pv[1],reps); // Number of replicates to run - save pv[1] as int reps.
-	bool pairwiseOn; str_cast(pv[2],pairwiseOn);
-	// pv[3] ... pv[9]
+	std::string batch_name = pv[0]; //Prefix for file where this run will be saved.
+	int reps = stringToNum<int>(pv[1]); // Number of replicates to run - save pv[1] as int reps.
+	bool pairwiseOn = stringToNum<int>(pv[2]);
+	// pv[3]... pv[4]
+	
+	bool summaryOut = stringToNum<int>(pv[5]);
+	bool detailOut = stringToNum<int>(pv[6]);
+	// pv[7]... pv[9]
 
 	// General settings
 	std::string pfile = pv[10]; // All premises filename
 	std::string seedfile = pv[11]; // Initially infected premises filename
-	int numRandomSeed; str_cast(pv[12],numRandomSeed); // Pick this many premises at random from 11 to be infected, or if -1, pick one from ea county
-	int timesteps; str_cast(pv[13],timesteps); // Total timesteps to run
+	int numRandomSeed = stringToNum<int>(pv[12]); // Pick this many premises at random from 11 to be infected, or if -1, pick one from ea county
+	int timesteps = stringToNum<int>(pv[13]); // Total timesteps to run
 	// pv[14]	//If run times for replicates should be saved (0 or 1).
-	str_cast(pv[15],verboseLevel); // set level of global variable verbose
-	bool switchXY; str_cast(pv[16],switchXY); // if off, y is before x
+	verboseLevel = stringToNum<int>(pv[15]); // set level of global variable verbose
+	bool switchXY = stringToNum<int>(pv[16]); // if off, y is before x
 	// pv[17] ... pv[19]
 	
 	// Grid-related settings
 	int maxFarms=-1;
 	double kernelRadius=-1;
-	double cellSide=0;
 	std::string cellFile = pv[20]; // Grid cells filename
 	std::vector<double> gridParamsDensity = stringToNumVec(pv[21]); // Maximum farms per cell - split into ints
 	if (gridParamsDensity.size()!=0){
 		maxFarms = gridParamsDensity[0];
 		kernelRadius = gridParamsDensity[1];
 	}
-	str_cast(pv[22],cellSide); // Length of side for uniform cells	
+	double cellSide = stringToNum<double>(pv[22]); // Length of side for uniform cells	
 	// pv[23] ... pv[28]
 	std::string outCellFile = pv[29]; // Filename to write cells to
 	
@@ -80,13 +83,13 @@ int main(int argc, char* argv[])
 	std::vector<int> coShipTimes = stringToIntVec(pv[31]); // Times to start using the above methods
 		coShipTimes.emplace_back(timesteps+1); // add this b/c whichElement function needs a maximum (element won't be used)
 
-	int farmFarmMethod; str_cast(pv[32],farmFarmMethod); // Method to assign shipments to premises
+	int farmFarmMethod = stringToNum<int>(pv[32]); // Method to assign shipments to premises
 	// pv[33] ... pv[37]
 	std::string outShipFile = pv[38]; // Filename to write shipments (with flagged bans) to
-	int outShipRes; str_cast(pv[39], outShipRes); // Output shipments at premises (0), county (1), or state (2) level
+	int outShipRes = stringToNum<int>(pv[39]); // Output shipments at premises (0), county (1), or state (2) level
 	
 	// Infection-related settings
-	int kernelType; str_cast(pv[40],kernelType); // for local (diffuse) spread
+	int kernelType = stringToNum<int>(pv[40]); // for local (diffuse) spread
 	// int quarantine = str_cast(pv[41]); // length of quarantine in days for all shipments
 	std::vector<double> lp = stringToNumVec(pv[42]); // convert to numbers
 		std::tuple<double,double> latencyParams = std::make_tuple(lp[0],lp[1]);
@@ -102,8 +105,8 @@ int main(int argc, char* argv[])
 	// Control-related settings
 	std::vector<double> rp = stringToNumVec(pv[50]);
 		std::tuple<double,double> reportParams = std::make_tuple(rp[0],rp[1]);
-	int shipBanCompliance; str_cast(pv[51], shipBanCompliance); // Percent effectiveness
-	int shipBanScale; str_cast(pv[52], shipBanScale); // resolution of shipping ban (0-county, 1-state)
+	int shipBanCompliance = stringToNum<int>(pv[51]); // Percent effectiveness
+	int shipBanScale = stringToNum<int>(pv[52]); // resolution of shipping ban (0-county, 1-state)
 	std::vector<int> shipParams = {shipBanCompliance, shipBanScale, farmFarmMethod};
 	std::vector<double> bip = stringToNumVec(pv[53]);
 		std::tuple<double,double> banInitParams = std::make_tuple(bip[0],bip[1]);
@@ -190,26 +193,26 @@ int main(int argc, char* argv[])
 		}
 // start loop here
 for (int r=1; r<=reps; r++){
-		std::clock_t rep_start = std::clock();
-		// load initially infected farms and instantiate Status manager
-		// note that initial farms are started as infectious rather than exposed
-		if (numRandomSeed < 0){
-			std::string FIPS = FIPSlist.at(r);
-			seedFarms = fipsmap->at(FIPS);
-		}
-		Status_manager Status(seedFarms, numRandomSeed, lagParams, allPrems, timesteps);
+	std::clock_t rep_start = std::clock();
+	// load initially infected farms and instantiate Status manager
+	// note that initial farms are started as infectious rather than exposed
+	if (numRandomSeed < 0){
+		std::string FIPS = FIPSlist.at(r);
+		seedFarms = fipsmap->at(FIPS);
+	}
+	Status_manager Status(seedFarms, numRandomSeed, lagParams, allPrems, timesteps);
 //		Shipment_manager Ship(fipsmap, shipParams, speciesOnPrems, fipsSpeciesMap);
-		Grid_checker gridCheck(allCells, Status.get_sources());
+	Grid_checker gridCheck(allCells, Status.get_sources());
 
- 		int t=0;		
- 		std::vector<Farm*> focalFarms;
- 		// set focalFarms as all farms with status inf at time 0
-		Status.premsWithStatus("inf", t, focalFarms);
-		int numSuscept = Status.numPremsWithStatus("sus", t);
-		int numExposed = Status.numPremsWithStatus("exp", t);
-		bool potentialTx = (focalFarms.size()>0 && numSuscept>0) || (numExposed>0 && numSuscept>0);
+	int t=0;		
+	std::vector<Farm*> focalFarms;
+	// set focalFarms as all farms with status inf at time 0
+	Status.premsWithStatus("inf", t, focalFarms);
+	int numSuscept = Status.numPremsWithStatus("sus", t);
+	int numExposed = Status.numPremsWithStatus("exp", t);
+	bool potentialTx = (focalFarms.size()>0 && numSuscept>0) || (numExposed>0 && numSuscept>0);
 
-   	   while (t<timesteps && potentialTx){ // timesteps, stop early if dies out
+   while (t<timesteps && potentialTx){ // timesteps, stop early if dies out
    	   	 std::clock_t timestep_start = std::clock();		
    	   	 t++; // starts at 1
     		 // update all farm/FIPS statuses: at the proper times, exposed become infectious, infectious recover,
@@ -284,27 +287,52 @@ for (int r=1; r<=reps; r++){
 		Status.premsWithStatus("inf", t, focalFarms); // assign "inf" farms as focalFarms
 		numSuscept = Status.numPremsWithStatus("sus", t);
 		numExposed = Status.numPremsWithStatus("exp", t);
-/*		
-		// output status as specified	
-		if (outStatusFile!="*"){
-			for (auto& os:outStatuses){
-				std::string printString = Status.formatOutput(os,t,0); // method 0 sums all prems for each timepoint (only enabled option)
-				printLine(outStatusFile, printString);	
+		
+		// output details of makeExposed (rep, t)
+		if (detailOut){
+			// output detail to file
+			// rep, ID, time, sourceID, method
+			std::string detOutFile = batch_name;
+			detOutFile += "_detail.txt";
+			// specify seed farm/county?
+			if (r==1 && t==1){
+				std::string header = "Rep\tExposedID\tatTime\tSourceID\tInfRoute\n";
+				printLine(detOutFile,header);
 			}
+			std::string printString = Status.formatDetails(r,t,makeExposed);
+			printLine(detOutFile, printString);	
 		}	
-*/
+		
 		potentialTx = ((focalFarms.size()>0 && numSuscept>0) || (numExposed>0 && numSuscept>0));
 
 		std::clock_t timestep_end = std::clock();				
  		double timestepTimeMS = 1000.0 * (timestep_end - timestep_start) / CLOCKS_PER_SEC;
 		std::cout << "CPU time for timestep "<< timestepTimeMS << "ms." << std::endl;
- 		}  	// end "while under time and exposed/infectious and susceptible farms remain"
+ 	}  	// end "while under time and exposed/infectious and susceptible farms remain"
  		
- 		std::clock_t rep_end = std::clock();
- 		double repTimeMS = 1000.0 * (rep_end - rep_start) / CLOCKS_PER_SEC;
-		std::cout << "CPU time for rep "<<r<<" ("<<t<<" timesteps): " << repTimeMS << "ms." << std::endl;
+	std::clock_t rep_end = std::clock();
+	double repTimeMS = 1000.0 * (rep_end - rep_start) / CLOCKS_PER_SEC;
+	std::cout << "CPU time for rep "<<r<<" ("<<t<<" timesteps): " << repTimeMS << "ms." << std::endl;
+
+	if (summaryOut){		
+		// output summary to file (rep, days inf, run time)
+		// rep, # farms infected, # days of infection, seed farm and county, run time
+		std::string sumOutFile = batch_name;
+		sumOutFile += "_summary.txt";
+		if (r==1){
+			std::string header = "Rep\tNum_Inf\tDuration\tSeed_Farms\tSeed_FIPS\tRunTimeMS\n";
+			printLine(sumOutFile,header);
+		}
+		std::string repOut = Status.formatRepSummary(r,t,repTimeMS);
+		printLine(sumOutFile, repOut);
 		
+	}
+	
+
+
 } // end for loop
+
+	
 
 return 0;
 }

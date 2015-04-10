@@ -48,7 +48,7 @@ class Grid_manager
 		std::vector<std::string> speciesOnPrems; // list of species on all farms provided in prem file
 		std::vector<double> speciesSus, speciesInf; // species specific susceptibility and infectiousness, in same order as speciesOnAllFarms
 		std::unordered_map<std::string,std::vector<int>> herdSizes;
-		double xiP, xiQ;
+		std::unordered_map<std::string,double> xiP, xiQ;
 		unsigned int committedFarms;
 
 		// functions		
