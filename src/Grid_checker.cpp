@@ -117,6 +117,7 @@ void Grid_checker::binomialEval(Farm* f1, grid_cell* fc, grid_cell* c2, int ccID
 	double kern = fc->grid_cell::kernelTo(ccID);
 	double pmax = oneMinusExp(-focalInf * kern);
 	double N = c2->get_num_farms();
+	std::vector<Farm*> fcexp; fcexp.reserve(N);
 	
 	// draw number of hypothetical farms exposed, from binomial
 	int numExp = draw_binom(N,pmax);
@@ -148,11 +149,11 @@ void Grid_checker::binomialEval(Farm* f1, grid_cell* fc, grid_cell* c2, int ccID
 if(verbose>1){
 		std::cout << "Infection @ distance: ";
 		std::cout << std::sqrt(distBWfarmssq)/1000 << " km, prob "<<ptrue<<std::endl;}
-				exposed.emplace_back(f2);
+				fcexp.emplace_back(f2);
 			}
 		 } // end "for each hypothetically exposed farm"
 		} // end "if any hypothetically exposed farms"
-	exposed.swap(output);
+	fcexp.swap(output);
 }
 /*
 std::vector<Farm*> Grid_manager::countdownEval(Farm* focalFarm, std::vector<Farm*> compFarms)

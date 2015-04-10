@@ -137,16 +137,32 @@ if (verbose>1){std::cout << "Copying farms from farm_map to farmList..." << std:
 	}	
 	
 	// calculate xiP and xiQ
-//	xiP.emplace_back(0.0000002177,0.0000002177); // from USDOSv1
-//	xiQ.emplace_back(0.0000002086,0.0000002086); // from USDOSv1
+// 	for (auto& sp:sumP){
+// 		xiP[sp.first] = 1/(double(fcount)*sp.second); // infectiousness normalizer
+// if (verbose>1){std::cout<<"xi_p for "<<sp.first<<": "<<xiP.at(sp.first)<<std::endl;}
+// 	}
+// 	for (auto& sp:sumQ){
+// 		xiQ[sp.first] = 1/(double(fcount)*sp.second); // susceptibility normalizer
+// if (verbose>1){std::cout<<"xi_q for "<<sp.first<<": "<<xiQ.at(sp.first)<<std::endl;}
+// 	}
+// use USDOSv1 values directly
+// 	for (auto& sp:sumP){
+// 		xiP[sp.first] = 0.0000002177; // infectiousness normalizer
+// if (verbose>1){std::cout<<"xi_p for "<<sp.first<<": "<<xiP.at(sp.first)<<std::endl;}
+// 	}
+// 	for (auto& sp:sumQ){
+// 		xiQ[sp.first] = 0.0000002086; // susceptibility normalizer
+// if (verbose>1){std::cout<<"xi_q for "<<sp.first<<": "<<xiQ.at(sp.first)<<std::endl;}
+// 	}	
+// use other values
 	for (auto& sp:sumP){
-		xiP[sp.first] = 1/(double(fcount)*sp.second); // infectiousness normalizer
+		xiP[sp.first] = 1; // infectiousness normalizer
 if (verbose>1){std::cout<<"xi_p for "<<sp.first<<": "<<xiP.at(sp.first)<<std::endl;}
 	}
 	for (auto& sp:sumQ){
-		xiQ[sp.first] = 1/(double(fcount)*sp.second); // susceptibility normalizer
+		xiQ[sp.first] = 1; // susceptibility normalizer
 if (verbose>1){std::cout<<"xi_q for "<<sp.first<<": "<<xiQ.at(sp.first)<<std::endl;}
-	}
+	}	
 	
 	// calculate and store farm susceptibility and infectiousness
 	for (auto& f:farm_map){
