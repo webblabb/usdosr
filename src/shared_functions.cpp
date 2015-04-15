@@ -38,7 +38,7 @@ double oneMinusExp(double x)
 }
 
 // Used in gridding (kernel values for fixed grid distances)
-// Used in pairwise evaluations in main
+// Grid manager & grid checker
 double kernelsq(double distsq)
 // returns kernel value as a function of distance squared
 {	

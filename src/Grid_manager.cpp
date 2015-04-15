@@ -37,9 +37,10 @@ Grid_manager::Grid_manager(std::string &fname, bool xyswitch, std::vector<std::s
 	double x, y;
 	std::string fips;
 	int fcount = 0;
-	std::unordered_map<std::string,double> sumP, sumQ;
+	std::unordered_map<std::string,double> sumSp, sumP, sumQ;
 	// initialize each species sum to 0
 	for (auto& s:speciesOnPrems){
+		sumSp[s] = 0.0;
 		sumP[s] = 0.0;
 		sumQ[s] = 0.0;
 	}
@@ -81,6 +82,7 @@ if (verbose>0){std::cout << "Premises file open." << std::endl;}
 				for (auto& sp:speciesOnPrems){ // for each species
 					tempsize = stringToNum<int>(line_vector[colcount]); // assign value in column "colcount" to "tempsize"
 					farm_map.at(id)->Farm::set_speciesCount(sp,tempsize); // set number for species at premises
+					sumSp[sp] += tempsize;
 					// get infectiousness ("p") for this species (column 4 aligns with param index 0 for species 1, hence -4)
 					double p = speciesInf.at(colcount-4);
 					sumP[sp] += pow(double(tempsize),p);
@@ -138,11 +140,13 @@ if (verbose>1){std::cout << "Copying farms from farm_map to farmList..." << std:
 	
 	// calculate xiP and xiQ
 // 	for (auto& sp:sumP){
-// 		xiP[sp.first] = 1/(double(fcount)*sp.second); // infectiousness normalizer
+// 		// sp.first is species name, sp.second is sum of each (herd size^p)
+// 		xiP[sp.first] = 0.0000002177*(sumSp[sp.first]/sp.second); // infectiousness normalizer
 // if (verbose>1){std::cout<<"xi_p for "<<sp.first<<": "<<xiP.at(sp.first)<<std::endl;}
 // 	}
 // 	for (auto& sp:sumQ){
-// 		xiQ[sp.first] = 1/(double(fcount)*sp.second); // susceptibility normalizer
+// 		// sp.first is species name, sp.second is sum of each (herd size^q)
+// 		xiQ[sp.first] = 0.0000002086*(sumSp[sp.first]/sp.second); // susceptibility normalizer
 // if (verbose>1){std::cout<<"xi_q for "<<sp.first<<": "<<xiQ.at(sp.first)<<std::endl;}
 // 	}
 // use USDOSv1 values directly
@@ -156,11 +160,11 @@ if (verbose>1){std::cout << "Copying farms from farm_map to farmList..." << std:
 // 	}	
 // use other values
 	for (auto& sp:sumP){
-		xiP[sp.first] = 1; // infectiousness normalizer
+		xiP[sp.first] = 0.00082; // infectiousness normalizer
 if (verbose>1){std::cout<<"xi_p for "<<sp.first<<": "<<xiP.at(sp.first)<<std::endl;}
 	}
 	for (auto& sp:sumQ){
-		xiQ[sp.first] = 1; // susceptibility normalizer
+		xiQ[sp.first] = 5.7; // susceptibility normalizer
 if (verbose>1){std::cout<<"xi_q for "<<sp.first<<": "<<xiQ.at(sp.first)<<std::endl;}
 	}	
 	
@@ -689,8 +693,8 @@ double Grid_manager::shortestCellDist2(grid_cell* cell1, grid_cell* cell2)
 		// only use distance between x values
 		}	
 	
-	double xDiff = abs(cell1_x-cell2_x);
-	double yDiff = abs(cell1_y-cell2_y);
+	double xDiff = fabs(cell1_x-cell2_x);
+	double yDiff = fabs(cell1_y-cell2_y);
 	std::vector<double> orderedDiffs = orderNumbers(xDiff,yDiff); // in shared_functions.h
 	if (storedDists.count(orderedDiffs[0])==1 && 
 		storedDists.at(orderedDiffs[0]).count(orderedDiffs[1])==1){
