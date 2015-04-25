@@ -7,6 +7,7 @@ Grid_checker::Grid_checker(const std::unordered_map<int, grid_cell*>* in_allCell
 	:
 	allCells(in_allCells),
 	sources(in_sources)
+// makes shallow copy of grid cells to start as susceptible - we only modify the vector of pointers to Farms, not the Farms themselves
 {
 	verbose = verboseLevel;
 	int fcount = 0;
@@ -32,19 +33,18 @@ void Grid_checker::stepThroughCells(std::vector<Farm*>& focalFarms,
 // in_focalFarms is all infectious premises
 // nonSus is all non-susceptible premises, including focalFarms
 {
-if (verbose>1){std::cout<<"Starting grid check."<<std::endl;}
-
 //================================= update susceptible (vector of) grid_cells*
 	if (nonSus.size()>0){
-		if (verbose>1){std::cout<<"Removing "<<nonSus.size()<<" non-susceptible farms."<<std::endl;}
-		std::unordered_map<int, std::vector<Farm*>> nonSusCellMap;
+		if (verbose>2){std::cout<<"Removing "<<nonSus.size()<<" non-susceptible farms by ID."<<std::endl;}
+		std::unordered_map<int, std::vector<int>> nonSusCellMap;
 		for (auto& ns:nonSus){ // ns is Farm*
-			nonSusCellMap[ns->Farm::get_cellID()].emplace_back(ns);
+			nonSusCellMap[ns->Farm::get_cellID()].emplace_back(ns->Farm::get_id());
 		}
 		std::vector<grid_cell*> empties;
 		for (auto& s:susceptible){
-			int sID = s->get_id();
+			int sID = s->get_id(); // cell id
 			if (nonSusCellMap.count(sID)==1){ // if this cell is represented in nonSus
+if (verbose>2){std::cout<<"Removing matches for cell "<<sID<<std::endl;}
 				s->removeFarmSubset(nonSusCellMap.at(sID)); // remove those farms from sus cell
 				if (s->get_num_farms()==0){empties.emplace_back(s);}
 			}
@@ -61,7 +61,7 @@ if (verbose>1){
 if (verbose>1){
 	int scount = 0;
 	for (auto& s:susceptible){scount += s->get_num_farms();}
-	std::cout<<"Susceptible cells updated with "<<scount<<" farms."<<std::endl;}
+	std::cout<<"Susceptible cells updated, now contain "<<scount<<" farms."<<std::endl;}
 		
  	}
 	
@@ -139,16 +139,14 @@ void Grid_checker::binomialEval(Farm* f1, grid_cell* fc, grid_cell* c2, int ccID
 			double ydiff = (f1y - f2y);
 			double distBWfarmssq = xdiff*xdiff + ydiff*ydiff;
 			double kernelBWfarms = kernelsq(distBWfarmssq); // kernelsq calculates kernel based on distance squared
-			double compSus = f2->Farm::get_sus(); // susceptible farm in comparison cell (farmInf already defined from focal cell)
+			double compSus = f2->Farm::get_sus(); // susceptible farm in comparison cell
 
 			// calculate probability between these specific farms
 			double ptrue = oneMinusExp(-focalInf * compSus * kernelBWfarms); // prob tx between this farm pair
 
 			double random = unif_rand();
 			if (random <= ptrue/pmax){ // actual infection
-if(verbose>1){
-		std::cout << "Infection @ distance: ";
-		std::cout << std::sqrt(distBWfarmssq)/1000 << " km, prob "<<ptrue<<std::endl;}
+if(verbose>1){std::cout << "Infection @ distance: "<< std::sqrt(distBWfarmssq)/1000 << " km, prob "<<ptrue<<std::endl;}
 				fcexp.emplace_back(f2);
 			}
 		 } // end "for each hypothetically exposed farm"

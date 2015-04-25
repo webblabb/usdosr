@@ -33,6 +33,9 @@ class Farm
 		double x_coordinate, y_coordinate, sus, inf;
 		std::string fips;
 		std::unordered_map< std::string, int > speciesCounts; // species and counts
+		std::unordered_map< std::string, int > statuses; // used in Control_actions
+		std::unordered_map< std::string, int > start; // used in Status_manager: start times for disease statuses
+		std::unordered_map< std::string, int > end; // used in Status_manager: end times for disease statuses
 	
 	public:
 		Farm(int, double, double, std::string);
@@ -44,14 +47,22 @@ class Farm
 		double get_sus() const; // inlined
 		double get_inf() const; // inlined
  		std::string get_fips() const; // inlined
- 		const std::unordered_map< std::string, int >* get_spCounts() const; // inlined
- 		
+ 		const std::unordered_map< std::string, int >* get_spCounts(); // inlined
+ 		int get_status(std::string) const; //inlined
  		int get_size(const std::string species) const;
+ 		int get_start(std::string) const; //inlined
+ 		int get_end(std::string) const; //inlined
+ 		bool beenExposed() const; //inlined
  		
 		void set_cellID(const int cellID);
  		void set_speciesCount(const std::string, int);
  		void set_sus(const double);
  		void set_inf(const double);
+ 		void set_status(const std::string, const int);
+ 		void set_start(const std::string, const int); //inlined - set start time for disease status
+ 		void set_end(const std::string, const int); //inlined - set end time for disease status
+
+
 };
 
 inline int Farm::get_id() const
@@ -82,9 +93,33 @@ inline std::string Farm::get_fips() const
 {
 	return fips;
 }
-const inline std::unordered_map< std::string, int >* Farm::get_spCounts() const
+const inline std::unordered_map< std::string, int >* Farm::get_spCounts()
 {
 	return &speciesCounts;
+}
+inline int Farm::get_status(const std::string s) const
+{
+	return statuses.at(s);
+}
+inline void Farm::set_start(const std::string status, const int t) 
+{
+	start[status] = t;
+}
+inline void Farm::set_end(const std::string status, const int t)
+{
+	end[status] = t;
+}
+inline int Farm::get_start(std::string s) const
+{
+	return start.at(s);
+}
+inline int Farm::get_end(std::string s) const
+{
+	return end.at(s);
+}
+inline bool Farm::beenExposed() const
+{
+	return start.count("exp")==1;
 }
 
 #endif //FARM_H

@@ -50,6 +50,7 @@ Grid_manager::Grid_manager(std::string &fname, bool xyswitch, std::vector<std::s
 	if(f.is_open())
 	{
 if (verbose>0){std::cout << "Premises file open." << std::endl;}
+if (verbose>1){std::cout << "Loading farms: " << std::endl;}
 		while(! f.eof())
 		{
 			std::string line;
@@ -69,7 +70,7 @@ if (verbose>0){std::cout << "Premises file open." << std::endl;}
 				}
 				// write farm pointer to private var farm_map
 				farm_map[id] = new Farm(id, x, y, fips); 
-				fcount++;
+				++fcount;
 				// add species counts - check that number of columns is as expected
 				if(line_vector.size() < 4+speciesOnPrems.size()){
 					std::cout<<"ERROR (premises file & config 44-46) at line"<<std::endl;
@@ -91,7 +92,7 @@ if (verbose>0){std::cout << "Premises file open." << std::endl;}
 					sumQ[sp] += pow(double(tempsize),q);					
 					// if there are animals of this species, add to fips-species list to sort by population later
 					if (tempsize>0){fipsSpeciesMap[fips][sp].emplace_back(farm_map.at(id));}
-					colcount++;
+					++colcount;
 				}
 			
 				// write farm pointer to fips map
@@ -106,7 +107,7 @@ if (verbose>0){std::cout << "Premises file open." << std::endl;}
 					else if (y > std::get<3>(xylimits)){std::get<3>(xylimits) = y;} // y max
 					}
 				else {
-if (verbose>0){std::cout << "Initializing xy limits...";}
+if (verbose>0){std::cout << "Initializing xy limits.";}
 					xylimits = std::make_tuple(x,x,y,y);
 					// initialize min & max x value, min & max y value
 					} 
@@ -122,7 +123,7 @@ if (verbose>1){
 }
 	
 	f.close();
-if (verbose>0){std::cout << fcount << " farms in " << FIPSmap.size() 
+if (verbose>0){std::cout << farm_map.size() << " farms in " << FIPSmap.size() 
 	<< " counties loaded. Premises file closed." << std::endl;
 }
 
@@ -454,7 +455,7 @@ void Grid_manager::initiateGrid(double cellSide)
     	{
     		xlist.emplace_back(x);
     		ylist.emplace_back(y);
-    		cellCount++;
+    		++cellCount;
         	}
     uniquex.emplace_back(cellCount); // new x-value will start at element cellCount
     }
@@ -493,15 +494,15 @@ void Grid_manager::initiateGrid(double cellSide)
 					cellFarmMap[i].emplace_back(f);
 					cellFound = 1;
 				}
-				else if (farmy >= ylist[i]){i++;}
-				else if (farmy < ylist[i]){std::cout << "Farm in previous x value range, "; i--;}
+				else if (farmy >= ylist[i]){++i;}
+				else if (farmy < ylist[i]){std::cout << "Farm in previous x value range, "; --i;}
 				else {std::cout << "Farm y range not found." << std::endl;}
 				} // end 2nd while cell not found
 			}
 			else if (farmx >= xlist[uniquex[xi+1]]) // or if farm x >= next larger x value, increase xi
-			{xi++;}
+			{++xi;}
 			else if (farmx < xlist[i]) // or if farm x < this x value
-			{std::cout << "Farm in previous x value range, "; xi--;}
+			{std::cout << "Farm in previous x value range, "; --xi;}
 			else {std::cout << "Farm x range not found." << std::endl;}
 		} // end 1st while cell not found
     } // end for each farm
@@ -511,12 +512,12 @@ void Grid_manager::initiateGrid(double cellSide)
    bool printNumFarms = 0;
    std::string allLinesToPrint;
    int actualCellCount = 0;
-   for (auto c=0; c!=cellCount; c++)
+   for (auto c=0; c!=cellCount; ++c)
    {
 	   if (cellFarmMap[c].size()>0){ // if there are any farms in this cell:
 	   		allCells[actualCellCount] = new grid_cell(actualCellCount, xlist[c], ylist[c], cellSide, cellFarmMap[c]);
 	   		assignCellIDtoFarms(actualCellCount,cellFarmMap[c]);
-	   		actualCellCount++;
+	   		++actualCellCount;
 // 	   		if (printNumFarms){
 // 	   			char temp[5];
 // 	   			//sprintf(temp, "%u\n", cellFarmMap[c].size()); // use this on sweatshop computers
@@ -552,7 +553,7 @@ std::string Grid_manager::to_string(grid_cell& gc) const
 		vars[3] = gc.get_s();
 		vars[4] = gc.get_num_farms();
 
-	for(auto it = vars.begin(); it != vars.end(); it++)
+	for(auto it = vars.begin(); it != vars.end(); ++it)
 	{
 		sprintf(temp, "%f\t", *it);
 		toPrint += temp;
@@ -716,9 +717,9 @@ void Grid_manager::makeCellRefs()
 {	
 	std::unordered_map<grid_cell*, std::unordered_map<int, double> > susxKern;
 
-	for (unsigned int whichCell1=0; whichCell1 != allCells.size(); whichCell1++){	
+	for (unsigned int whichCell1=0; whichCell1 != allCells.size(); ++whichCell1){	
 		grid_cell* cell1 = allCells.at(whichCell1);	
-		for (unsigned int whichCell2 = whichCell1; whichCell2 != allCells.size(); whichCell2++){
+		for (unsigned int whichCell2 = whichCell1; whichCell2 != allCells.size(); ++whichCell2){
 			grid_cell* cell2 = allCells.at(whichCell2);
 			// get distance between grid cells 1 and 2...
 			// if comparing to self, distance=0
@@ -794,7 +795,7 @@ void Grid_manager::set_FarmSus(Farm* f)
 		double count = f->get_size(sp); // i.e. get_size("beef") gets # of beef cattle on premises
 		double spSus = xiQ.at(sp)*pow(count,speciesSus[i]); // multiply by stored susceptibility value for this species/type		
 		premSus += spSus; // add this species to the total for this premises
-		i++;	
+		++i;	
 	}
 	f->set_sus(premSus);
 if (verbose>2){std::cout<<"Farm "<<f->get_id()<<" sus set to "<<premSus<<std::endl;}
@@ -813,7 +814,7 @@ void Grid_manager::set_FarmInf(Farm* f)
 		double spInf = xiP.at(sp)*pow(count,speciesInf[i]); // susceptibility value for this species/type
 		// confirm how to combine species! temporary solution:
 		premInf += spInf; // add this species to the total for this premises
-		i++;	
+		++i;	
 	}
 	f->set_inf(premInf);
 if (verbose>2){std::cout<<"Farm "<<f->get_id()<<" inf set to "<<premInf<<std::endl;}

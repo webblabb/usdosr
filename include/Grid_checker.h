@@ -38,4 +38,15 @@ class Grid_checker
 inline void Grid_checker::take_exposed(std::vector<Farm*>& output){
 	exposed.swap(output);}
 
+template<typename T> 
+struct isInList // used in grid checker for grid_cell*
+{
+	isInList(const std::vector<T> in_list) : itemList(in_list) {} // constructor
+	bool operator() (const T item){ // overload operator function
+		return (isWithin(item,itemList));
+	}	
+	private:
+		std::vector<T> itemList; // member
+};
+
 #endif

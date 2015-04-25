@@ -36,7 +36,7 @@ class grid_cell
         double get_x() const; // inlined
         double get_y() const; // inlined
         double kernelTo(int) const; //inlined
-        void removeFarmSubset(std::vector<Farm*>&);
+        void removeFarmSubset(std::vector<int>&);
 		void take_KernelValues(std::unordered_map<int, double>&);
 
 };
@@ -74,5 +74,15 @@ inline double grid_cell::get_y() const {
 
 inline double grid_cell::kernelTo(int id) const {
 	return susxKern.at(id);}
+	
+struct farmIDpresent // used in removeFarmSubset function with Farm*
+{
+	farmIDpresent(const std::vector<int> id_list) : ids(id_list) {} // constructor
+	bool operator() (const Farm* f){ // overload operator function
+		return (isWithin(f->Farm::get_id(),ids));
+	}	
+	private:
+		std::vector<int> ids; // member
+};
 	
 #endif

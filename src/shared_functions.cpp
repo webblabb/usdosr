@@ -1,5 +1,7 @@
 #include "shared_functions.h"
 
+
+
 // Used in gridding (decision making for stepping into cells)
 // Used in pairwise evaluations in main
 double unif_rand()
@@ -61,6 +63,18 @@ double kernelsq(double distsq)
 	usq = usedist^2
 	points(usedist, (k1 / (1 + (usq^(k3/2))/(k2^k3))),col="blue",pch="*")
 	*/
+
+// used by status_manager and control_rules
+int normDelay(std::tuple<double, double>& params)
+// determine length of period drawn from normal distribution
+{
+	double mean = std::get<0>(params);
+	double var = std::get<1>(params);
+	double normDraw = norm_rand()*var + mean; // scaled to # drawn from N(0,1)
+	int draw = (int)(normDraw+0.5); // round up to nearest day
+	if(draw<1){draw = 1;}
+	return draw;
+}
 
 // used in reading in files
 std::vector<std::string> 

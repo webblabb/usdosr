@@ -49,6 +49,7 @@ struct parameters{
 	// control parameters
 	std::tuple<double,double> indexReportLag;
 	std::tuple<double,double> reportLag;
+	// shipping ban
 	double shipBanCompliance;
 	int banLevel;
 	std::tuple<double,double> reportToOrderBan;
@@ -56,14 +57,14 @@ struct parameters{
 	
 	// related parameter sets
 	std::unordered_map< std::string, std::tuple<double,double> > lagParams;
-	std::unordered_map< std::string, std::tuple<double,double> > controlLags;
+	std::unordered_map< std::string, std::vector<std::tuple<double,double>> > controlLags;
 };
 
 class file_manager
 {
 	private:
 		int verbose;
-		std::vector<std::string> pv; // parameter vector
+		std::vector<std::string> pv; // parameter vector for loading in
 		parameters params; // struct of all parameters
 		
 		bool checkMeanVar(std::string&, int, std::string);

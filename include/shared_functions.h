@@ -18,6 +18,7 @@
 	int draw_binom(int, double);
 	double oneMinusExp(double);
  	double kernelsq(double distsq);
+ 	int normDelay(std::tuple<double, double>&);
 	std::vector<std::string>
 		split(const std::string&, char, std::vector<std::string>&);
 	std::vector<std::string> 
@@ -169,14 +170,4 @@ inline bool sortByID(const T item1, const T item2)
 	return (item1 -> get_id()) < (item2 -> get_id());
 }
 
-template<typename T> 
-struct isInList // used in removeFarmSubset function for Farm* and grid checker for grid_cell*
-{
-	isInList(const std::vector<T> in_list) : itemList(in_list) {} // constructor
-	bool operator() (const T item){ // overload operator function
-		return (isWithin(item,itemList));
-	}	
-	private:
-		std::vector<T> itemList; // member
-};
 #endif

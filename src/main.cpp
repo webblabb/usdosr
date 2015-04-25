@@ -6,12 +6,10 @@
 // Test range of cell sizes
 
 #include <iostream>
-#include <string>
 #include <ctime>
 #include <stdlib.h>
-#include <fstream>
-#include <vector>
 
+#include "Control_actions.h"
 #include "file_manager.h"
 #include "Grid_manager.h"
 #include "Grid_checker.h"
@@ -129,48 +127,53 @@ for (int r=1; r<=reps; r++){
 	std::clock_t rep_start = std::clock();
 	// load initially infected farms and instantiate Status manager
 	// note that initial farms are started as infectious rather than exposed
+	
+	auto cParams = p->controlLags;
+ 	Control_actions Control(cParams);
+	
 	if (p->seedMethod < 0){ // if choosing seeds by county, choose county based on rep number
 		seedFarms = fipsmap->at(FIPSlist.at(r));
 	}
 	int seedType = p->seedMethod;
-	std::unordered_map<std::string, std::tuple<double,double>> lagP = p->lagParams;
-	Status_manager Status(seedFarms, seedType, lagP, allPrems, timesteps);
-	
-	std::vector<int> shipParams = p->shipParams;
-//	Shipment_manager Ship(fipsmap, shipParams, species, fipsSpeciesMap);
+	auto lagP = p->lagParams;
+	Status_manager Status(seedFarms, seedType, lagP, allPrems, timesteps, &Control); // seeds initial exposures
+
+//	std::vector<int> shipParams = p->shipParams;
+//	Shipment_manager Ship(fipsmap, shipParams, species, fipsSpeciesMap, Status.get_sources());
 
 	Grid_checker gridCheck(allCells, Status.get_sources());
 
-	int t=0;		
+	int t=0;	
+	int numSuscept, numExposed;	
 	std::vector<Farm*> focalFarms;
-	// set focalFarms as all farms with status inf at time 0
-	Status.premsWithStatus("inf", t, focalFarms);
-	int numSuscept = Status.numPremsWithStatus("sus", t);
-	int numExposed = Status.numPremsWithStatus("exp", t);
-	bool potentialTx = (focalFarms.size()>0 && numSuscept>0) || (numExposed>0 && numSuscept>0);
+	bool potentialTx = 1;
 
-   while (t<timesteps && potentialTx){ // timesteps, stop early if dies out
-   	   	 std::clock_t timestep_start = std::clock();		
-   	   	 t++; // starts at 1
-    	// update farm/FIPS statuses: at the proper times, exposed become infectious, infectious recover,
-   		 Status.updates(t);  	
+   while (t<=timesteps && potentialTx){ // timesteps, stop early if dies out
+   	   	std::clock_t timestep_start = std::clock();		
+   	   	
+   	   	++t; // starts at 1
+    	// update farm statuses: at the proper times, exposed become infectious, infectious recover,
+   		Status.updates(t);  	
+   		Status.premsWithStatus("inf", focalFarms);	// set focalFarms as all farms with status inf
    		    	 
    		std::cout << std::endl<<std::endl<<"Timestep "<<t<<": "
-		<<Status.numPremsWithStatus("sus", t)<<" susceptible, "
-		<<Status.numPremsWithStatus("exp", t)<<" exposed, "
-		<<Status.numPremsWithStatus("inf", t)<<" infectious, "
-		<<Status.numPremsWithStatus("imm", t)<<" immune premises. "<<std::endl
+		<<Status.numPremsWithStatus("sus")<<" susceptible, "
+		<<Status.numPremsWithStatus("exp")<<" exposed, "
+		<<focalFarms.size()<<" infectious, "
+		<<Status.numPremsWithStatus("imm")<<" immune premises. "<<std::endl;
 		
 		// Control-related updates:
 		// exposed are reported, reported are banned, banned are compliant
+// 
+// 		<<Status.numFIPSWithStatus("reported", t)<<" FIPS reported. "
+// 		<<Status.numFIPSWithStatus("banOrdered", t)<<" FIPS with ban ordered. "
+// 		<<Status.numFIPSWithStatus("banActive", t)<<" FIPS with active shipping ban. "
+// 		<<std::endl;
+//    		
 
-		<<Status.numFIPSWithStatus("reported", t)<<" FIPS reported. "
-		<<Status.numFIPSWithStatus("banOrdered", t)<<" FIPS with ban ordered. "
-		<<Status.numFIPSWithStatus("banActive", t)<<" FIPS with active shipping ban. "
-		<<std::endl;
-   		 
    		 // determine infections that will happen from local diffusion
-		 if(verbose>0){std::cout << "Starting grid check (local spread): "<<std::endl;}
+   		 
+if(verbose>0){std::cout << "Starting grid check (local spread): "<<std::endl;}
   		 std::clock_t gridcheck_start = std::clock();
   		 std::vector<Farm*> notSus;	 
   		 Status.take_notSus(notSus); // simultaneously takes values and clears vector in Status
@@ -181,54 +184,45 @@ for (int r=1; r<=reps; r++){
 		 
   		 std::clock_t gridcheck_end = std::clock();
   		 double gridCheckTimeMS = 1000.0 * (gridcheck_end - gridcheck_start) / CLOCKS_PER_SEC;
-  		 if(verbose>0){std::cout << "Total grid infections: " << gridInf.size() << std::endl;}
- 		 if(verbose>0){std::cout << "CPU time for checking grid: " << gridCheckTimeMS << "ms." << std::endl;}
-/* 		 	
+if(verbose>0){std::cout << "Total grid infections: " << gridInf.size() << std::endl;
+	std::cout << "CPU time for checking grid: " << gridCheckTimeMS << "ms." << std::endl;}
+ 		 	
  		 // determine infections that will happen from shipments	 
- 		 std::clock_t ship_start = std::clock();	  
- 		 std::vector<std::string> bannedFIPS = Status.FIPSWithStatus("banActive", t);
+// 		 std::clock_t ship_start = std::clock();	  
+// 		 std::vector<std::string> bannedFIPS = Status.FIPSWithStatus("banActive", t);
  		 // assign county-level shipment method according to time
- 		 int cmElement = whichElement(t, p->shipMethodTimeStarts); // which time span does t fall into
- 		 int countyMethod = (p->shipMethods).at(cmElement); // get matching shipment method
- 		 Ship.makeShipments(focalFarms, notSus, countyMethod, bannedFIPS);
- 		 auto fs = Ship.get_farmShipments();
+//  		 auto timeVec = p->shipMethodTimeStarts;
+//  		 int cmElement = whichElement(t, timeVec); // which time span does t fall into
+//  		 int countyMethod = (p->shipMethods).at(cmElement); // get matching shipment method
+// 		 Ship.makeShipments(focalFarms, notSus, countyMethod, bannedFIPS);
+// 		 auto fs = Ship.get_farmShipments();
  		 // output shipments as specified	
-		if (outShipFile!="*"){
-			std::string printString = Ship.formatOutput(outShipRes, t); // t only used if t==1, tells func to print column headings
-			printLine(outShipFile, printString);
-		}
+// 		if (outShipFile!="*"){
+// 			std::string printString = Ship.formatOutput(outShipRes, t); // t only used if t==1, tells func to print column headings
+// 			printLine(outShipFile, printString);
+// 		}
  		  		 
- 		 auto infShips = Ship.get_infFarmShipments(); // need this for later
- 		 std::cout << infShips.size()<<" infectious shipments, of which "<<std::endl;
- 		 int banCount = 0;
- 		 for (auto& shipment:infShips){if(std::get<5>(shipment)==1){banCount++;}}
- 		 std::cout << banCount<<" were ban-compliant."<<std::endl;
- 		 std::clock_t ship_end = std::clock();
- 		 double shipTimeMS = 1000.0 * (ship_end - ship_start) / CLOCKS_PER_SEC;
- 		 if(verbose>0){std::cout << "CPU time for shipping: " << shipTimeMS << "ms." << std::endl;}	 
+//  		 auto infShips = Ship.get_infFarmShipments(); // need this for later
+//  		 std::cout << infShips.size()<<" infectious shipments, of which "<<std::endl;
+//  		 int banCount = 0;
+//  		 for (auto& shipment:infShips){if(std::get<5>(shipment)==1){banCount++;}}
+//  		 std::cout << banCount<<" were ban-compliant."<<std::endl;
+//  		 std::clock_t ship_end = std::clock();
+//  		 double shipTimeMS = 1000.0 * (ship_end - ship_start) / CLOCKS_PER_SEC;
+//  		 if(verbose>0){std::cout << "CPU time for shipping: " << shipTimeMS << "ms." << std::endl;}	 
 
- 		 // infections from shipping (exclude ban-compliant shipments)
- 		 std::vector<Farm*> shipInf; shipInf.clear();
- 		 for (auto& is:infShips){
- 		  if (std::get<5>(is)==0){ // if this shipment was not ban-compliant (includes not banned at all)
- 		 	int destFarmID = std::get<1>(is); // get destination farm ID
- 		 	shipInf.emplace_back(allFarms.at(destFarmID)); // add to list of farms to become exposed
- 		  }
- 		 }
-*/ 		 
- 		 // combine & eliminate duplicates
-// 		 std::vector<std::vector<Farm*>> toCombine {gridInf, shipInf}; // create a vector of vectors called "toCombine"
-// 		 std::vector<Farm*> makeExposed = uniqueFrom(toCombine); // eliminate duplicates
-		std::vector<Farm*> makeExposed = gridInf;
+ 		// change statuses for these farms (checks for duplicates)
+ 		Status.localExposure(gridInf,t);
+// 		Status.shipExposure();
 
- 		// change statuses for these farms
- 		Status.changeTo("exp", makeExposed, t, lagP["latency"]);
-
-		Status.premsWithStatus("inf", t, focalFarms); // assign "inf" farms as focalFarms
-		numSuscept = Status.numPremsWithStatus("sus", t);
-		numExposed = Status.numPremsWithStatus("exp", t);
+		// at the end of this transmission day, statuses are now...
+		Status.premsWithStatus("inf", focalFarms); // assign "inf" farms as focalFarms
+		numSuscept = Status.numPremsWithStatus("sus");
+		std::vector<Farm*> exposed;
+		Status.premsWithStatus("exp", exposed);
+		numExposed = exposed.size();
 		
-		// output details of makeExposed (rep, t)
+		// write output for details of exposures from this rep, t
 		if (p->printDetail > 0){
 			// output detail to file
 			// rep, ID, time, sourceID, method
@@ -239,10 +233,10 @@ for (int r=1; r<=reps; r++){
 				std::string header = "Rep\tExposedID\tatTime\tSourceID\tInfRoute\n";
 				printLine(detOutFile,header);
 			}
-			std::string printString = Status.formatDetails(r,t,makeExposed);
+			std::string printString = Status.formatDetails(r,t,exposed);
 			printLine(detOutFile, printString);	
 		}	
-		
+				
 		potentialTx = ((focalFarms.size()>0 && numSuscept>0) || (numExposed>0 && numSuscept>0));
 
 		std::clock_t timestep_end = std::clock();				
@@ -268,8 +262,6 @@ for (int r=1; r<=reps; r++){
 		
 	}
 	
-
-
 } // end for loop
 
 	

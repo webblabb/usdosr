@@ -44,3 +44,7 @@ void Farm::set_inf(const double in_inf)
 	inf = in_inf;
 }
 
+void Farm::set_status(const std::string s, const int i)
+{
+	statuses[s] = i;
+}

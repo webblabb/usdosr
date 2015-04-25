@@ -8,62 +8,71 @@
 #define Status_manager_h
 
 #include "shared_functions.h"
+#include "Control_actions.h"
+
+#include <utility> // std::iter_swap
+#include <set> // for eventTimes
 
 extern int verboseLevel;
 
+struct diseaseStatus {
+	std::vector<Farm*> farms;
+	int lo; // before this placeholder, end times are less than t - passed
+	int hi; // after this placeholder, start times are greater than t - not started yet
+};
+
+// To define transitions from one disease status to the next
+struct statusShift{
+	std::string one; // old disease status
+	std::string two; // new disease status
+	std::tuple<double,double> lagToTwo; // mean and variance of lag time from old to new
+};
+
 class Status_manager
+// makes new copies of Farms on which to change statuses
 {
 	private:
 		int verbose;
-		// map with nested keys: status, status END time, value: vector of Farm*s
-		// status keys: sus, exp, inf, imm, vax, cull, exp2 (to be reported)
-		// time index makes it faster to look up current statuses
-		std::unordered_map< std::string,std::unordered_map<int,std::vector<Farm*>> > statusTimeFarms;
-		// map with nested keys: status, FIPS, status START time
-		std::unordered_map< std::string,std::unordered_map<std::string, int> > statusFIPSTime;
-		// status keys: reported, banOrdered, banCompliant
-		std::vector<Farm*> notSus;
-		// all farms that are not susceptible as of last status update - cleared at each timestep
-		std::vector<Farm*> allNotSus;
-		// all farms that are not susceptible in this replicate
-
+		
+		std::vector<statusShift> diseaseSeq; // Sequence of disease statuses and associated lag times
 		std::unordered_map<std::string, std::tuple<double,double>> params;
-		// map of mean/variance of lag times for ["latency"]exposed-infectious, 
-		// ["infectious"]infectious-recovered, ["report"]exposed-reported, 
-		// ["startBan"]reported-banned, ["complyBan"]banned-compliant...
-		// time past the end of the simulation, to assign to permanent status end times
-		std::vector<std::string> species; // for formatting output
-		
-		int normDelay(std::tuple<double,double>&);
-		// tuple contains mean and variance
-		
+		// map of mean/variance of times spent in 
+		// ["latency"] exposed-to-infectious, 
+		// ["infectious"] infectious-to-recovered 
+		std::unordered_map<int, Farm*> allNotSus; // farms that have had any status change (so not susceptible) in this replicate
+		std::vector<Farm*> notSus; // pointers to farms that became not-susceptible during the last timestep
+		std::unordered_map<std::string, diseaseStatus> ds; // disease statuses with affected farms with start/end times
+		std::vector<std::string> species; // for formatting output - not needed?
+		Control_actions* control; // pointer to Control object
 		int pastEndTime;
-		int nPrems;
-		
+		int nPrems; // needed to return number of susceptibles
 		std::vector<Farm*> seededFarms;
-		std::unordered_map< Farm*, std::vector<std::tuple<Farm*, int>> > sources;
+		std::unordered_map< Farm*, std::vector<std::tuple<Farm*, int>> > sources; // exposed farm, source of infection, type of spread (0=local, 1=ship)
+		// Grid_checker and Shipment_manager write to this
+		std::set<int> eventTimes; // any time a status change is scheduled to occur
 		
-		int get_totalOf(const std::string status);
 		void get_seedCos(std::vector<std::string>&);
+		void setStatus(Farm*, int, std::string, std::tuple<double,double>);
 
 	public:
 		Status_manager(std::vector<Farm*>&, int, std::unordered_map<std::string, std::tuple<double,double>>&, 
-			const std::unordered_map<int, Farm*>*, int);
+			const std::unordered_map<int, Farm*>*, int, Control_actions*);
 			
 		~Status_manager();		
 		
-		void changeTo(std::string status, std::vector<Farm*>&toChange, int t, std::tuple<double,double> params);
-		void changeTo(std::string status, std::vector<Farm*>&toChange, int endTime);
-
 		void updates(int t);
 		
-		void premsWithStatus(std::string, int, std::vector<Farm*>&); // get vector of Farm*s with status @ time
-		int numPremsWithStatus(std::string, int); // get number of Farm*s with status @ time
-		int numFIPSWithStatus(std::string, int); // get number of FIPS with status @ time
-
+		void premsWithStatus(std::string, std::vector<Farm*>&); // get vector of Farm*s with status
+		int numPremsWithStatus(std::string); // get number of Farm*s with status
+		
+		int nextEvent(int);
+		void localExposure(std::vector<Farm*>&, int);
+//		void shipExposure(shipments, int t)		
+		void expose(std::vector<Farm*>&, int);
+		
 		void take_notSus(std::vector<Farm*>&); //inlined
-		std::unordered_map< Farm*, std::vector<std::tuple<Farm*, int>> >* get_sources(); // inlined
-		const std::vector<Farm*>* get_seededFarms(); //inlined
+		std::unordered_map< Farm*, std::vector<std::tuple<Farm*, int>> >* get_sources(); // inlined - provides access for Grid_checker, Shipment_manager
+		
 		std::string formatRepSummary(int, int, double);
 		std::string formatDetails(int, int, std::vector<Farm*>&);
 };
@@ -73,8 +82,8 @@ inline void Status_manager::take_notSus(std::vector<Farm*>& output){
 	
 inline std::unordered_map< Farm*, std::vector<std::tuple<Farm*, int>> >* Status_manager::get_sources(){
 	return &sources;}
-	
-inline const std::vector<Farm*>* Status_manager::get_seededFarms(){
-	return &seededFarms;}
 
+inline int Status_manager::nextEvent(int t){ // return time of next event after t
+	return *eventTimes.upper_bound(t);} 	
+	
 #endif
