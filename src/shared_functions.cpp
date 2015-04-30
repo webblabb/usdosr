@@ -39,31 +39,6 @@ double oneMinusExp(double x)
 	}
 }
 
-// Used in gridding (kernel values for fixed grid distances)
-// Grid manager & grid checker
-double kernelsq(double distsq)
-// returns kernel value as a function of distance squared
-{	
-	double usedist = distsq;
-	if (usedist==0){usedist = 1;} // units assumed to be m
-	static double k1 = 0.12*0.0083;//*0.089; // use xi*beta (0.089*0.0003508) from table s3
-	static double k2 = 1600; // directly from Table S3
-	static double k3 = 4.6; // directly from Table S3
-	static double k2tok3 = pow(k2,k3);
-	return std::min(1.0, k1/(1+pow(usedist,(k3/2))/k2tok3) );
-}
-	/* 
-	to demonstrate this is the same as kernel(dist), run in R:
-	usedist=1:2000
-	k1 = 0.12
-	k2 = 1000
-	k3 = 3
-	# original f(distance)
-	plot(k1 / (1 + (usedist/k2)^k3) ~ usedist) 
-	usq = usedist^2
-	points(usedist, (k1 / (1 + (usq^(k3/2))/(k2^k3))),col="blue",pch="*")
-	*/
-
 // used by status_manager and control_rules
 int normDelay(std::tuple<double, double>& params)
 // determine length of period drawn from normal distribution
@@ -249,13 +224,13 @@ std::string vecToCommaSepString(const std::vector<std::string> vecToPaste)
 }
 
 void addItemTab(std::string& outString, int toAdd){
-	char temp[10];
+	char temp[20];
 	sprintf(temp, "%d\t", toAdd);
 	outString += temp;
 }
 
 void addItemTab(std::string& outString, double toAdd){
-	char temp[10];
+	char temp[50];
 	sprintf(temp, "%.2f\t", toAdd);
 	outString += temp;
 }

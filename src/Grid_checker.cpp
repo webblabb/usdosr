@@ -3,13 +3,18 @@
 #include "Grid_checker.h"
 
 Grid_checker::Grid_checker(const std::unordered_map<int, grid_cell*>* in_allCells, 
-	std::unordered_map< Farm*, std::vector< std::tuple<Farm*,int> >>* in_sources)
+	std::unordered_map< Farm*, std::vector< std::tuple<Farm*,int> >>* in_sources,
+	std::vector<double>& kernParams)
 	:
 	allCells(in_allCells),
-	sources(in_sources)
+	sources(in_sources),
+	k1(kernParams.at(0)),
+	k2(kernParams.at(1)),
+	k3(kernParams.at(2))
 // makes shallow copy of grid cells to start as susceptible - we only modify the vector of pointers to Farms, not the Farms themselves
 {
 	verbose = verboseLevel;
+	k2tok3 = pow(k2,k3);
 	int fcount = 0;
 	// initially copy all cells (containing all farms) into susceptible
 	susceptible.reserve(allCells->size());
@@ -26,6 +31,14 @@ if (verbose>1){std::cout<<"Grid checker constructed. "<<fcount<<" initially susc
 Grid_checker::~Grid_checker()
 {
 	for (auto& s:susceptible){delete s;}
+}
+
+double Grid_checker::kernelsq(double distsq)
+// returns kernel value as a function of distance squared
+{	
+	double usedist = distsq;
+	if (usedist==0){usedist = 1;} // units assumed to be m
+	return std::min(1.0, k1/(1+pow(usedist,(k3/2))/k2tok3) );
 }
 
 void Grid_checker::stepThroughCells(std::vector<Farm*>& focalFarms, 

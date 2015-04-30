@@ -36,7 +36,7 @@ void file_manager::readConfig(std::string& cfile)
 			line.erase(std::remove_if(line.begin(), line.end(), isspace), line.end());
 			if(line.size() != 0){pv.emplace_back(line);}
 		}
-		if (pv.size()!=61){std::cout<<"Warning: expected configuration file with 60 lines, loaded file with "<<pv.size()-1<<" lines."<<std::endl;
+		if (pv.size()!=71){std::cout<<"Warning: expected configuration file with 70 lines, loaded file with "<<pv.size()-1<<" lines."<<std::endl;
 		} else {
 		std::cout << "Configuration file loaded with "<<pv.size()-1<<" lines."<<std::endl;}
 
@@ -55,12 +55,12 @@ void file_manager::readConfig(std::string& cfile)
 			if (pv[4]=="*"){pv[5]="0";}
 			if (pv[5]=="*"){pv[6]="0";}
 		}
-		params.printSummary = stringToNum<int>(pv[1]);
-		params.printDetail = stringToNum<int>(pv[2]);
-		params.printCells = stringToNum<int>(pv[3]);
-		params.printShipments = stringToNum<int>(pv[4]);
-		params.printControl = stringToNum<int>(pv[5]);
-		// pv[6] ... pv[10]
+		params.printSummary = stringToNum<int>(pv[2]);
+		params.printDetail = stringToNum<int>(pv[3]);
+		params.printCells = stringToNum<int>(pv[4]);
+		params.printShipments = stringToNum<int>(pv[5]);
+		params.printControl = stringToNum<int>(pv[6]);
+		// pv[7] ... pv[10]
 		// Premises file
 		if (pv[11]=="*"){
 			std::cout << "ERROR (config 11): No premises file specified." << std::endl; exitflag=1;}
@@ -109,7 +109,18 @@ void file_manager::readConfig(std::string& cfile)
 		checkExit = checkPositive(params.infExponents, 25); if (checkExit==1){exitflag=1;}
 		if (params.infExponents.size() != params.species.size()){
 			std::cout<<"ERROR (config 25): Different numbers of species and infectiousness exponents provided." <<std::endl; exitflag=1;}
-		// pv[26] ... pv[27]
+		// Susceptibility constants by species
+		params.susConsts = stringToNumVec(pv[26]);
+		checkExit = checkPositive(params.susConsts, 26); if (checkExit==1){exitflag=1;}
+		if (params.susConsts.size() != params.species.size()){
+			std::cout<<"ERROR (config 12 & 26): Different numbers of species and susceptibility constants provided: "<<params.species.size()<<" species and "
+			<<params.susConsts.size()<<" constants." <<std::endl; exitflag=1;}
+		// Infectiousness constants by species
+		params.infConsts = stringToNumVec(pv[27]);
+		checkExit = checkPositive(params.infConsts, 27); if (checkExit==1){exitflag=1;}
+		if (params.infConsts.size() != params.species.size()){
+			std::cout<<"ERROR (config 12 & 27): Different numbers of species and infectiousness constants provided: "<<params.species.size()<<" species and "
+			<<params.infConsts.size()<<" constants." <<std::endl; exitflag=1;}
 		// Kernel type & parameters
 		if (pv[28]=="*"){std::cout << "ERROR (config 28): No diffusion kernel type specified." << std::endl; exitflag=1;}
 		params.kernelType = stringToNum<int>(pv[28]);

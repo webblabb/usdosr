@@ -18,14 +18,22 @@
 #include "Grid_manager.h"
 
 Grid_manager::Grid_manager(std::string &fname, bool xyswitch, std::vector<std::string>& in_species,
-	std::vector<double>& in_speciesSus, std::vector<double>& in_speciesInf)
+	std::vector<double>& in_speciesSus, std::vector<double>& in_speciesInf,
+	std::vector<double>& in_speciesSusC, std::vector<double>& in_speciesInfC,
+	std::vector<double>& kernParams)
 	:
 	speciesOnPrems(in_species),
 	speciesSus(in_speciesSus),
 	speciesInf(in_speciesInf),
-	committedFarms(0)
+	speciesSusC(in_speciesSusC),
+	speciesInfC(in_speciesInfC),
+	committedFarms(0),
+	k1(kernParams.at(0)),
+	k2(kernParams.at(1)),
+	k3(kernParams.at(2))
 // fills farm_map, farmList, and xylimits
 {
+	k2tok3 = pow(k2,k3);
 	verbose = verboseLevel; // manual control to override verboseLevel
 
 	farm_map.reserve(850000);
@@ -37,12 +45,20 @@ Grid_manager::Grid_manager(std::string &fname, bool xyswitch, std::vector<std::s
 	double x, y;
 	std::string fips;
 	int fcount = 0;
-	std::unordered_map<std::string,double> sumSp, sumP, sumQ;
+	std::unordered_map<std::string,double> sumSp, sumP, sumQ, constSus, constInf;
 	// initialize each species sum to 0
 	for (auto& s:speciesOnPrems){
 		sumSp[s] = 0.0;
 		sumP[s] = 0.0;
 		sumQ[s] = 0.0;
+	}
+	
+	// put constant sus/inf values into map by species name
+	int i = 0;
+	for (auto& s:speciesOnPrems){
+		constSus[s] = speciesSusC.at(i);
+		constInf[s] = speciesInfC.at(i);
+		++i;
 	}
 
 	std::ifstream f(fname);
@@ -140,17 +156,17 @@ if (verbose>1){std::cout << "Copying farms from farm_map to farmList..." << std:
 	}	
 	
 	// calculate xiP and xiQ
-// 	for (auto& sp:sumP){
-// 		// sp.first is species name, sp.second is sum of each (herd size^p)
-// 		xiP[sp.first] = 0.0000002177*(sumSp[sp.first]/sp.second); // infectiousness normalizer
-// if (verbose>1){std::cout<<"xi_p for "<<sp.first<<": "<<xiP.at(sp.first)<<std::endl;}
-// 	}
-// 	for (auto& sp:sumQ){
-// 		// sp.first is species name, sp.second is sum of each (herd size^q)
-// 		xiQ[sp.first] = 0.0000002086*(sumSp[sp.first]/sp.second); // susceptibility normalizer
-// if (verbose>1){std::cout<<"xi_q for "<<sp.first<<": "<<xiQ.at(sp.first)<<std::endl;}
-// 	}
-// use USDOSv1 values directly
+	for (auto& sp:sumP){
+		// sp.first is species name, sp.second is sum of each (herd size^p)
+		xiP[sp.first] = constInf.at(sp.first)*(sumSp[sp.first]/sp.second); // infectiousness normalizer
+std::cout<<"xi_p for "<<sp.first<<": "<<xiP.at(sp.first)<<std::endl;
+	}
+	for (auto& sp:sumQ){
+		// sp.first is species name, sp.second is sum of each (herd size^q)
+		xiQ[sp.first] = constSus.at(sp.first)*(sumSp[sp.first]/sp.second); // susceptibility normalizer
+std::cout<<"xi_q for "<<sp.first<<": "<<xiQ.at(sp.first)<<std::endl;
+	}
+//////////////////// use USDOSv1 values directly
 // 	for (auto& sp:sumP){
 // 		xiP[sp.first] = 0.0000002177; // infectiousness normalizer
 // if (verbose>1){std::cout<<"xi_p for "<<sp.first<<": "<<xiP.at(sp.first)<<std::endl;}
@@ -159,15 +175,16 @@ if (verbose>1){std::cout << "Copying farms from farm_map to farmList..." << std:
 // 		xiQ[sp.first] = 0.0000002086; // susceptibility normalizer
 // if (verbose>1){std::cout<<"xi_q for "<<sp.first<<": "<<xiQ.at(sp.first)<<std::endl;}
 // 	}	
-// use other values
-	for (auto& sp:sumP){
-		xiP[sp.first] = 0.00082; // infectiousness normalizer
-if (verbose>1){std::cout<<"xi_p for "<<sp.first<<": "<<xiP.at(sp.first)<<std::endl;}
-	}
-	for (auto& sp:sumQ){
-		xiQ[sp.first] = 5.7; // susceptibility normalizer
-if (verbose>1){std::cout<<"xi_q for "<<sp.first<<": "<<xiQ.at(sp.first)<<std::endl;}
-	}	
+//////////////////// use other values
+// 	for (auto& sp:sumP){
+// 		// sp.first is species name, sp.second is sum of each (herd size^p)
+// 		xiP[sp.first] = 0.00082*(sumSp[sp.first]/sp.second); // sum of indivs/sum of herd size^p
+// if (verbose>0){std::cout<<"xi_p for "<<sp.first<<": "<<xiP.at(sp.first)<<std::endl;}
+// 	}
+// 	for (auto& sp:sumQ){
+// 		xiQ[sp.first] = 5.7*(sumSp[sp.first]/sp.second);; // // sum of indivs/sum of herd size^q
+// if (verbose>0){std::cout<<"xi_q for "<<sp.first<<": "<<xiQ.at(sp.first)<<std::endl;}
+// 	}	
 	
 	// calculate and store farm susceptibility and infectiousness
 	for (auto& f:farm_map){
@@ -619,6 +636,26 @@ void Grid_manager::printCells(std::string& pfile) const
 // 	std::cout << "Vector printed to " << fname <<std::endl;
 // */
 // }
+
+// Calculates kernel values for given distances
+double Grid_manager::kernelsq(double distsq)
+// returns kernel value as a function of distance squared
+{	
+	double usedist = distsq;
+	if (usedist==0){usedist = 1;} // units assumed to be m
+	return std::min(1.0, k1/(1+pow(usedist,(k3/2))/k2tok3) );
+}
+	/* 
+	to demonstrate this is the same as kernel(dist), run in R:
+	usedist=1:2000
+	k1 = 0.12
+	k2 = 1000
+	k3 = 3
+	# original f(distance)
+	plot(k1 / (1 + (usedist/k2)^k3) ~ usedist) 
+	usq = usedist^2
+	points(usedist, (k1 / (1 + (usq^(k3/2))/(k2^k3))),col="blue",pch="*")
+	*/
 
 double Grid_manager::shortestCellDist2(grid_cell* cell1, grid_cell* cell2)
 // returns shortest distance^2 between cell1 and cell2

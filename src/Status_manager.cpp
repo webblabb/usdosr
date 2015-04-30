@@ -173,8 +173,8 @@ if (verbose>2){std::cout<<", lo at "<< ds.at(s.one).lo <<std::endl;}
 	} // end "if there are farms in this status"
 	} // end "for each disease transition"
 	
+	// special case - immune only moves hi forward, because status doesn't expire
 	if(ds.count("imm")==1){
-		// adjust hi only (lo stays at beginning because imm doesn't expire)
 		bool advance = (ds.at("imm").hi != ds.at("imm").farms.size()-1); // only continue if not at end
 		// last valid position for hi is size()-1, because anything after hi hasn't started yet
 		while (advance){
@@ -187,6 +187,8 @@ if (verbose>2){std::cout<<", lo at "<< ds.at(s.one).lo <<std::endl;}
 		}
 if (verbose>2){std::cout<<"imm hi at "<<ds.at("imm").hi<<", lo at "<< ds.at("imm").lo << std::endl;}
 	} // end if any imm
+	
+	// special case - if any farms vaccinated, add to notSus
 
 }
 
@@ -195,7 +197,7 @@ void Status_manager::localExposure(std::vector<Farm*>& farms, int t)
 // records sources of infection
 {
 	std::vector<Farm*> toExpose = farms;
-	// check with control for premises-specific effects (vax, etc)
+	// check control parts of farms for premises-specific effects (vax, etc)
 	expose(toExpose, t);
 }
 /*
@@ -255,7 +257,8 @@ void Status_manager::get_seedCos(std::vector<std::string>& output)
 
 std::string Status_manager::formatRepSummary(int rep, int duration, double repTimeMS)
 {
-	int nInf = ds.at("inf").farms.size() - seededFarms.size();
+	int nInf = 0;
+	if (ds.count("inf")==1){nInf = ds.at("inf").farms.size();}
 	std::vector<int> seedIDs; seedIDs.reserve(seededFarms.size());
 	for (auto& sf:seededFarms){
 		seedIDs.emplace_back(sf->Farm::get_id());
@@ -266,29 +269,38 @@ std::string Status_manager::formatRepSummary(int rep, int duration, double repTi
 	get_seedCos(seedFips);
 	std::string seedCos = vecToCommaSepString(seedFips);
 
+	double repTimeS = repTimeMS/1000;
 	std::string toPrint;
 	addItemTab(toPrint, rep); // rep #
+if(verbose>1){std::cout<<"rep "<<rep;}
 	addItemTab(toPrint, nInf); // # total infectious (includes seeds)
+if(verbose>1){std::cout<<", nInf "<<nInf;}
 	addItemTab(toPrint, duration); // duration of epidemic	
+if(verbose>1){std::cout<<", duration "<<duration;}
 	addItemTab(toPrint, seeds); // seed farm(s)
+if(verbose>1){std::cout<<", seeds "<<seeds;}
 	addItemTab(toPrint, seedCos); // seed county(s)
-	addItemTab(toPrint, repTimeMS); // runtime
+if(verbose>1){std::cout<<", seedCos "<<seedCos;}
+	addItemTab(toPrint, repTimeS); // runtime
+if(verbose>1){std::cout<<", repTimeSec "<<repTimeS<<std::endl;}
 	toPrint.replace(toPrint.end()-1, toPrint.end(), "\n"); // add line break at end
+if(verbose>1){std::cout<<"toPrint: "<<toPrint<<std::endl;}
 	
 	return toPrint;
 }
 
-std::string Status_manager::formatDetails(int rep, int t, std::vector<Farm*>& newExp)
+std::string Status_manager::formatDetails(int rep, int t)
 // rep, ID, time, sourceID, method - not including initial seeds
 {
 	std::string toPrint;
+	std::unordered_map< Farm*, std::vector<std::tuple<Farm*, int>> > empty;
 	
-	for (auto& e:newExp){
-		int expPrem = e->Farm::get_id();
-		auto sourceInfo = sources.at(e);
-		std::vector<int> sourceIDs; sourceIDs.reserve(sourceInfo.size());
-		std::vector<int> routes; routes.reserve(sourceInfo.size());
-		for (auto& si:sourceInfo){
+	if (sources.size()>0){
+	for (auto& info:sources){
+		int expPrem = info.first->Farm::get_id();
+		std::vector<int> sourceIDs; sourceIDs.reserve(info.second.size());
+		std::vector<int> routes; routes.reserve(info.second.size());
+		for (auto& si:info.second){
 			sourceIDs.emplace_back(std::get<0>(si)->Farm::get_id()); // source premises ID
 			routes.emplace_back(std::get<1>(si)); // route of exposure
 		}
@@ -301,6 +313,8 @@ std::string Status_manager::formatDetails(int rep, int t, std::vector<Farm*>& ne
 		addItemTab(toPrint, sourceIDs_str); // source prem ID(s)
 		addItemTab(toPrint, routes_str); // route(s) of exposure: 0=local, 1=shipment
 		toPrint.replace(toPrint.end()-1, toPrint.end(), "\n"); // add line break at end
+	}
+	empty.swap(sources); // clear sources so only one timepoint is printed at a time
 	}
 	return toPrint;
 }

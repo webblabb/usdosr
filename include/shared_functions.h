@@ -13,11 +13,24 @@
 
 #include "farm.h" // for Farm* for farm sus/inf
 
+struct County // used in Status, Shipment, and Control
+{
+	std::string fips;
+	std::unordered_map<std::string, int> statuses; // for control type and level
+};
+
+struct shipment // used in Shipment, Status
+{
+	int t, // time of shipment
+		origID, // premises ID of shipment origin
+		destID, // premises ID of shipment destination
+		ban; // 0 = no ban, 1 = ban ordered but non-compliant, 2 = ban ordered & compliant
+};
+
 	double unif_rand();
 	double norm_rand();
 	int draw_binom(int, double);
 	double oneMinusExp(double);
- 	double kernelsq(double distsq);
  	int normDelay(std::tuple<double, double>&);
 	std::vector<std::string>
 		split(const std::string&, char, std::vector<std::string>&);

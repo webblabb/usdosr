@@ -1,4 +1,4 @@
-## One variable per row, comments start with #
+## One variable per row, comments start with # 
 ## Empty rows ignored. Rows with numbers and without descriptions are placeholders for future variables.
 ## Arguments not provided should be replaced with '*'.
 ## Values in parentheses are the index in the vector where value is stored.
@@ -7,7 +7,7 @@
 ## 'x' after the value indicates that this feature is not yet functional
 
 ######################## Output settings ########################
-* #(1) Batch name, used as prefix for output files. Only letters, numbers and underscore.
+apr28test #(1) Batch name, used as prefix for output files. Only letters, numbers and underscore.
 0 #(2) Summary output on/off (1/0) - one line per replicate with # infected, duration, seed info
 0 #(3) Detailed infection output on/off (1/0) - one line per exposed premises with time, source of infection, route of infection
 0 #(4)xPrint grid cells on/off (disabled)
@@ -19,11 +19,11 @@
 * #(10)
 
 ######################## General settings ########################
-FLAPS_beefdairy_20151201_formatted.txt		#(11)~Name of file containing premises ID, FIPS, x, y, population - ie FLAPS_beefdairy_20151201_formatted.txt
-beef,dairy 			#(12)~List of species for which counts are provided in premises file, comma-separated
+uk_edited.txt		#(11)~Name of file containing premises ID, FIPS, x, y, population - ie FLAPS_beefdairy_20151201_formatted.txt
+cows,sheep 			#(12)~List of species for which counts are provided in premises file, comma-separated
 365 				#(13)~Timesteps (days) to run
-5 	#(14)~Number of replicates to run (auto-set to 1 if (23) is set to seed county by county).
-2 	#(15)~Verbose level: Output extra information to console as model runs (0=off, 1=basic steps, 2=debug)
+1 	#(14)~Number of replicates to run (auto-set to 1 if (23) is set to seed county by county).
+1 	#(15)~Verbose level: Output extra information to console as model runs (0=off, 1=basic steps, 2=debug)
 0 	#(16)x~Pairwise algorithm on (1) or off (0) in addition to gridding (disabled)
 0 	#(17)~Reverse x/y option: in case input file is entered as lat/long (y/x)(set to 1) instead of long/lat (x/y)(set to 0)
 * #(18)
@@ -31,15 +31,15 @@ beef,dairy 			#(12)~List of species for which counts are provided in premises fi
 * #(20)
 
 ######################## Infection-related settings ########################
-randomFarms.txt 	#(21)+Name of file containing PREMISES identifiers from which to seed infection
+uk_seeds.txt 	#(21)+Name of file containing PREMISES identifiers from which to seed infection
 * 				#(22)x+Name of file containing COUNTY identifiers from which to seed infection (disabled)
-100 	#(23)~Seed method. 0: use all premises (within provided counties if applicable), (>0) choose this many random premises (within provided counties if applicable), (<0) choose this many seeds _per FIPS_ (changes # of reps to # of FIPS)
-0.42,0.49 	#(24)~Susceptibility exponent values, species-specific & comma-separated in order listed in (12)
-0.41,0.2 	#(25)~Infectiousness exponent values, species-specific & comma-separated in order listed in (12)
-* #(26)
-* #(27)
-0 					#(28)x~Kernel type for local (diffusion) spread
-0.000966,1600,4.6	#(29)x~Kernel parameters: k1,k2,k3 where kernel is k1/(1 + (distance/k2)^k3)
+1 	#(23)~Seed method. 0: use all premises (within provided counties if applicable), (>0) choose this many random premises (within provided counties if applicable), (<0) choose this many seeds _per FIPS_ (changes # of reps to # of FIPS)
+0.42,0.49 	#(24)~Susceptibility exponents(q), species-specific & comma-separated in order listed in (12)
+0.41,0.2 	#(25)~Infectiousness exponents(p), species-specific & comma-separated in order listed in (12)
+5.7,1		#(26)~Susceptibility constants(S), species-specific & comma-separated in order listed in (12)
+0.00082,0.00083 #(27)~Infectiousness constants(T), species-specific & comma-separated in order listed in (12)
+0 					#(28)~Kernel type for local (diffusion) spread: k1/(1 + (distance/k2)^k3)
+0.000966,1600,4.6	#(29)x~Kernel parameters k1, k2, k3
 5,1 		#(30)~Mean, variance (around normal) days from premises exposure to infectiousness (latency duration)
 4,1 		#(31)~Mean, variance (around normal) days from premises infectiousness to immunity (infectiousness duration)
 * #(32)
@@ -67,13 +67,23 @@ randomFarms.txt 	#(21)+Name of file containing PREMISES identifiers from which t
 * #(50)
 
 ######################## Control-related settings ########################
-2,0		#(51)x~Reporting: Mean, variance (around normal) days from INDEX premises exposure to reporting 
-1,0 	#(52)~Reporting: Mean, variance (around normal) days from premises exposure to reporting 
+2,0		#(51)x~Mean, variance (around normal) days from INDEX premises exposure to reporting 
+1,0 	#(52)~Mean, variance (around normal) days from premises exposure to reporting 
 100 	#(53)~Shipment ban: Percent compliance (0=no shipment ban)
 0 		#(54)~Shipment ban: County-(0) or state-(1) level ban (state-level not yet tested)
-1,0 	#(55)~Shipment ban level 1: Mean, variance (around normal) days from premises reported to ban ordered
-0,0  	#(56)~Shipment ban level 2: Mean, variance (around normal) days from ban ordered to implemented
+1,0 	#(55)~Shipment ban: Mean, variance (around normal) days from premises reported to ban initiated
+0,0  	#(56)~Shipment ban: Mean, variance of compliance time lag after ban initiated
 * #(57)
 * #(58)
 * #(59)
 * #(60)
+* #(61)
+* #(62)
+* #(63)
+* #(64) 
+* #(65)
+* #(66)
+* #(67) 
+* #(68)
+* #(69)
+* #(70)

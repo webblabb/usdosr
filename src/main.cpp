@@ -56,8 +56,10 @@ int main(int argc, char* argv[])
 	std::vector<std::string> species = p->species; // used in Grid_manager and Shipment_manager construction
 	std::vector<double> susExp = p->susExponents;
 	std::vector<double> infExp = p->infExponents;
-
-	Grid_manager G(premfile,xyswitch,species,susExp,infExp);
+	std::vector<double> susC = p->susConsts;
+	std::vector<double> infC = p->infConsts;
+	std::vector<double> kernelP = p->kernelParams;
+	Grid_manager G(premfile,xyswitch,species,susExp,infExp,susC,infC,kernelP);
 		
 	// get pointers to full list of farms & cells
 	auto allPrems = G.get_allFarms(); 
@@ -141,14 +143,14 @@ for (int r=1; r<=reps; r++){
 //	std::vector<int> shipParams = p->shipParams;
 //	Shipment_manager Ship(fipsmap, shipParams, species, fipsSpeciesMap, Status.get_sources());
 
-	Grid_checker gridCheck(allCells, Status.get_sources());
+	Grid_checker gridCheck(allCells, Status.get_sources(),kernelP);
 
 	int t=0;	
 	int numSuscept, numExposed;	
 	std::vector<Farm*> focalFarms;
 	bool potentialTx = 1;
 
-   while (t<=timesteps && potentialTx){ // timesteps, stop early if dies out
+   while (t<timesteps && potentialTx){ // timesteps, stop early if dies out
    	   	std::clock_t timestep_start = std::clock();		
    	   	
    	   	++t; // starts at 1
@@ -219,11 +221,14 @@ if(verbose>0){std::cout << "Total grid infections: " << gridInf.size() << std::e
 		Status.premsWithStatus("inf", focalFarms); // assign "inf" farms as focalFarms
 		numSuscept = Status.numPremsWithStatus("sus");
 		std::vector<Farm*> exposed;
-		Status.premsWithStatus("exp", exposed);
+		Status.premsWithStatus("exp",exposed);
 		numExposed = exposed.size();
 		
+std::cout<<numSuscept<<" now susceptible, "<<numExposed<<" now exposed."<<std::endl;
+		
 		// write output for details of exposures from this rep, t
-		if (p->printDetail > 0){
+		int detail = p->printDetail;
+		if (detail > 0){
 			// output detail to file
 			// rep, ID, time, sourceID, method
 			std::string detOutFile = p->batch;
@@ -233,7 +238,7 @@ if(verbose>0){std::cout << "Total grid infections: " << gridInf.size() << std::e
 				std::string header = "Rep\tExposedID\tatTime\tSourceID\tInfRoute\n";
 				printLine(detOutFile,header);
 			}
-			std::string printString = Status.formatDetails(r,t,exposed);
+			std::string printString = Status.formatDetails(r,t);
 			printLine(detOutFile, printString);	
 		}	
 				
@@ -254,18 +259,15 @@ if(verbose>0){std::cout << "Total grid infections: " << gridInf.size() << std::e
 		std::string sumOutFile = p->batch;
 		sumOutFile += "_summary.txt";
 		if (r==1){
-			std::string header = "Rep\tNum_Inf\tDuration\tSeed_Farms\tSeed_FIPS\tRunTimeMS\n";
+			std::string header = "Rep\tNum_Inf\tDuration\tSeed_Farms\tSeed_FIPS\tRunTimeSec\n";
 			printLine(sumOutFile,header);
 		}
 		std::string repOut = Status.formatRepSummary(r,t,repTimeMS);
-		printLine(sumOutFile, repOut);
+		printLine(sumOutFile,repOut);
 		
 	}
 	
 } // end for loop
 
-	
-
 return 0;
 }
-

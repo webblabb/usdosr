@@ -16,7 +16,7 @@
 // Level 1: cull ordered but not yet implemented
 // Level 2: cull implemented
 
-// Vaccination
+// Vaccination (anticipated)
 // Level 1: vax ordered but not yet implemented
 // Level 2: vax implemented with some supply restriction
 // Level 3: vax implemented with more supply
@@ -31,12 +31,6 @@
 #include <unordered_set>
 
 extern int verboseLevel;
-
-struct County // to be replaced with County class in shipment model later
-{
-	std::string fips;
-	std::unordered_map<std::string, int> statuses; // for control type and level
-};
 
 template <typename T>
 struct nextChange
@@ -78,8 +72,8 @@ class Control_actions
 		void updates(int);
 		int getNfarms(std::string, int) const; // inlined, total farms with this status (control type-level)
 		int getNcounties(std::string, int) const; // inlined, total farms with this status (control type-level)
-//		int getFarmLevel(Farm*, std::string) const; // status for specific farm/control type
 		int getCountyLevel(std::string, std::string) const; // status for specific county/control type
+		// farm specific levels are accessible directly from Status manager (same copy of Farm)
 
 };
 

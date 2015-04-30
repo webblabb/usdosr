@@ -19,13 +19,16 @@ class Grid_checker
 		const std::unordered_map<int, grid_cell*>* allCells; // used for reference for infectious
 		// pointer to Status_manager object
 		std::unordered_map< Farm*, std::vector< std::tuple<Farm*,int> >>* sources;
-
+		double k1, k2, k3, k2tok3; // kernel parameters
+		double kernelsq(double);
 		void binomialEval(Farm*,grid_cell*,grid_cell*,int,std::vector<Farm*>&);
 		// arguments: focal farm, focal cell, comp cell, comp cell ID, output
+
 		
 	public:
 		Grid_checker(const std::unordered_map<int, grid_cell*>*,  // allCells
-			std::unordered_map< Farm*, std::vector< std::tuple<Farm*,int> >>*); //sources
+			std::unordered_map< Farm*, std::vector< std::tuple<Farm*,int> >>*, //sources to write to
+			std::vector<double>&); //sources
 		~Grid_checker();
 		
 		void stepThroughCells(

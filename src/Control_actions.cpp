@@ -91,7 +91,7 @@ void Control_actions::updates(int t)
 					counties[farmfips] = co;
 				}
 				
-				// start shipping ban sequence
+				// start shipping ban sequence at county level
 				startControlSeq_c(counties.at(farmfips), "shipBan");	
 			}
 		}

@@ -31,6 +31,8 @@ struct parameters{
 	int seedMethod;
 	std::vector<double> susExponents;
 	std::vector<double> infExponents;
+	std::vector<double> susConsts;
+	std::vector<double> infConsts;
 	int kernelType;
 	std::vector<double> kernelParams;
 	std::tuple<double,double> latencyParams;

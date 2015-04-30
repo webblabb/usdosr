@@ -48,8 +48,8 @@ class Status_manager
 		int nPrems; // needed to return number of susceptibles
 		std::vector<Farm*> seededFarms;
 		std::unordered_map< Farm*, std::vector<std::tuple<Farm*, int>> > sources; // exposed farm, source of infection, type of spread (0=local, 1=ship)
-		// Grid_checker and Shipment_manager write to this
-		std::set<int> eventTimes; // any time a status change is scheduled to occur
+		// Grid_checker and Shipment_manager write to this (not implemented yet)
+ 		std::set<int> eventTimes; // any time a status change is scheduled to occur
 		
 		void get_seedCos(std::vector<std::string>&);
 		void setStatus(Farm*, int, std::string, std::tuple<double,double>);
@@ -74,7 +74,7 @@ class Status_manager
 		std::unordered_map< Farm*, std::vector<std::tuple<Farm*, int>> >* get_sources(); // inlined - provides access for Grid_checker, Shipment_manager
 		
 		std::string formatRepSummary(int, int, double);
-		std::string formatDetails(int, int, std::vector<Farm*>&);
+		std::string formatDetails(int, int);
 };
 
 inline void Status_manager::take_notSus(std::vector<Farm*>& output){

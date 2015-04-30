@@ -13,23 +13,18 @@ Shipment_manager::Shipment_manager(
 	:
 	FIPSmap(in_FIPSmap),
 	fipsSpeciesMap(fipsSpMap),
-	banCompliance((double) shipSettings[0]), // will later be compared against a double
-	banScale(shipSettings[1]),
 	farmFarmMethod(shipSettings[2]),
 	species(speciesOnPrems)
 {	
 	verbose = verboseLevel;
 	
 	allFIPS.reserve(FIPSmap->size());
-	stateFIPSmap.reserve(50);
 	
 	// copy species
 	// record vector of all possible shipment destinations (counties)
 	// allFIPS used in generating random shipments, also record state
 	for (auto& f:(*FIPSmap)){
 		allFIPS.emplace_back(f.first);
-		std::string statecode = f.first.substr(0,2); // get first two characters (substring starting at 0, length of 2)
-		stateFIPSmap[statecode].emplace_back(f.first); // add to map where index is state, value is vector of counties
 	}
 	if(verbose>0){std::cout << "Shipment manager constructed: "<<FIPSmap->size()<<" counties with premises." << std::endl;}
 }
@@ -46,26 +41,25 @@ void Shipment_manager::makeShipments(std::vector<Farm*>& infFarms, std::vector<F
 {
 	countyShipmentList.clear();
 	farmShipmentList.clear();
-	infFarmShips.clear();
 	
-	if (banScale==1){ 
-	// compare with last number of banned FIPS for updated version
-	if (lastNumBannedFIPS != in_bannedFIPS.size()){
-		lastNumBannedFIPS = in_bannedFIPS.size();
-		for (auto& f:in_bannedFIPS){
-			std::string statecode = f.substr(0,2); // get first two characters (substring starting at 0, length of 2)
-			if (!isWithin(statecode,bannedStates)){ // if this state is not in the map
-				bannedStates.emplace_back(statecode);
-				std::vector<std::string> FIPSInState = stateFIPSmap.at(statecode);
-				for (auto& fs:FIPSInState){
-					allBannedFIPS.emplace_back(fs); // add to map
-				}
-			}
-		}
-	}
-	} else {
-		allBannedFIPS = in_bannedFIPS; // if ban is at county level, just use bannedFIPS
-	}
+// 	if (banScale==1){ 
+// 	// compare with last number of banned FIPS for updated version
+// 	if (lastNumBannedFIPS != in_bannedFIPS.size()){
+// 		lastNumBannedFIPS = in_bannedFIPS.size();
+// 		for (auto& f:in_bannedFIPS){
+// 			std::string statecode = f.substr(0,2); // get first two characters (substring starting at 0, length of 2)
+// 			if (!isWithin(statecode,bannedStates)){ // if this state is not in the map
+// 				bannedStates.emplace_back(statecode);
+// 				std::vector<std::string> FIPSInState = stateFIPSmap.at(statecode);
+// 				for (auto& fs:FIPSInState){
+// 					allBannedFIPS.emplace_back(fs); // add to map
+// 				}
+// 			}
+// 		}
+// 	}
+// 	} else {
+// 		allBannedFIPS = in_bannedFIPS; // if ban is at county level, just use bannedFIPS
+// 	}
 	
 	// get counties (by FIPS codes) of infectious farms
 	std::unordered_map<std::string, std::vector<Farm*>> infFIPSmap;
@@ -176,13 +170,12 @@ void Shipment_manager::farmFarmShipments(std::unordered_map<std::string, std::ve
 				// get species
 				std::string sp = std::get<3>(s);
 				// get ban status (just to copy over)
-				bool activeBan = std::get<4>(s);
+// 				bool activeBan = std::get<4>(s);
 
 				// get all farms with species in counties - can be sent to/from any farm regardless of status
 				std::vector<Farm*> oPrems = fipsSpeciesMap->at(oFIPS)[sp]; // already sorted by population
 				std::vector<Farm*> dPrems = fipsSpeciesMap->at(dFIPS)[sp];
- 				if(verbose==2){std::cout<<"Origin FIPS: "<<oFIPS<<" has "<<oPrems.size()<<
- 				" prems, destination FIPS: "<<dFIPS<<" has "<<dPrems.size()<<std::endl;}
+if(verbose>1){std::cout<<"Origin FIPS: "<<oFIPS<<" has "<<oPrems.size()<<" prems, destination FIPS: "<<dFIPS<<" has "<<dPrems.size()<<std::endl;}
 
 			  	// sizes of prems with this species, sorted by population size
 				std::vector<int> oPremSizes, dPremSizes;
@@ -197,9 +190,9 @@ void Shipment_manager::farmFarmShipments(std::unordered_map<std::string, std::ve
 					std::cout<<"County without proper premises type, skipping shipment."<<std::endl;
 				} else {
 			    // assignment
-				// if ban in effect, determine compliance for all shipments
-			    std::vector<int> comply (volume, 0); // initialize to 0 (non-compliant or no ban)
-				if(activeBan){comply = banCompliant(volume);} 
+// if ban in effect, determine compliance for all shipments
+// 			    std::vector<int> comply (volume, 0); // initialize to 0 (non-compliant or no ban)
+// 				if(activeBan){comply = banCompliant(volume);} 
 
 				if (farmFarmMethod == 0){ // random
 					std::vector<Farm*> origPrems = random_unique(oPrems,volume); // pick v random premises
@@ -207,13 +200,13 @@ void Shipment_manager::farmFarmShipments(std::unordered_map<std::string, std::ve
 					for (int v = 0; v!= volume; v++){ // for each shipment
 						auto fShip = std::make_tuple(origPrems[v]->get_id(), // origin
 							destPrems[v]->get_id(), // destination
-							1, // # of shipments are all 1, since we loop through "volume" number of times
+// 							1, // # of shipments are all 1, since we loop through "volume" number of times
 							sp, // species
-							activeBan, // county-level ban true/false
-							(bool)comply[v]); // compliant 
+// 							activeBan, // county-level ban true/false
+// 							(bool)comply[v]); // compliant 
 						farmShipmentList.emplace_back(fShip);
-						if (origPrems[v]->Farm::get_status()=="inf" && destPrems[v]->Farm::get_status()=="sus"){
-							infFarmShips.emplace_back(fShip);}
+// 						if (origPrems[v]->Farm::get_status()=="inf" && destPrems[v]->Farm::get_status()=="sus"){
+// 							infFarmShips.emplace_back(fShip);}
 					}
 				} else if (farmFarmMethod == 1){ // shipment probability based on relative farm size				
 					// get cumulative sums of sizes for farms in county to distribute probabilities
@@ -243,28 +236,34 @@ void Shipment_manager::farmFarmShipments(std::unordered_map<std::string, std::ve
 // 							<< oCumSums[oElement];
 // 						std::cout << std::endl << "Random D: " << dRand << " matches size "
 // 							<< dCumSums[dElement];
-						if (oPrem->Farm::get_status()=="inf" && dPrem->Farm::get_status()=="sus"){
-							infFarmShips.emplace_back(fShip);}
+// 						if (oPrem->Farm::get_status()=="inf" && dPrem->Farm::get_status()=="sus"){
+// 							infFarmShips.emplace_back(fShip);}
 					}				
 				} else if (farmFarmMethod == 2){ // shipped from biggest infectious farm to random destinations
 					for (int v = 0; v!= volume; v++){ // for each shipment between these counties
 						std::string infstring = "inf";
 						Farm* oPrem = largestStatus(oPrems,infstring);
 						Farm* dPrem = randomFrom(dPrems);
-						auto fShip = std::make_tuple(oPrem->get_id(),dPrem->get_id(),1,sp,activeBan,(bool)comply[v]);
+						auto fShip = std::make_tuple(oPrem->get_id(),dPrem->get_id(),//1,
+						sp//,activeBan,(bool)comply[v]
+						);
 						farmShipmentList.emplace_back(fShip);
-						if (oPrem->Farm::get_status()=="inf" && dPrem->Farm::get_status()=="sus"){
-							infFarmShips.emplace_back(fShip);}
+// 						if (oPrem->Farm::get_status()=="inf" && dPrem->Farm::get_status()=="sus"){
+// 							infFarmShips.emplace_back(fShip);}
 					}
 				} else if (farmFarmMethod == 3){ // shipped from random destinations to the biggest susceptible farm
 					for (int v = 0; v!= volume; v++){ // for each shipment between these counties
 						std::string susstring = "sus";
 						Farm* oPrem = randomFrom(oPrems);
 						Farm* dPrem = largestStatus(dPrems,susstring);
-						auto fShip = std::make_tuple(oPrem->get_id(),dPrem->get_id(),1,sp,activeBan,(bool)comply[v]);
+						auto fShip = std::make_tuple(oPrem->get_id(),dPrem->get_id(),
+						//1,
+						sp,
+						//activeBan,(bool)comply[v]
+						);
 						farmShipmentList.emplace_back(fShip);
-						if (oPrem->Farm::get_status()=="inf" && dPrem->Farm::get_status()=="sus"){
-							infFarmShips.emplace_back(fShip);}
+						// if (oPrem->Farm::get_status()=="inf" && dPrem->Farm::get_status()=="sus"){
+// 							infFarmShips.emplace_back(fShip);}
 					}
 				} else if (farmFarmMethod == 4){ // shipped between biggest farms
 					for (int v = 0; v!= volume; v++){ // for each shipment between these counties
@@ -272,10 +271,14 @@ void Shipment_manager::farmFarmShipments(std::unordered_map<std::string, std::ve
 						std::string susstring = "sus";
 						Farm* oPrem = largestStatus(oPrems,infstring);
 						Farm* dPrem = largestStatus(dPrems,susstring);
-						auto fShip = std::make_tuple(oPrem->get_id(),dPrem->get_id(),1,sp,activeBan,(bool)comply[v]);
+						auto fShip = std::make_tuple(oPrem->get_id(),dPrem->get_id(),
+						//1,
+						sp//,
+						//activeBan,(bool)comply[v]
+						);
 						farmShipmentList.emplace_back(fShip);
-						if (oPrem->Farm::get_status()=="inf" && dPrem->Farm::get_status()=="sus"){
-							infFarmShips.emplace_back(fShip);}
+						// if (oPrem->Farm::get_status()=="inf" && dPrem->Farm::get_status()=="sus"){
+// 							infFarmShips.emplace_back(fShip);}
 					}
 				} else {std::cout << "Method for farmFarmShipments not recognized." << std::endl;}
 				} // end if there are premises in origin and dest counties
@@ -285,28 +288,28 @@ void Shipment_manager::farmFarmShipments(std::unordered_map<std::string, std::ve
 	std::cout<<farmShipmentList.size()<<" total farm shipments."<<std::endl;
 }
 
-void Shipment_manager::checkShipTrans(std::vector<std::tuple<int,int,int,std::string,bool,bool>>& farmShips, 
-	std::vector<Farm*>& infInoFIPS, std::vector<Farm*>& suscIndFIPS)
-// identify shipments from infectious to susceptible farms
-// input is: (1) tuple of origin farm ID, dest farm ID, volume, banStatus
-// (2) vector<Farm*> of infectious farms in origin farm's county
-// (3) vector<Farm*> of susceptible farms in destination farm's county
-{	
-	// put IDs of infectious and susceptible farms into vectors for isWithin function
-	std::vector<int> infFarmIDs, suscFarmIDs;
-	for (auto& ifarm:infInoFIPS){infFarmIDs.emplace_back(ifarm->get_id());}
-	for (auto& sfarm:suscIndFIPS){suscFarmIDs.emplace_back(sfarm->get_id());}
-
-	for (auto fs:farmShips){ // check if each origin farm is infectious
-		int origFarm = std::get<0>(fs); // get origin farm ID for this shipment
-		 if(isWithin(origFarm,infFarmIDs)){ // if origin is infectious
-			int destFarm = std::get<1>(fs); // get dest farm ID for this shipment
-			if(isWithin(destFarm,suscFarmIDs)){ // check if destination is in susceptible list
-				infFarmShips.emplace_back(fs);}
-		 }
-	}
-}
-
+// void Shipment_manager::checkShipTrans(std::vector<std::tuple<int,int,int,std::string,bool,bool>>& farmShips, 
+// 	std::vector<Farm*>& infInoFIPS, std::vector<Farm*>& suscIndFIPS)
+// // identify shipments from infectious to susceptible farms
+// // input is: (1) tuple of origin farm ID, dest farm ID, volume, banStatus
+// // (2) vector<Farm*> of infectious farms in origin farm's county
+// // (3) vector<Farm*> of susceptible farms in destination farm's county
+// {	
+// 	// put IDs of infectious and susceptible farms into vectors for isWithin function
+// 	std::vector<int> infFarmIDs, suscFarmIDs;
+// 	for (auto& ifarm:infInoFIPS){infFarmIDs.emplace_back(ifarm->get_id());}
+// 	for (auto& sfarm:suscIndFIPS){suscFarmIDs.emplace_back(sfarm->get_id());}
+// 
+// 	for (auto fs:farmShips){ // check if each origin farm is infectious
+// 		int origFarm = std::get<0>(fs); // get origin farm ID for this shipment
+// 		 if(isWithin(origFarm,infFarmIDs)){ // if origin is infectious
+// 			int destFarm = std::get<1>(fs); // get dest farm ID for this shipment
+// 			if(isWithin(destFarm,suscFarmIDs)){ // check if destination is in susceptible list
+// 				infFarmShips.emplace_back(fs);}
+// 		 }
+// 	}
+// }
+// 
 std::string Shipment_manager::formatOutput(int shipRes, int t)
 {
 // formats one line for output to existing file

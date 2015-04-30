@@ -46,10 +46,12 @@ class Grid_manager
 		std::unordered_map<int, std::unordered_map<int, double>> 
 			storedDists; // freq-used distances between cell pairs, used in shortestCellDist - use IDs to sort
 		std::vector<std::string> speciesOnPrems; // list of species on all farms provided in prem file
-		std::vector<double> speciesSus, speciesInf; // species specific susceptibility and infectiousness, in same order as speciesOnAllFarms
+		std::vector<double> speciesSus, speciesInf, speciesSusC, speciesInfC; // species specific susceptibility and infectiousness exponents and constants, in same order as speciesOnAllFarms
 		std::unordered_map<std::string,std::vector<int>> herdSizes;
 		std::unordered_map<std::string,double> xiP, xiQ;
 		unsigned int committedFarms;
+		
+		double k1, k2, k3, k2tok3; // kernel parameters
 
 		// functions		
 		void set_maxFarms(unsigned int in_maxFarms); //inlined
@@ -69,6 +71,7 @@ class Grid_manager
 			std::tuple<int,double,double,double>& cellSpecs, 
 			std::stack< std::tuple<int,double,double,double> >& queue); // replaces parent cell with subdivided offspring quadrants
  		void assignCellIDtoFarms(int cellID, std::vector<Farm*>& farmsInCell);
+ 		double kernelsq(double);
 		double shortestCellDist2(
 			grid_cell* cell1, 
 			grid_cell* cell2); // calculates shortest distance^2 between two cells
@@ -86,8 +89,11 @@ class Grid_manager
 			std::string &fname, // filename of premises
 			bool xyswitch,  // switch x/y columns
 			std::vector<std::string>&, // list of species populations provided
-			std::vector<double>&,  // list of species-specific susceptibility values
-			std::vector<double>&); // list of species-specific infectiousness values
+			std::vector<double>&,  // list of species-specific susceptibility exponents
+			std::vector<double>&, // list of species-specific infectiousness exponents
+			std::vector<double>&,  // list of species-specific susceptibility constants
+			std::vector<double>&, // list of species-specific infectiousness constants
+			std::vector<double>&); // kernel parameters
 			
 		~Grid_manager();
 		
