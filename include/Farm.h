@@ -36,6 +36,7 @@ class Farm
 		std::unordered_map< std::string, int > statuses; // used in Control_actions
 		std::unordered_map< std::string, int > start; // used in Status_manager: start times for disease statuses
 		std::unordered_map< std::string, int > end; // used in Status_manager: end times for disease statuses
+		std::string diseaseStatus; // used in Status manager;
 	
 	public:
 		Farm(int, double, double, std::string);
@@ -47,6 +48,8 @@ class Farm
 		double get_sus() const; // inlined
 		double get_inf() const; // inlined
  		std::string get_fips() const; // inlined
+ 		std::string get_diseaseStatus() const; //inlined
+ 		
  		const std::unordered_map< std::string, int >* get_spCounts(); // inlined
  		int get_status(std::string) const; //inlined
  		int get_size(const std::string species) const;
@@ -61,7 +64,7 @@ class Farm
  		void set_status(const std::string, const int);
  		void set_start(const std::string, const int); //inlined - set start time for disease status
  		void set_end(const std::string, const int); //inlined - set end time for disease status
-
+		void set_diseaseStatus(std::string&); //inlined
 
 };
 
@@ -93,6 +96,10 @@ inline std::string Farm::get_fips() const
 {
 	return fips;
 }
+inline std::string Farm::get_diseaseStatus() const
+{
+	return diseaseStatus;
+}
 const inline std::unordered_map< std::string, int >* Farm::get_spCounts()
 {
 	return &speciesCounts;
@@ -116,6 +123,10 @@ inline int Farm::get_start(std::string s) const
 inline int Farm::get_end(std::string s) const
 {
 	return end.at(s);
+}
+inline void Farm::set_diseaseStatus(std::string& stat)
+{
+	diseaseStatus = stat;
 }
 inline bool Farm::beenExposed() const
 {

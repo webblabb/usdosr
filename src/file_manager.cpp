@@ -194,12 +194,9 @@ void file_manager::readConfig(std::string& cfile)
 		params.lagParams["infectious"] = params.infectiousParams; 	//infectious-recovered
 		
 		// Put together control-related lag parameters
-		params.controlLags["indexReport"].emplace_back(std::make_tuple(0.0,0.0));
 		params.controlLags["indexReport"].emplace_back(params.indexReportLag); 	//first case exposed-reported
-		params.controlLags["report"].emplace_back(std::make_tuple(0.0,0.0));
 		params.controlLags["report"].emplace_back(params.reportLag); 				//exposed-reported
 		//... Shipment ban parameters
-		params.controlLags["shipBan"].emplace_back(std::make_tuple(0.0,0.0)); // filler for index 0 (could be used for different reporting for this control type if applicable)
 		params.controlLags["shipBan"].emplace_back(params.reportToOrderBan); // Level/index 1: time from report to order
 		params.controlLags["shipBan"].emplace_back(params.orderToCompliance); // Level/index 2: time from order to implementation	
 		

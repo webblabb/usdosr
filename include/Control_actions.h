@@ -44,14 +44,12 @@ class Control_actions
 // Control_actions use pointers to Farms from Status
 {
 	private:
+		int verbose;
 		std::unordered_map< std::string, std::vector<std::tuple<double,double>> > cl; // control parameters
 		std::unordered_map< std::string, int> cTypeMax; // maximum level for each control type
 		
-		std::map<int, std::vector< nextChange<Farm> >> farmsToChange; // key: times that require action, value: specifics of action for farms
-		std::map<int, std::vector< nextChange<Farm> >>::iterator farmIndex; // iterator at upcoming time point in farmsToChange
-		
-		std::map<int, std::vector< nextChange<County> >> countiesToChange; // key: times that require action, value: specifics of action for counties
-		std::map<int, std::vector< nextChange<County> >>::iterator countyIndex; // iterator at upcoming time point in countiesToChange
+		std::unordered_map<int, std::vector< nextChange<Farm> >> farmsToChange; // key: times that require action, value: specifics of action for farms
+		std::unordered_map<int, std::vector< nextChange<County> >> countiesToChange; // key: times that require action, value: specifics of action for counties
 		
 		std::unordered_set<Farm*> farms; // any farms that enter the control system
 		std::unordered_map< std::string, County* > counties; // mapped by fips
@@ -64,6 +62,8 @@ class Control_actions
 		void startControlSeq_f(Farm*, std::string);
 		void startControlSeq_c(County*, std::string);	
 		
+		double compliance_shipBan();
+		
 	public:
 		Control_actions(std::unordered_map< std::string, std::vector<std::tuple<double,double>> >&);
 		~Control_actions();
@@ -72,18 +72,17 @@ class Control_actions
 		void updates(int);
 		int getNfarms(std::string, int) const; // inlined, total farms with this status (control type-level)
 		int getNcounties(std::string, int) const; // inlined, total farms with this status (control type-level)
-		int getCountyLevel(std::string, std::string) const; // status for specific county/control type
-		// farm specific levels are accessible directly from Status manager (same copy of Farm)
+		int checkShipBan(shipment*);
 
 };
 
 inline int Control_actions::getNfarms(std::string ctype, int level) const
-{
-	return farmStatusCounts.at(ctype).at(level);
+{ // initialized to 0 in case ctype doesn't exist
+	return farmStatusCounts.at(ctype).at(level); 
 }
 
 inline int Control_actions::getNcounties(std::string ctype, int level) const
-{
+{ // initialized to 0 in case ctype doesn't exist
 	return countyStatusCounts.at(ctype).at(level);
 }
 

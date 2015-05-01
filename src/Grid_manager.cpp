@@ -34,7 +34,7 @@ Grid_manager::Grid_manager(std::string &fname, bool xyswitch, std::vector<std::s
 // fills farm_map, farmList, and xylimits
 {
 	k2tok3 = pow(k2,k3);
-	verbose = verboseLevel; // manual control to override verboseLevel
+	verbose = 1; // manual control to override verboseLevel
 
 	farm_map.reserve(850000);
 	allCells.reserve(800);
@@ -107,10 +107,12 @@ if (verbose>1){std::cout << "Loading farms: " << std::endl;}
 					double q = speciesSus.at(colcount-4);
 					sumQ[sp] += pow(double(tempsize),q);					
 					// if there are animals of this species, add to fips-species list to sort by population later
-					if (tempsize>0){fipsSpeciesMap[fips][sp].emplace_back(farm_map.at(id));}
+					if (tempsize>0){
+						fipsSpeciesMap[fips][sp].emplace_back(farm_map.at(id));
+					}
 					++colcount;
 				}
-			
+				
 				// write farm pointer to fips map
 				FIPSmap[fips].emplace_back(farm_map.at(id));
 				
@@ -123,7 +125,7 @@ if (verbose>1){std::cout << "Loading farms: " << std::endl;}
 					else if (y > std::get<3>(xylimits)){std::get<3>(xylimits) = y;} // y max
 					}
 				else {
-if (verbose>0){std::cout << "Initializing xy limits.";}
+if (verbose>1){std::cout << "Initializing xy limits.";}
 					xylimits = std::make_tuple(x,x,y,y);
 					// initialize min & max x value, min & max y value
 					} 

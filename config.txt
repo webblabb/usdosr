@@ -19,8 +19,8 @@ apr28test #(1) Batch name, used as prefix for output files. Only letters, number
 * #(10)
 
 ######################## General settings ########################
-uk_edited.txt		#(11)~Name of file containing premises ID, FIPS, x, y, population - ie FLAPS_beefdairy_20151201_formatted.txt
-cows,sheep 			#(12)~List of species for which counts are provided in premises file, comma-separated
+FLAPS_beefdairy_20151201_formatted.txt		#(11)~Name of file containing premises ID, FIPS, x, y, population - ie FLAPS_beefdairy_20151201_formatted.txt
+beef,dairy 			#(12)~List of species for which counts are provided in premises file, comma-separated
 365 				#(13)~Timesteps (days) to run
 1 	#(14)~Number of replicates to run (auto-set to 1 if (23) is set to seed county by county).
 1 	#(15)~Verbose level: Output extra information to console as model runs (0=off, 1=basic steps, 2=debug)
@@ -31,9 +31,9 @@ cows,sheep 			#(12)~List of species for which counts are provided in premises fi
 * #(20)
 
 ######################## Infection-related settings ########################
-uk_seeds.txt 	#(21)+Name of file containing PREMISES identifiers from which to seed infection
+randomFarms.txt 	#(21)+Name of file containing PREMISES identifiers from which to seed infection
 * 				#(22)x+Name of file containing COUNTY identifiers from which to seed infection (disabled)
-1 	#(23)~Seed method. 0: use all premises (within provided counties if applicable), (>0) choose this many random premises (within provided counties if applicable), (<0) choose this many seeds _per FIPS_ (changes # of reps to # of FIPS)
+100 	#(23)~Seed method. 0: use all premises (within provided counties if applicable), (>0) choose this many random premises (within provided counties if applicable), (<0) choose this many seeds _per FIPS_ (changes # of reps to # of FIPS)
 0.42,0.49 	#(24)~Susceptibility exponents(q), species-specific & comma-separated in order listed in (12)
 0.41,0.2 	#(25)~Infectiousness exponents(p), species-specific & comma-separated in order listed in (12)
 5.7,1		#(26)~Susceptibility constants(S), species-specific & comma-separated in order listed in (12)
@@ -55,7 +55,7 @@ uk_seeds.txt 	#(21)+Name of file containing PREMISES identifiers from which to s
 * #(40)
 
 ######################## Shipment-related settings ########################
-0 	#(41)~Method(s) to generate county-county shipments (USAMM), comma-separated (0= shipments off, 1=random)
+1 	#(41)~Method(s) to generate county-county shipments (USAMM), comma-separated (0= shipments off, 1=random)
 1 	#(42)~Timepoints at which to begin using each of the methods above (first timepoint must be 1), comma-separated
 0 	#(43)~Method to assign shipments to premises within counties (farmFarmMethod): 0: random, 1: like-size to like-size, 2: largest inf to random, 3: random to largest sus, 4: largest inf to largest sus
 * #(44)

@@ -35,12 +35,13 @@ up the status of an individual premises.
 
 Status_manager::Status_manager(std::vector<Farm*>& seedPool, int numRandomSeed, 
 	std::unordered_map<std::string, std::tuple<double,double>>& in_params, 
-	const std::unordered_map<int, Farm*>* allPrems, //necessary?
+	const std::unordered_map<int, Farm*>* allPrems, //needed for counties
 	int endTime,
 	Control_actions* control_in)
 	:
 	params(in_params),
 	control(control_in),
+	allFarms(allPrems),
 	pastEndTime(endTime+100),
 	nPrems(allPrems->size())
 // initialize with arguments:
@@ -54,28 +55,33 @@ Status_manager::Status_manager(std::vector<Farm*>& seedPool, int numRandomSeed,
 {
 	verbose = verboseLevel;
 	
+// keep internal list of unique counties that are susceptible, for shipping
+// 	for (auto& p:*allPrems){
+// 		susCounties.emplace(p.second->Farm::get_fips());
+// 	}
+	
 	std::vector<Farm*> focalFarms;
 	if (numRandomSeed!=0){ // select this number from seed pool
 		random_unique(seedPool, abs(numRandomSeed), focalFarms);
-		if (verbose>0){std::cout<<focalFarms.size()<<" initial premises infections."<<std::endl;}
+		if (verbose>0){std::cout<<focalFarms.size()<<" initial premises infection(s)."<<std::endl;}
 	} else { // use all of seedPool
 		focalFarms.swap(seedPool);
 	}
 	
-	for (auto& f:focalFarms){ // set seed farms as exposed
-		setStatus(f,1,"exp",params["latency"]);		
+if (verbose>2){std::cout<<"Latency parameters: "<<std::get<0>(params.at("latency"))<<", "<<std::get<1>(params.at("latency"))<<std::endl;}
+	for (auto& f:focalFarms){ // set seed farms as exposed, start control sequence
+		setStatus(f,1,"exp",params.at("latency"),1); // last argument is "first is true - use index lag"	
+if (verbose>2){std::cout<<"Set initial exp status from Stat Man contructor"<<std::endl;}
 	}
 	seededFarms = focalFarms; // saved for output	
 		
-if (verbose>2){
+if (verbose>1){
 	std::cout<<focalFarms.size()<<" exposed premises initiated. End times for exposed premises: "<<std::endl;
 	for (auto&e : ds.at("exp").farms){
 		std::cout<<e->get_end("exp")<<", ";
 	}
 	std::cout<<std::endl;
 }
-	// start control sequence: assign reporting time for exposed farms
-	control->addFarm(focalFarms,1, 1); // 3rd argument = 1 uses index-lagged reporting time
 		
 	// store species for formatting later
 	auto speciesMap = (*focalFarms.begin())->get_spCounts(); // just get species list from first focal farm
@@ -83,11 +89,12 @@ if (verbose>2){
 	
 	// Specify sequence of disease statuses and associated lag times
 	// 1. Exposure to infectiousness
-	statusShift exp_inf {"exp","inf",params["infectious"]};
+	statusShift exp_inf {"exp","inf",params.at("infectious")};
 	diseaseSeq.emplace_back(exp_inf);
 	// 2. Infectiouness to immunity (end time past simulation)
 	statusShift inf_imm {"inf","imm",std::make_tuple(pastEndTime,0)};
 	diseaseSeq.emplace_back(inf_imm);
+std::cout << "Status manager initiated."<<std::endl;
 }
 
 Status_manager::~Status_manager()
@@ -95,7 +102,7 @@ Status_manager::~Status_manager()
 	for (auto& f:allNotSus){delete f.second;}
 }
 
-void Status_manager::setStatus(Farm* f_in, int startTime, std::string status, std::tuple<double,double> lag)
+void Status_manager::setStatus(Farm* f_in, int startTime, std::string status, std::tuple<double,double> lag, bool first)
 // adds to notSus lists and control if farm is just starting disease sequence
 // adds to new status lists and assigns end times
 // for permanent statuses, set lag params mean=pastEndTime, var=0
@@ -104,11 +111,14 @@ void Status_manager::setStatus(Farm* f_in, int startTime, std::string status, st
 	
 	if (status.compare("exp")==0){ // if farm is becoming exposed (first appearance in Status_manager)
 		int fid = f->Farm::get_id();
+if (verbose>2){std::cout<<"Exposing farm "<<fid<<std::endl;}
 		allNotSus[fid] = new Farm(*f_in);
 		notSus.emplace_back(allNotSus.at(fid)); // gets cleared at each timepoint
-		// and start control sequence
-		control->addFarm(allNotSus.at(fid),startTime);
-if (verbose>2){std::cout<<notSus.size()<<" not sus farms, "<<allNotSus.size()<<" allNotSus farms."<<std::endl;}
+std::cout<<"Added to allNotSus and notSus"<<std::endl;
+		// start control sequence
+		control->addFarm(allNotSus.at(fid),startTime,first);
+if (verbose>1){std::cout<<notSus.size()<<" not sus farms, "<<allNotSus.size()<<" allNotSus farms"<<std::endl;
+}
 	}	 
 
 	// otherwise, farm is already in Status and f_in is the Status_manager copy
@@ -116,6 +126,7 @@ if (verbose>2){std::cout<<notSus.size()<<" not sus farms, "<<allNotSus.size()<<"
 	f->set_start(status,startTime);
 	int endTime = startTime+normDelay(lag);
 	f->set_end(status,endTime);
+	f->set_diseaseStatus(status);
 	// add to appropriate disease-status list
 	bool firstOfStatus = 0;	
 		if (ds.count(status)==0){firstOfStatus=1;}
@@ -200,18 +211,39 @@ void Status_manager::localExposure(std::vector<Farm*>& farms, int t)
 	// check control parts of farms for premises-specific effects (vax, etc)
 	expose(toExpose, t);
 }
-/*
-void Status_manager::shipExposure(shipments, int t)
+
+void Status_manager::shipExposure(std::vector<shipment*>& ships, int time)
 // filters for any control measures impacting shipment spread
-// records sources of infection
+// records sources of infection in sources
+// shipment has t, farm origID, farm destID, origin FIPS, dest FIPS, species, ban (0-2)
 {
 	std::vector<Farm*> toExpose;
-	// check with control for shipping bans
-	expose(toExpose, t);
+	// fill in fields t, transmission (if applicable), ban, for each shipment
+	for (auto& s:ships){
+		s->t = time;
+		// if source is infectious and destination is susceptible
+		if (allNotSus.count(s->origID)==1){ // if origin farm has at least been exposed
+			if (allNotSus.at(s->origID)->get_diseaseStatus().compare("inf")==0){ // and if origin farm is infectious
+				if (allNotSus.count(s->destID)==0){ // and if dest farm is susceptible
+					s->transmission = 1; // default is 0
+std::cout<<"Exposure via shipment"<<std::endl;
+				}
+			}
+		}	
+		// check with control for shipping ban level
+		s->ban = control->checkShipBan(s);
+		if (s->ban < 3 // if anything other than compliant with a ban (no ban or non-compliant)
+			&& s->transmission == 1){// and transmission direction is correct
+			toExpose.emplace_back(allFarms->at(s->destID));
+			sources[allFarms->at(s->destID)].emplace_back(std::make_tuple(allFarms->at(s->origID),1)); // 1 is shipping as method of exposure
+		}
+	}
+	expose(toExpose, time);
 }
-*/
+
 void Status_manager::expose(std::vector<Farm*>& farms, int t)
 {
+std::cout<<"Checking "<<farms.size()<<" farms for exposure"<<std::endl;
 	for (auto& f:farms){
 		// check if farm has already been exposed
 		if (!f->beenExposed()){

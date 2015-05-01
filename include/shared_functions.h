@@ -1,11 +1,9 @@
-// add functions to split comma-sep string into vector of ints
-
 #ifndef shared_functions_h
 #define shared_functions_h
 
 #include <algorithm>
-#include <random> // for random number generator in unif_rand
-#include <chrono> // for random number gen
+#include <random> // for random number generator
+#include <chrono> // for random number generator
 #include <cmath> // for std::sqrt in gKernel, floor in randomFrom
 #include <fstream> // for printing
 #include <iostream> // for troubleshooting output
@@ -13,7 +11,7 @@
 
 #include "farm.h" // for Farm* for farm sus/inf
 
-struct County // used in Status, Shipment, and Control
+struct County // used in Status and Control
 {
 	std::string fips;
 	std::unordered_map<std::string, int> statuses; // for control type and level
@@ -21,10 +19,14 @@ struct County // used in Status, Shipment, and Control
 
 struct shipment // used in Shipment, Status
 {
-	int t, // time of shipment
-		origID, // premises ID of shipment origin
-		destID, // premises ID of shipment destination
-		ban; // 0 = no ban, 1 = ban ordered but non-compliant, 2 = ban ordered & compliant
+	int t; // time of shipment
+	int origID; // premises ID of shipment origin
+	int destID; // premises ID of shipment destination
+	std::string origFIPS;
+	std::string destFIPS;
+	std::string species;
+	bool transmission; // if this is from an infectious to a susceptible premises
+	int ban; // 0 = no ban, 1 = ban ordered but not active, 2 ban ordered & active, 3 = ban active & compliant
 };
 
 	double unif_rand();
