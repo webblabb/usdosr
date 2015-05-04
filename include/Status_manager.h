@@ -18,8 +18,8 @@ extern int verboseLevel;
 struct diseaseStatus 
 {
 	std::vector<Farm*> farms;
-	int lo; // before this placeholder, end times are less than t - passed
-	int hi; // after this placeholder, start times are greater than t - not started yet
+	unsigned int lo; // before this placeholder, end times are less than t - passed
+	unsigned int hi; // after this placeholder, start times are greater than t - not started yet
 };
 
 // To define transitions from one disease status to the next
