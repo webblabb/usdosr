@@ -19,7 +19,7 @@ apr28test #(1) Batch name, used as prefix for output files. Only letters, number
 * #(10)
 
 ######################## General settings ########################
-FLAPS_beefdairy_20151201_formatted.txt		#(11)~Name of file containing premises ID, FIPS, x, y, population - ie FLAPS_beefdairy_20151201_formatted.txt
+inputfiles/FLAPS_beefdairy_20151201_formatted.txt		#(11)~Name of file containing premises ID, FIPS, x, y, population - ie FLAPS_beefdairy_20151201_formatted.txt
 beef,dairy 			#(12)~List of species for which counts are provided in premises file, comma-separated
 365 				#(13)~Timesteps (days) to run
 1 	#(14)~Number of replicates to run (auto-set to 1 if (23) is set to seed county by county).

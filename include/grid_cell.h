@@ -6,7 +6,6 @@
 #ifndef grid_cell_h
 #define grid_cell_h
 
-#include "farm.h"
 #include "shared_functions.h" // for isWithin function in struct farmInList
 
 class grid_cell

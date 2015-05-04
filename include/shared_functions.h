@@ -9,7 +9,7 @@
 #include <iostream> // for troubleshooting output
 #include <sstream>
 
-#include "farm.h" // for Farm* for farm sus/inf
+#include "Farm.h" // for Farm* for farm sus/inf
 
 struct County // used in Status and Control
 {
@@ -162,7 +162,7 @@ int whichElement(T& toMatch, std::vector<T>& elementMaxes)
 	if (elementMaxes.size()==1){match=0;}
 	else{
 		bool found = 0;
-		int it = 1;
+		unsigned int it = 1;
 		while (it!=elementMaxes.size() && found == 0){
 			if (toMatch>=elementMaxes[it-1] && toMatch<elementMaxes[it]){ // >= than previous, < current
 				match = it-1; // subtract one to get the element below
