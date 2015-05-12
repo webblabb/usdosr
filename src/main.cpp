@@ -1,10 +1,4 @@
-// - start with evenly spaced grid
-// Check that cells are placed/oriented as expected
-// Check that farms are assigned to cells as expected
-// Check that distances between cells are as expected
-// Check that kernel values are as expected
-// Test range of cell sizes
-
+// main.cpp - controls timesteps, initiating various managers, and output
 #include <iostream>
 #include <ctime>
 #include <stdlib.h>
@@ -164,9 +158,9 @@ if(verbose>1){std::cout<<"Control statuses updated."<<std::endl;}
 		<<focalFarms.size()<<" infectious, "
 		<<Status.numPremsWithStatus("imm")<<" immune premises. "<<std::endl
 
- 		<<Control.getNcounties("report", 1)<<" FIPS reported. " // reported counties have "reported" status = 1
- 		<<Control.getNcounties("shipBan", 1)<<" FIPS with ban ordered. " // level 1 = ordered, not yet compliant
- 		<<Control.getNcounties("shipBan", 2)<<" FIPS with active shipping ban. "// level 2 = ordered and compliant
+ 		<<Control.getNcounties("report", 1)<<" counties reported. " // reported counties have "reported" status = 1
+ 		<<Control.getNcounties("shipBan", 1)<<" counties with ban ordered. " // level 1 = ordered, not yet compliant
+ 		<<Control.getNcounties("shipBan", 2)<<" counties with active shipping ban. "// level 2 = ordered and compliant
  		<<std::endl;
 
    		 // determine infections that will happen from local diffusion
@@ -250,7 +244,7 @@ if(verbose>0){std::cout << "Total grid infections: " << gridInf.size() << std::e
 		sumOutFile += "_summary.txt";
 		if (r==1){
 			std::string header = "Rep\tNum_Inf\tDuration\tSeed_Farms\tSeed_FIPS\tRunTimeSec\n";
-			printLine(sumOutFile,header);
+			printLine(sumOutFile,header,1); // 1 means file will be overwritten/created
 		}
 		std::string repOut = Status.formatRepSummary(r,t,repTimeMS);
 		printLine(sumOutFile,repOut);

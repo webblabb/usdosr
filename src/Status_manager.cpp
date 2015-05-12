@@ -114,7 +114,7 @@ void Status_manager::setStatus(Farm* f_in, int startTime, std::string status, st
 if (verbose>2){std::cout<<"Exposing farm "<<fid<<std::endl;}
 		allNotSus[fid] = new Farm(*f_in);
 		notSus.emplace_back(allNotSus.at(fid)); // gets cleared at each timepoint
-std::cout<<"Added to allNotSus and notSus"<<std::endl;
+if (verbose>2){std::cout<<"Added to allNotSus and notSus"<<std::endl;}
 		// start control sequence
 		control->addFarm(allNotSus.at(fid),startTime,first);
 if (verbose>1){std::cout<<notSus.size()<<" not sus farms, "<<allNotSus.size()<<" allNotSus farms"<<std::endl;
@@ -169,8 +169,8 @@ if (verbose>2){std::cout<<s.one<<" hi at "<<ds.at(s.one).hi;}
 		// check farms from lo to hi for expired statuses, adjusting lo if needed
 		std::vector<Farm*>::iterator lo_it = ds.at(s.one).farms.begin();
 		std::vector<Farm*>::iterator hi_it = ds.at(s.one).farms.begin();
-		std::advance(lo_it, ds.at(s.one).lo);
-		std::advance(hi_it, ds.at(s.one).hi);
+		std::advance(lo_it, ds.at(s.one).lo); // move iterator to lo
+		std::advance(hi_it, ds.at(s.one).hi); // move iterator to hi
 			
 		for (auto it = lo_it; it <= hi_it; it++){ // check each farm* between lo and hi
 			if ( (*it)->get_end(s.one) == t ){ // if validity of this status expires for this farm today
@@ -220,7 +220,7 @@ void Status_manager::shipExposure(std::vector<shipment*>& ships, int time)
 	std::vector<Farm*> toExpose;
 	// fill in fields t, transmission (if applicable), ban, for each shipment
 	for (auto& s:ships){
-		s->t = time;
+		s->t = time; // set time of shipment
 		// if source is infectious and destination is susceptible
 		if (allNotSus.count(s->origID)==1){ // if origin farm has at least been exposed
 			if (allNotSus.at(s->origID)->get_diseaseStatus().compare("inf")==0){ // and if origin farm is infectious

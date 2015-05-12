@@ -241,10 +241,14 @@ void addItemTab(std::string& outString, std::string toAdd){
 }
 
 // function for printing (adding) output to specified file
-void printLine(std::string& outputFile, std::string& printString)
+void printLine(std::string& outputFile, std::string& printString, bool overwrite)
 {
 	std::ofstream outfile;
-	outfile.open(outputFile, std::ios::app); // append to existing file
+	if (!overwrite){
+		outfile.open(outputFile, std::ios::app); // append to existing file
+	} else {
+		outfile.open(outputFile); // overwrite/create new file
+	}
 	if(!outfile){std::cout<<"File "<<outputFile<<" not open."<<std::endl;}
 	outfile << printString; 
 	outfile.close();

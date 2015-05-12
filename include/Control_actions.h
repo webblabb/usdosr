@@ -57,10 +57,10 @@ class Control_actions
 		std::unordered_map<std::string, std::vector<int>> farmStatusCounts; // counts of farms in each status
 		std::unordered_map<std::string, std::vector<int>> countyStatusCounts;
 		
-		void scheduleLevelUp_f(Farm*, std::string, int);
-		void scheduleLevelUp_c(County*, std::string, int);
-		void startControlSeq_f(Farm*, std::string);
-		void startControlSeq_c(County*, std::string);	
+		void scheduleLevelUp_f(Farm*, std::string, int, int);
+		void scheduleLevelUp_c(County*, std::string, int, int);
+		void startControlSeq_f(Farm*, std::string, int);
+		void startControlSeq_c(County*, std::string, int);	
 		
 		double compliance_shipBan();
 		

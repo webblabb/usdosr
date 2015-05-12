@@ -181,7 +181,7 @@ void file_manager::readConfig(std::string& cfile)
 		// Ban lag - compliance
 		checkExit = checkMeanVar(pv[56],56,"ban compliance"); if (checkExit==1){exitflag=1;}
 		tempVec = stringToNumVec(pv[56]);
-		params.reportToOrderBan = std::make_tuple(tempVec[0],tempVec[1]);
+		params.orderToCompliance = std::make_tuple(tempVec[0],tempVec[1]);
 		//pv[57] ... pv[60]
 	
 		if (exitflag){
@@ -197,6 +197,7 @@ void file_manager::readConfig(std::string& cfile)
 		params.controlLags["indexReport"].emplace_back(params.indexReportLag); 	//first case exposed-reported
 		params.controlLags["report"].emplace_back(params.reportLag); 				//exposed-reported
 		//... Shipment ban parameters
+		params.controlLags["shipBan"].emplace_back(std::make_tuple(0,0)); // Level/index 0
 		params.controlLags["shipBan"].emplace_back(params.reportToOrderBan); // Level/index 1: time from report to order
 		params.controlLags["shipBan"].emplace_back(params.orderToCompliance); // Level/index 2: time from order to implementation	
 		

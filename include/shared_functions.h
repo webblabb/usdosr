@@ -48,7 +48,7 @@ struct shipment // used in Shipment, Status
 	void addItemTab(std::string&, int);
 	void addItemTab(std::string&, double);
 	void addItemTab(std::string&, std::string);
-	void printLine(std::string&, std::string&);
+	void printLine(std::string&, std::string&, bool overwrite=0);
 
 	
 template<typename T> 
