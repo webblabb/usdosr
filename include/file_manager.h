@@ -15,16 +15,17 @@ struct parameters{
 	int printCells;
 	int printShipments;
 	int printControl;
-	
+
 	// general parameters
 	std::string premFile;
+	std::string fipsFile;
 	std::vector<std::string> species;
 	int timesteps;
 	int replicates;
 	int verboseLevel;
 	bool pairwiseOn;
 	bool reverseXY;
-	
+
 	// infection parameters
 	std::string seedPremFile;
 	std::string seedCountyFile;
@@ -37,17 +38,17 @@ struct parameters{
 	std::vector<double> kernelParams;
 	std::tuple<double,double> latencyParams;
 	std::tuple<double,double> infectiousParams;
-	
+
 	// grid parameters
 	std::string cellFile;
 	std::vector<int> densityParams;
 	int uniformSide;
-	
+
 	// shipment parameters
 	std::vector<int> shipMethods;
 	std::vector<int> shipMethodTimeStarts;
 	int shipPremAssignment;
-	
+
 	// control parameters
 	std::tuple<double,double> indexReportLag;
 	std::tuple<double,double> reportLag;
@@ -56,7 +57,7 @@ struct parameters{
 	int banLevel;
 	std::tuple<double,double> reportToOrderBan;
 	std::tuple<double,double> orderToCompliance;
-	
+
 	// related parameter sets
 	std::unordered_map< std::string, std::tuple<double,double> > lagParams;
 	std::unordered_map< std::string, std::vector<std::tuple<double,double>> > controlLags;
@@ -68,7 +69,7 @@ class file_manager
 		int verbose;
 		std::vector<std::string> pv; // parameter vector for loading in
 		parameters params; // struct of all parameters
-		
+
 		bool checkMeanVar(std::string&, int, std::string);
 		bool checkPositive(std::vector<int>&, int);
 		bool checkPositive(std::vector<double>&, int);

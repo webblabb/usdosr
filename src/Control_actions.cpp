@@ -1,4 +1,6 @@
 #include "Control_actions.h"
+#include "Farm.h"
+#include "County.h"
 
 Control_actions::Control_actions(std::unordered_map< std::string, std::vector<std::tuple<double,double>> >& controlParams) // input map of tuples of lag parameters "cl"
 	:
@@ -7,16 +9,16 @@ Control_actions::Control_actions(std::unordered_map< std::string, std::vector<st
 	verbose = verboseLevel;
 	// could reserve estimated # of exposures for farms
 	// could reserve total number counties for counties
-	
+
 	// set counts to 0 for each status where applicable
-	
+
 	// "report" applies to both counties and farms
-	int size = cl.at("report").size()+1; // how many sets of parameters in vector for this control type 
+	int size = cl.at("report").size()+1; // how many sets of parameters in vector for this control type
 	// add one because no lag needed for first status
-	std::vector<int> v1 (size, 0); 
+	std::vector<int> v1 (size, 0);
 	farmStatusCounts["report"] = v1;
 	countyStatusCounts["report"] = v1;
-if(verbose>1){	
+if(verbose>1){
 	std::cout<<"Control initiation: Report counts for farms set to ";
 	for (auto&v:farmStatusCounts["report"]){std::cout<<v<<", ";}
 	std::cout<<std::endl;
@@ -29,7 +31,7 @@ if(verbose>1){
 	size = cl.at("shipBan").size()+1; // add one because no lag needed for first status
 	std::vector<int> v2 (size, 0);
 	countyStatusCounts["shipBan"] = v2;
-if(verbose>1){		
+if(verbose>1){
 	std::cout<<"shipBan counts for county set to ";
 	for (auto&v:countyStatusCounts["shipBan"]){std::cout<<v<<", ";}
 	std::cout<<std::endl;
@@ -37,7 +39,7 @@ if(verbose>1){
 	for (auto& type:cl){ // type.first = control type
 		cTypeMax[type.first] = type.second.size()-1; // maximum level for this control type
 	}
-	
+
 }
 
 Control_actions::~Control_actions()
@@ -54,10 +56,10 @@ std::cout<<"Made it to vector version of addFarm with fvec of "<<fvec.size()<<" 
 std::cout<<"Retreived report params"<<std::endl;
 	  	if (first){ reportParams = cl.at("indexReport").front();  }// use index lag to determine time farm will be reported
 	  	int rTime = t + normDelay(reportParams); // determine time farm will be reported
-std::cout<<"Assigning report time of "<<rTime<<std::endl;	  
+std::cout<<"Assigning report time of "<<rTime<<std::endl;
 		f->set_status("report",0); // set farm's control status, 0 = not reported
 		farms.emplace(f); // add to unordered_set
-		nextChange<Farm> nc{ f, "report", 1 }; // this farm will have "reported" status 1...
+		nextChange<Farm*> nc{ f, "report", 1 }; // this farm will have "reported" status 1...
 		farmsToChange[rTime].emplace_back(nc); // ...at rTime
 	}
 }
@@ -67,7 +69,7 @@ void Control_actions::addFarm(Farm* f, int t, bool first) // by default "first"=
 {
 	std::vector<Farm*> fvec;
 	fvec.emplace_back(f);
-	
+
 	addFarm(fvec,t,first); // call vector version of addFarm function
 }
 
@@ -75,12 +77,12 @@ void Control_actions::updates(int t)
 {
 	// check countiesToChange to see if changes need to be made
 	if (countiesToChange.count(t)==1){ // if any changes happen today (t)
-		std::vector< nextChange<County> >& changes = countiesToChange.at(t); // isolate the farms to be changed
+		std::vector< nextChange<County*> >& changes = countiesToChange.at(t); // isolate the farms to be changed
 		for (auto& c:changes){
 			County* co = c.unit;
-			co->statuses[c.controlType] = c.level; // set level for this control type
+			co->set_control_status(c.controlType, c.level); // set level for this control type
 			countyStatusCounts.at(c.controlType).at(c.level)++; // add to total count of this status-level
-if(verbose>1){std::cout<<co->fips<<" updated to "<<c.controlType<<" level "<<c.level<<std::endl;}
+            if(verbose>1){std::cout<<co->get_id()<<" updated to "<<c.controlType<<" level "<<c.level<<std::endl;}
 			// if not at end of control sequence, add next status change to list
 			if (c.level < cTypeMax.at(c.controlType)){ // if at any stage before last
 				scheduleLevelUp_c(co,c.controlType,c.level+1);
@@ -90,32 +92,41 @@ if(verbose>1){std::cout<<co->fips<<" updated to "<<c.controlType<<" level "<<c.l
 
 	// check indexed item in farmsToChange to see if changes need to be made
 	if (farmsToChange.count(t)==1){ // if the next timepoint requiring action is today (t)
-		std::vector< nextChange<Farm> >& changes = farmsToChange.at(t); // isolate the farms to be changed
-std::cout<<changes.size()<<" farm changes happening today."<<std::endl;
+		std::vector< nextChange<Farm*> >& changes = farmsToChange.at(t); // isolate the farms to be changed
+        std::cout<<changes.size()<<" farm changes happening today."<<std::endl;
 		for (auto& c:changes){
 			Farm* f = c.unit;
 			f->set_status(c.controlType,c.level);
 			farmStatusCounts.at(c.controlType).at(c.level)++; // add to total count of this status-level
 if(verbose>1){std::cout<<f->get_id()<<" updated to "<<c.controlType<<" level "<<c.level<<std::endl;}
 			// if before end of control sequence for this type, schedule next status update
-			if (c.level < cTypeMax.at(c.controlType)){			
+			if (c.level < cTypeMax.at(c.controlType)){
 				scheduleLevelUp_f(f,c.controlType,c.level+1);
 			}
 			// at reporting time, cross-post at county level
 			if (c.controlType.compare("report")==0 && c.level==1){ // if this farm was just reported
-				std::string farmfips = f->get_fips();
-				
-				if (counties.count(farmfips)==0){ // if this county hasn't been encountered yet
-					// create and add to county map
-					County* co = new County;
-					co->fips = farmfips;
-					co->statuses["report"] = 1; // county is also reported when farm is reported
-					countyStatusCounts["report"].at(1)++;
-					counties[farmfips] = co;
-				}
-				
+				//std::string farmfips = f->get_fips();
+
+				County* farmfips = f->get_parent_county();
+				std::cout << "6" << std::endl;
+//				if(farmfips->get_control_status("report") == 0) //This county is not yet reported.
+//                {
+//                    farmfips->set_control_status("report", 1);
+//                    countyStatusCounts["report"].at(1)++;
+//                }
+                std::cout << "7" << std::endl;
+
+//				if (counties.count(farmfips)==0){ // if this county hasn't been encountered yet
+//					// create and add to county map
+//					County* co = new County;
+//					co->fips = farmfips;
+//					co->statuses["report"] = 1; // county is also reported when farm is reported
+//					countyStatusCounts["report"].at(1)++;
+//					counties[farmfips] = co;
+//				}
+
 				// start shipping ban sequence at county level
-				startControlSeq_c(counties.at(farmfips), "shipBan");	
+				startControlSeq_c(farmfips, "shipBan");
 			}
 		}
 	}
@@ -124,7 +135,7 @@ if(verbose>1){std::cout<<f->get_id()<<" updated to "<<c.controlType<<" level "<<
 void Control_actions::scheduleLevelUp_f(Farm* f, std::string cType, int level)
 // add a status shift to the to-do list for farms
 {
-	nextChange<Farm> next{ f, cType, level };
+	nextChange<Farm*> next{ f, cType, level };
 	int time = normDelay(cl.at(cType).at(level));
 	farmsToChange[time].emplace_back(next);
 }
@@ -132,25 +143,26 @@ void Control_actions::scheduleLevelUp_f(Farm* f, std::string cType, int level)
 void Control_actions::scheduleLevelUp_c(County* co, std::string cType, int level)
 // add a status shift to the to-do list for counties
 {
-	nextChange<County> next{ co, cType, level };
+	nextChange<County*> next{ co, cType, level };
 	int time = normDelay(cl.at(cType).at(level));
 	countiesToChange[time].emplace_back(next);
 }
 
 void Control_actions::startControlSeq_c(County* co, std::string cType)
 {
-	co->statuses[cType] = 0;
+    co->set_control_status(cType, 0);
+//	co->statuses[cType] = 0;
 	countyStatusCounts.at(cType).at(0)++; // increase count at level 0 (starting sequence)
-	scheduleLevelUp_c(co,cType,1);
-}	
-	
+	scheduleLevelUp_c(co, cType, 1);
+}
+
 void Control_actions::startControlSeq_f(Farm* f, std::string cType)
 {
 	f->set_status(cType,0);
 	farmStatusCounts.at(cType).at(0)++; // increase count at level 0 (starting sequence)
 	scheduleLevelUp_f(f,cType,1);
 }
-	
+
 double Control_actions::compliance_shipBan()
 // arguments are whatever's needed to decide
 {
@@ -161,7 +173,7 @@ int Control_actions::checkShipBan(shipment* ship)
 {
 	int level = 0; // returned if no ban in place
 	if (counties.count(ship->origFIPS)==1){
-		level = counties.at(ship->origFIPS)->statuses.at("shipBan");
+		level = counties.at(ship->origFIPS)->get_control_status("shipBan");
 		if (level == 2){ // if a ban is implemented for this county
 			// determine compliance
 			double banCompliance = compliance_shipBan(); // based on decision rules

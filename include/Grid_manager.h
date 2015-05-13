@@ -20,6 +20,9 @@
 #include <unordered_map>
 #include <utility> // std::pair
 #include <vector>
+#include "Shipment_kernel.h"
+
+class County;
 
 extern int verboseLevel;
 
@@ -29,31 +32,40 @@ class Grid_manager
 		int verbose;
 		// variables for grid creation
 		unsigned int maxFarms;
-		std::unordered_map<int, grid_cell*> 
+		std::unordered_map<int, grid_cell*>
 			allCells; // map of cells in grid
-		std::unordered_map<int, Farm*> 
+		std::unordered_map<int, Farm*>
 			farm_map; // Contains all farm objects. Id as key.
-		std::unordered_map<std::string, std::vector<Farm*>>
-			FIPSmap; // key is fips code, value is vector of farms within
-		std::unordered_map<std::string, 
+//		std::unordered_map<std::string, std::vector<Farm*>>
+//			FIPSmap; // key is fips code, value is vector of farms within
+		std::unordered_map<std::string, County*>
+			FIPSmap; // key is fips code, value is county object
+        std::vector<County*>
+            FIPSvector;
+		std::unordered_map<std::string,
 			std::unordered_map< std::string, std::vector<Farm*> >> fipsSpeciesMap;
 			// key is fips code, then species name, then sorted by population size
- 		std::vector<Farm*> 
+ 		std::vector<Farm*>
  			farmList; // vector of pointers to all farms (deleted in chunks as grid is created)
-		std::tuple<double,double,double,double> 
+		std::tuple<double,double,double,double>
 			xylimits; // [0]x min, [1]x max, [2]y min, [3]y max
-		// variables for infection evaluation			
-		std::unordered_map<int, std::unordered_map<int, double>> 
+		// variables for infection evaluation
+		std::unordered_map<int, std::unordered_map<int, double>>
 			storedDists; // freq-used distances between cell pairs, used in shortestCellDist - use IDs to sort
+		bool xyswitch;
 		std::vector<std::string> speciesOnPrems; // list of species on all farms provided in prem file
 		std::vector<double> speciesSus, speciesInf, speciesSusC, speciesInfC; // species specific susceptibility and infectiousness exponents and constants, in same order as speciesOnAllFarms
 		std::unordered_map<std::string,std::vector<int>> herdSizes;
 		std::unordered_map<std::string,double> xiP, xiQ;
 		unsigned int committedFarms;
-		
-		double k1, k2, k3, k2tok3; // kernel parameters
 
-		// functions		
+		double k1, k2, k3, k2tok3; // local kernel parameters
+		Shipment_kernel ship_kernel;
+
+		// functions
+		void readFips(std::string& fips_fname); //Reads counties from file.
+		void readFarms(std::string& farm_fname); //Does all the reading of premises-file
+		void initFips(); //Removes counties without farms.
 		void set_maxFarms(unsigned int in_maxFarms); //inlined
 		std::string to_string(grid_cell&) const;
 		std::vector<Farm*> getFarms(
@@ -62,31 +74,32 @@ class Grid_manager
 		void removeParent(
 			std::stack< std::tuple<int,double,double,double> >& queue);// removes 1st vector in queue
 		void addOffspring(
-			std::tuple<int,double,double,double> cellSpecs, 
+			std::tuple<int,double,double,double> cellSpecs,
 			std::stack< std::tuple<int,double,double,double> >& queue); // adds subdivided cells to queue
 		void commitCell(
-			std::tuple<int,double,double,double> cellSpecs, 
+			std::tuple<int,double,double,double> cellSpecs,
 			std::vector<Farm*>& farmsInCell); // adds cell as type GridCell to set allCells
 		void splitCell(
-			std::tuple<int,double,double,double>& cellSpecs, 
+			std::tuple<int,double,double,double>& cellSpecs,
 			std::stack< std::tuple<int,double,double,double> >& queue); // replaces parent cell with subdivided offspring quadrants
  		void assignCellIDtoFarms(int cellID, std::vector<Farm*>& farmsInCell);
  		double kernelsq(double);
 		double shortestCellDist2(
-			grid_cell* cell1, 
+			grid_cell* cell1,
 			grid_cell* cell2); // calculates shortest distance^2 between two cells
-		void makeCellRefs(); // make reference matrices for distance and kernel		
+		void makeCellRefs(); // make reference matrices for distance and kernel
 		// functions for infection evaluation
-		std::vector<grid_cell*> 
+		std::vector<grid_cell*>
 			IDsToCells(std::vector<int>); // convert vector of IDs to cell pointers
-		grid_cell* 				
+		grid_cell*
 			IDsToCells(int);  // overloaded to accept single ID also
 		void set_FarmSus(Farm*); // used in precalculation and stored with Farm
 		void set_FarmInf(Farm*); // used in precalculation and stored with Farm
-		
+
 	public:
 		Grid_manager( // constructor loads premises
 			std::string &fname, // filename of premises
+			std::string &fips_fname, //filename for counties
 			bool xyswitch,  // switch x/y columns
 			std::vector<std::string>&, // list of species populations provided
 			std::vector<double>&,  // list of species-specific susceptibility exponents
@@ -94,38 +107,38 @@ class Grid_manager
 			std::vector<double>&,  // list of species-specific susceptibility constants
 			std::vector<double>&, // list of species-specific infectiousness constants
 			std::vector<double>&); // kernel parameters
-			
+
 		~Grid_manager();
-		
+
 		// main function that splits/commits cells:
 		// 1st way to initiate a grid: specify maximum farms per cell, min size
 		void initiateGrid(
-			const unsigned int, 
-			const int); 
-		
+			const unsigned int,
+			const int);
+
 		// 2nd way to initiate a grid: specify file containing cell specs
 		void initiateGrid(
 			std::string &cname);
-		
+
 		// 3rd way to initiate a grid: specify side length (same units as x/y) for uniform cells
 		void initiateGrid(
-			double cellSide);	
-		
+			double cellSide);
+
 		void printCells(
 			std::string& pfile) const;
 
 		const std::unordered_map<int, grid_cell*>*
-			get_allCells(); //inlined	
-			
-		const std::unordered_map<int, Farm*>* 
+			get_allCells(); //inlined
+
+		const std::unordered_map<int, Farm*>*
 			get_allFarms(); //inlined
-			
-		const std::unordered_map<std::string, std::vector<Farm*>>* 
+
+		const std::unordered_map<std::string, County*>*
 			get_FIPSmap(); //inlined
-			
-		const std::unordered_map<std::string, std::unordered_map<std::string, std::vector<Farm*> >>* 
+
+		const std::unordered_map<std::string, std::unordered_map<std::string, std::vector<Farm*> >>*
 			get_fipsSpeciesMap(); //inlined
-			
+
 };
 
 /////////// for grid creation ///////////
@@ -142,7 +155,7 @@ inline void Grid_manager::set_maxFarms(unsigned int in_maxFarms)
 	maxFarms = in_maxFarms;
 }
 
-inline const std::unordered_map<int, grid_cell*>* 
+inline const std::unordered_map<int, grid_cell*>*
 	Grid_manager::get_allCells()
 {
 	return &allCells;
@@ -154,16 +167,22 @@ inline const std::unordered_map<int, Farm*>*
 	return &farm_map;
 }
 
-inline const std::unordered_map<std::string, std::vector<Farm*>>* 
+inline const std::unordered_map<std::string, County*>*
 	Grid_manager::get_FIPSmap()
 {
-	return &FIPSmap; 
+	return &FIPSmap;
 }
 
-inline const std::unordered_map<std::string, std::unordered_map<std::string, std::vector<Farm*> >>* 
+//inline const std::unordered_map<std::string, std::vector<Farm*>>*
+//	Grid_manager::get_FIPSmap()
+//{
+//	return &FIPSmap;
+//}
+
+inline const std::unordered_map<std::string, std::unordered_map<std::string, std::vector<Farm*> >>*
 	Grid_manager::get_fipsSpeciesMap()
 {
-	return &fipsSpeciesMap; 
+	return &fipsSpeciesMap;
 }
 
 // used to look up re-used cell distances
@@ -186,7 +205,7 @@ struct comparePop
 	comparePop(std::string in_species) : species(in_species) {}
 	bool operator() (const Farm* farm1, const Farm* farm2){
 		return (farm1->Farm::get_size(species)) < (farm2->Farm::get_size(species));
-	}	
+	}
 	private:
 		std::string species;
 };

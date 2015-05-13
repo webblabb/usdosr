@@ -5,10 +5,11 @@
 #include <cmath> // floor
 #include <iostream> // for error-checking output
 #include "Shipment_manager.h" // includes Farm, shared_functions
+#include "County.h"
 
 Shipment_manager::Shipment_manager(
-	const std::unordered_map<std::string, std::vector<Farm*>>* in_FIPSmap,
-	const std::unordered_map<std::string, std::unordered_map<std::string, std::vector<Farm*> >>* fipsSpMap, 
+	const std::unordered_map<std::string, County*>* in_FIPSmap,
+	const std::unordered_map<std::string, std::unordered_map<std::string, std::vector<Farm*> >>* fipsSpMap,
 	int ffm,
 	std::vector<std::string>& speciesOnPrems
 	)
@@ -17,17 +18,17 @@ Shipment_manager::Shipment_manager(
 	fipsSpeciesMap(fipsSpMap),
 	farmFarmMethod(ffm),
 	species(speciesOnPrems)
-{	
+{
 	verbose = verboseLevel;
-	
+
 	allFIPS.reserve(FIPSmap->size());
-	
+
 	// copy species
 	// record allFIPS: vector of all possible shipment destinations (counties)
 	// used in generating random shipments
 	for (auto& f:(*FIPSmap)){ // f.first is FIPS, f.second is vector of Farms*s
 		allFIPS.emplace_back(f.first);
-		
+
 		for (auto& s:species){// can remove when USAMM is implemented
 			if (fipsSpeciesMap->at(f.first).count(s)==1){speciesFIPS[s].emplace_back(f.first);}
 		}
@@ -49,7 +50,7 @@ void Shipment_manager::makeShipments(std::vector<Farm*>& infFarms, int countyMet
   if (countyMethod != 0){
 	startRecentShips = farmShipmentList.size();
 	startCoRecentShips = countyShipmentList.size();
-	
+
 	// get counties (by FIPS codes) of infectious farms
 	std::set<std::string> FIPSofConcern;
 	for (auto& i:infFarms){
@@ -62,7 +63,7 @@ if(verbose>1){std::cout << FIPSofConcern.size()<<" counties of concern from whic
 if(verbose>1){std::cout <<"Making shipment(s) for county "<<oc<<std::endl;}
 		countyCountyShipments(oc, countyMethod); // writes to countyShipmentList
 	}
-	
+
 if(verbose>1){std::cout << countyShipmentList.size()-startCoRecentShips <<" total shipments to assign to farms. "<<std::endl;}
 	farmFarmShipments(); // reads from countyShipmentList, writes to farmShipmentList
 	// return the farm shipments from this round
@@ -79,7 +80,7 @@ void Shipment_manager::countyCountyShipments(std::string oCounty, int method)
 	{
 		case 0:
 			break; // no shipments
-		
+
 		case 1:{
 		//  randomly assign destination counties
 			double random = unif_rand();
@@ -91,13 +92,13 @@ void Shipment_manager::countyCountyShipments(std::string oCounty, int method)
 				}
 				std::string sp = randomFrom(possibleSp);
 				std::string dCounty = randomFrom(speciesFIPS.at(sp));
-				
+
 				int volume = 1;
 				countyShipmentList.emplace_back(coShipment {0,oCounty,dCounty,sp,volume,0});
 			}
 			break;
 		}
-			
+
 		default:{
 			std::cout << "Method for countyCountyShipments not recognized." << std::endl;
 		}
@@ -120,7 +121,7 @@ Farm* Shipment_manager::largestStatus(std::vector<Farm*>& premVec, std::string& 
 
 void Shipment_manager::farmFarmShipments()
 // assigns shipments to farms from one county to another, distributed:
-// randomly (method=0), 
+// randomly (method=0),
 // with probability related to farm size (method=1)
 // from biggest farms in county to random destinations (method=2)
 // from random destinations to biggest farm in county (method=3)
@@ -136,7 +137,7 @@ void Shipment_manager::farmFarmShipments()
 		std::string sp = s->species;
 		int volume = s->volume;
 std::cout<<"Assigning shipment: "<<oFIPS<<", "<<dFIPS<<", "<<sp<<", "<<volume<<std::endl;
-				
+
 		// get all farms with species sp in counties - can be sent to/from any farm regardless of status
 		std::vector<Farm*> oPrems = fipsSpeciesMap->at(oFIPS).at(sp); // already sorted by population
 		std::vector<Farm*> dPrems = fipsSpeciesMap->at(dFIPS).at(sp);
@@ -151,7 +152,7 @@ if(verbose>1){std::cout<<"Origin FIPS: "<<oFIPS<<" has "<<oPrems.size()<<" prems
 		} else {
 			for (auto& ps:dPrems){dPremSizes.emplace_back(ps->Farm::get_size(sp));} // store population
 		}
-		
+
 		// check if there are 0 premises in county - prob wouldn't happen in USAMM? For now, skip that shipment
 		if (oPrems.size()==0 || dPrems.size()==0){
 			std::cout<<"County without proper premises type, skipping shipment."<<std::endl;
@@ -174,16 +175,16 @@ if(verbose>1){std::cout<<"Origin FIPS: "<<oFIPS<<" has "<<oPrems.size()<<" prems
 						0}); // ban (will be filled by Status manager)
 				}
 				break;
-			}	
-			case 1:{ // shipment probability based on relative farm size				
+			}
+			case 1:{ // shipment probability based on relative farm size
 				// get cumulative sums of sizes for farms in county to distribute probabilities
 				std::vector<int> oCumSums = {0};
 				std::vector<int> dCumSums = {0};
 				for (unsigned int oi=0; oi!=oPremSizes.size(); oi++){ //oi = origin iterator
-					oCumSums.emplace_back(oCumSums[oi-1]+oPremSizes[oi]);} 
+					oCumSums.emplace_back(oCumSums[oi-1]+oPremSizes[oi]);}
 				for (unsigned int di=0; di!=dPremSizes.size(); di++){ //di = destination iterator
-					dCumSums.emplace_back(dCumSums[di-1]+dPremSizes[di]);} 
-					
+					dCumSums.emplace_back(dCumSums[di-1]+dPremSizes[di]);}
+
 				for (int v=0; v!=volume; v++){
 					int oRand = unif_rand()*oCumSums.back(); // scale random up to maximum
 					int dRand = unif_rand()*dCumSums.back(); // scale random up to maximum
@@ -200,7 +201,7 @@ if(verbose>1){std::cout<<"Origin FIPS: "<<oFIPS<<" has "<<oPrems.size()<<" prems
 						0}); // ban (filled later)
 				}
 				break;
-			}				
+			}
 			case 2:{ // shipped from biggest infectious farm to random destinations
 				for (int v = 0; v!= volume; v++){ // for each shipment between these counties
 					std::string infstring = "inf";
@@ -215,7 +216,7 @@ if(verbose>1){std::cout<<"Origin FIPS: "<<oFIPS<<" has "<<oPrems.size()<<" prems
 						0}); // ban (filled later)
 				}
 				break;
-			}	
+			}
 			case 3:{ // shipped from random destinations to the biggest susceptible farm
 				for (int v = 0; v!= volume; v++){ // for each shipment between these counties
 					std::string susstring = "sus";
@@ -230,7 +231,7 @@ if(verbose>1){std::cout<<"Origin FIPS: "<<oFIPS<<" has "<<oPrems.size()<<" prems
 						0}); // ban (filled later)
 				}
 				break;
-			}	
+			}
 			case 4:{ // shipped between biggest farms
 				for (int v = 0; v!= volume; v++){ // for each shipment between these counties
 					std::string infstring = "inf";
@@ -246,7 +247,7 @@ if(verbose>1){std::cout<<"Origin FIPS: "<<oFIPS<<" has "<<oPrems.size()<<" prems
 						0}); // ban (filled later)
 				}
 				break;
-			}	
+			}
 			default:{
 				std::cout << "Method for farmFarmShipments not recognized." << std::endl;
 			}
@@ -275,7 +276,7 @@ std::string Shipment_manager::formatOutput(int shipRes, int t)
 				toPrint += "Compliant";
 				toPrint.replace(toPrint.end()-1, toPrint.end(), "\n"); // add line break at end
 			}
-		
+
 			for (auto& ships:farmShipmentList){
 				sprintf(temp, "%d\t", t);
 				toPrint += temp;
@@ -302,12 +303,12 @@ std::string Shipment_manager::formatOutput(int shipRes, int t)
 				toPrint += "OriginFIPS\t";
 				toPrint += "DestFIPS\t";
 				toPrint += "NumShips\t"; //sum
-				toPrint += "Species\t";				
+				toPrint += "Species\t";
 				toPrint += "Banned\t";
 				toPrint += "NumCompliant\t"; //sum
 				toPrint.replace(toPrint.end()-1, toPrint.end(), "\n"); // add line break at end
 			}
-		
+
 			for (auto& ships:countyShipmentList){
 				sprintf(temp, "%d\t", t);
 				toPrint += temp;

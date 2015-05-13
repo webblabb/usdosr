@@ -43,7 +43,7 @@ void file_manager::readConfig(std::string& cfile)
 		// Check for consistencies/requirements in parameter vectors, spit out warnings/errors and exit if needed
 		bool exitflag = 0;
 		bool checkExit;
-		
+
 		// Batch name
 		params.batch = pv[1];
 		// Outputs on/off
@@ -71,16 +71,16 @@ void file_manager::readConfig(std::string& cfile)
 		params.species = stringToStringVec(pv[12]);
 		// Timesteps
 		params.timesteps = stringToNum<int>(pv[13]);
-		if (params.timesteps<1){std::cout << "Warning (config 13): Number of timesteps must be 1 or more. Setting number of timesteps to 365." << std::endl; 
+		if (params.timesteps<1){std::cout << "Warning (config 13): Number of timesteps must be 1 or more. Setting number of timesteps to 365." << std::endl;
 			params.timesteps = 365;}
 		// Replicates
 		params.replicates = stringToNum<int>(pv[14]);
-		if (params.replicates<1){std::cout << "Warning (config 14): Number of replications must be 1 or more. Setting number of replications to 1." << std::endl; 
+		if (params.replicates<1){std::cout << "Warning (config 14): Number of replications must be 1 or more. Setting number of replications to 1." << std::endl;
 			params.replicates = 1;}
 		// Verbose level
 		params.verboseLevel = stringToNum<int>(pv[15]);
 		if (params.verboseLevel!=0 && params.verboseLevel!=1 && params.verboseLevel!=2){
-			std::cout << "Warning (config 15): Verbose option must be 0, 1 or 2. Setting option to off." << std::endl; 
+			std::cout << "Warning (config 15): Verbose option must be 0, 1 or 2. Setting option to off." << std::endl;
 			params.verboseLevel = 0;}
 		// Pairwise on
 		params.pairwiseOn = stringToNum<int>(pv[16]) ;
@@ -90,7 +90,11 @@ void file_manager::readConfig(std::string& cfile)
 		params.reverseXY = stringToNum<int>(pv[17]);
 		if (params.reverseXY!=0 && params.reverseXY!=1){
 			std::cout << "ERROR (config 17): Reversing x/y must be 0 (y first) or 1 (x first)." << std::endl; exitflag=1;}
-		// pv[18] ... pv[20]
+		//County data file
+		if (pv[18] == "*"){
+            std::cout << "ERROR (config 18): No county data file specified." << std::endl; exitflag=1;}
+		params.fipsFile = pv[18];
+		// pv[19] ... pv[20]
 		// Infectious seed files
 		if (pv[21]=="*" && pv[22]=="*"){
 			std::cout << "ERROR (config 21-22): No infectious premises/county seed file specified." << std::endl; exitflag=1;}
@@ -132,7 +136,7 @@ void file_manager::readConfig(std::string& cfile)
 		std::vector<double> tempVec = stringToNumVec(pv[30]);
 		params.latencyParams = std::make_tuple(tempVec[0],tempVec[1]);
 		// Infectiousness parameters
-		checkExit = checkMeanVar(pv[31],31,"infectiousness"); if (checkExit==1){exitflag=1;} // if exit triggered by this check, set exitflag=1	
+		checkExit = checkMeanVar(pv[31],31,"infectiousness"); if (checkExit==1){exitflag=1;} // if exit triggered by this check, set exitflag=1
 		tempVec = stringToNumVec(pv[31]);
 		params.infectiousParams = std::make_tuple(tempVec[0],tempVec[1]);
 		//pv[32] ... pv[35]
@@ -142,13 +146,13 @@ void file_manager::readConfig(std::string& cfile)
 		params.uniformSide = stringToNum<double>(pv[37]);
 		params.densityParams = stringToIntVec(pv[38]);
 			checkExit = checkPositive(params.densityParams, 38); if (checkExit==1){exitflag=1;}
-			if ((params.densityParams).size()!=2){std::cout << "ERROR (config 38): Two parameters required for grid creation by density." << std::endl; exitflag=1;}		
+			if ((params.densityParams).size()!=2){std::cout << "ERROR (config 38): Two parameters required for grid creation by density." << std::endl; exitflag=1;}
 		//pv[39] ... pv[40]
 		// Shipping methods and times
 		if (pv[41]=="*"){std::cout << "ERROR (config 41): No county-level shipment method(s) specified." << std::endl; exitflag=1;}
 		params.shipMethods = stringToIntVec(pv[41]);
 		if (pv[42]=="*"){std::cout << "ERROR (config 42): No shipment method start time(s) specified." << std::endl; exitflag=1;}
-		params.shipMethodTimeStarts = stringToIntVec(pv[42]);		
+		params.shipMethodTimeStarts = stringToIntVec(pv[42]);
 		if (params.shipMethods.size() != params.shipMethodTimeStarts.size()){
 			std::cout << "ERROR (config 41-42): Number of methods and start times provided must be the same ("<<params.shipMethods.size()<<" method(s) and "<<params.shipMethodTimeStarts.size()<<" start time(s) provided)."<<std::endl; exitflag=1;}
 		if (params.shipMethodTimeStarts.at(0) != 1){std::cout << "ERROR (config 42): First county-level shipment method start time must be 1."<<std::endl; exitflag=1;}
@@ -183,23 +187,23 @@ void file_manager::readConfig(std::string& cfile)
 		tempVec = stringToNumVec(pv[56]);
 		params.reportToOrderBan = std::make_tuple(tempVec[0],tempVec[1]);
 		//pv[57] ... pv[60]
-	
+
 		if (exitflag){
 			std::cout << "Exiting..." << std::endl;
 			exit(EXIT_FAILURE);
-		}	
-		
+		}
+
 		// Put together infection lag parameters
 		params.lagParams["latency"] = params.latencyParams; 		//exposed-infectious
 		params.lagParams["infectious"] = params.infectiousParams; 	//infectious-recovered
-		
+
 		// Put together control-related lag parameters
 		params.controlLags["indexReport"].emplace_back(params.indexReportLag); 	//first case exposed-reported
 		params.controlLags["report"].emplace_back(params.reportLag); 				//exposed-reported
 		//... Shipment ban parameters
 		params.controlLags["shipBan"].emplace_back(params.reportToOrderBan); // Level/index 1: time from report to order
-		params.controlLags["shipBan"].emplace_back(params.orderToCompliance); // Level/index 2: time from order to implementation	
-		
+		params.controlLags["shipBan"].emplace_back(params.orderToCompliance); // Level/index 2: time from order to implementation
+
 	} else { // if file not found
 		std::cout << "ERROR: Configuration file not found: " << cfile << std::endl <<
 		"Exiting..." << std::endl;

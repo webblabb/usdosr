@@ -26,7 +26,7 @@ beef,dairy 			#(12)~List of species for which counts are provided in premises fi
 1 	#(15)~Verbose level: Output extra information to console as model runs (0=off, 1=basic steps, 2=debug)
 0 	#(16)x~Pairwise algorithm on (1) or off (0) in addition to gridding (disabled)
 0 	#(17)~Reverse x/y option: in case input file is entered as lat/long (y/x)(set to 1) instead of long/lat (x/y)(set to 0)
-* #(18)
+FIPS_20151305.txt #(18)~Name of file containing fips name, state name, area (m2), x, y. Tab separated.
 * #(19)
 * #(20)
 

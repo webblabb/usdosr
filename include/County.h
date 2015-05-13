@@ -23,59 +23,101 @@ To create a complete county:
 
 #include <string>
 #include <unordered_map>
-#include <Region.h>
-#include <Farm.h>
-#include <State.h>
-#include <Alias_table.h>
-#include <Shipment_kernel.h>
+#include "Region.h"
+#include "Alias_table.h"
+
+
+class Farm;
+class State;
+class Shipment_kernel;
 
 class County : public Region
 {
 public:
-    County(double x, double y, std::string name);
+    County(std::string id);
+    County(std::string id, double x, double y);
     ~County();
 
-    virtual void set_farms(const std::vector<Farm*>& in_farms);
+    void set_farms(const std::vector<Farm*>& in_farms);
     void add_farm(Farm* in_farm);
     void init_probabilities(std::vector<County*>& in_counties, Shipment_kernel& k); //Incomplete
     void set_area(double in_area);
-    void set_parent_state(const State* target);
+    void set_parent_state(State* target);
+    void set_control_status(std::string status, int level);
 
-    std::string get_name() const; //Inlined
-    double get_area() const; //Inlined
-    const State* get_parent_state() const; //Inlined
+    double get_area(); //Inlined
+    int get_n_farms(); //Inlined
+    const std::vector<Farm*>& get_farms(); //Inlined
+    std::unordered_map<std::string, int> get_statuses(); //Inlined
+    int get_control_status(std::string status); //Inlined
+    State* get_parent_state(); //Inlined
     County* get_shipment_destination();
 
+    void calculate_centroid();
+
+    void print_bools();
+
 private:
-    std::string name;
     double area;
-    const State* parent_state;
+    State* parent_state;
+    std::vector<Farm*> member_farms;
     std::unordered_map <County*, double> county_distances;
+    std::unordered_map<std::string, int> statuses; // for control type and level
     Alias_table<County*> county_probabilities;
     std::vector<Farm*> infected_farms;
     std::vector<Farm*> susceptible_farms;
-    void set_initialized(bool& parameter);
-    void not_initialized();
 
+    bool county_initialized = false;
     bool is_set_area = false;
     bool is_set_state = false;
     bool is_set_shipment = false;
-    bool is_initialized = false;
+
+    virtual void set_initialized(bool& parameter);
+    virtual void all_initialized();
 };
 
-inline std::string County::get_name() const
+inline double County::get_area()
 {
-    return name;
-}
+    if(!is_set_area)
+        not_initialized();
 
-inline double County::get_area() const
-{
     return area;
 }
 
-inline const State* County::get_parent_state() const
+inline int County::get_n_farms()
 {
+    return(int(member_farms.size()));
+}
+
+inline const std::vector<Farm*>& County::get_farms()
+{
+    if(!county_initialized)
+        not_initialized();
+
+    return member_farms;
+}
+
+inline State* County::get_parent_state()
+{
+    if(!county_initialized)
+        not_initialized();
+
     return parent_state;
 }
 
+inline std::unordered_map<std::string, int> County::get_statuses()
+{
+    if(!county_initialized)
+        not_initialized();
+
+    return statuses;
+}
+
+inline int County::get_control_status(std::string status)
+{
+    if(!county_initialized)
+        not_initialized();
+
+    return statuses.at(status);
+}
 #endif // COUNTY_H

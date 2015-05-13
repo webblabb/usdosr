@@ -14,14 +14,17 @@
 #include <sstream>
 #include <string>
 #include <ctime> // for timing
+#include <exception>
 // included in Grid_manager.h: grid_cell, farm, shared_functions, tuple, utility
 #include "Grid_manager.h"
+#include "County.h"
 
-Grid_manager::Grid_manager(std::string &fname, bool xyswitch, std::vector<std::string>& in_species,
-	std::vector<double>& in_speciesSus, std::vector<double>& in_speciesInf,
-	std::vector<double>& in_speciesSusC, std::vector<double>& in_speciesInfC,
-	std::vector<double>& kernParams)
-	:
+
+Grid_manager::Grid_manager(std::string &farm_fname, std::string &fips_fname, bool xyswitch,
+    std::vector<std::string>& in_species, std::vector<double>& in_speciesSus,
+    std::vector<double>& in_speciesInf,	std::vector<double>& in_speciesSusC,
+    std::vector<double>& in_speciesInfC, std::vector<double>& kernParams) :
+    xyswitch(xyswitch),
 	speciesOnPrems(in_species),
 	speciesSus(in_speciesSus),
 	speciesInf(in_speciesInf),
@@ -30,21 +33,128 @@ Grid_manager::Grid_manager(std::string &fname, bool xyswitch, std::vector<std::s
 	committedFarms(0),
 	k1(kernParams.at(0)),
 	k2(kernParams.at(1)),
-	k3(kernParams.at(2))
+	k3(kernParams.at(2)),
+	ship_kernel(490, 0.32, "linear") //<-- TEMPORARY PARAMETERS!!!
 // fills farm_map, farmList, and xylimits
 {
 	k2tok3 = pow(k2,k3);
 	verbose = 1; // manual control to override verboseLevel
 
-	farm_map.reserve(850000);
+    readFips(fips_fname);
+    readFarms(farm_fname);
+    initFips();
+
+    if (verbose>0){std::cout << farm_map.size() << " farms in " << FIPSmap.size()
+	<< " counties loaded. Premises file closed." << std::endl;
+    }
+
 	allCells.reserve(800);
-	
+
+if (verbose>1){
+	std::cout << "x min = " << std::get<0>(xylimits) << std::endl;
+	std::cout << "x max = " << std::get<1>(xylimits) << std::endl;
+	std::cout << "y min = " << std::get<2>(xylimits) << std::endl;
+	std::cout << "y max = " << std::get<3>(xylimits) << std::endl;
+}
+
+
+
+	/* IS THIS CORRECT??!
+	// sort within each FIPS map element by farm size (population) for each species
+	// (for use in Shipment manager, but this pre-calculates to save run time)
+	for (auto& sp:speciesOnPrems){
+		std::sort(fipsSpeciesMap[fips][sp].begin(),fipsSpeciesMap[fips][sp].end(),comparePop(sp)); // comparePop struct defined in Grid_manager.h
+	}
+    */
+
+
+//////////////////// use USDOSv1 values directly
+// 	for (auto& sp:sumP){
+// 		xiP[sp.first] = 0.0000002177; // infectiousness normalizer
+// if (verbose>1){std::cout<<"xi_p for "<<sp.first<<": "<<xiP.at(sp.first)<<std::endl;}
+// 	}
+// 	for (auto& sp:sumQ){
+// 		xiQ[sp.first] = 0.0000002086; // susceptibility normalizer
+// if (verbose>1){std::cout<<"xi_q for "<<sp.first<<": "<<xiQ.at(sp.first)<<std::endl;}
+// 	}
+//////////////////// use other values
+// 	for (auto& sp:sumP){
+// 		// sp.first is species name, sp.second is sum of each (herd size^p)
+// 		xiP[sp.first] = 0.00082*(sumSp[sp.first]/sp.second); // sum of indivs/sum of herd size^p
+// if (verbose>0){std::cout<<"xi_p for "<<sp.first<<": "<<xiP.at(sp.first)<<std::endl;}
+// 	}
+// 	for (auto& sp:sumQ){
+// 		xiQ[sp.first] = 5.7*(sumSp[sp.first]/sp.second);; // // sum of indivs/sum of herd size^q
+// if (verbose>0){std::cout<<"xi_q for "<<sp.first<<": "<<xiQ.at(sp.first)<<std::endl;}
+// 	}
+
+
+	//Start initialization of counties.
+	if(verbose > 0)
+        std::cout << "Initializing " << FIPSmap.size() << " counties..." << std::endl;
+}
+
+Grid_manager::~Grid_manager()
+{
+    for (auto c:FIPSmap){delete c.second;}
+	for (auto f:farm_map){delete f.second;}
+	for (auto gc:allCells){delete gc.second;}
+}
+
+void Grid_manager::readFips(std::string& fips_fname)
+{
+    FIPSmap.reserve(3500);
+    std::string county, state, fips;
+    double area, x, y;
+    int n_counties_loaded = 0;
+
+    std::ifstream f(fips_fname);
+	if(f.is_open())
+	{
+	    while(!f.eof())
+        {
+            std::string line;
+			getline(f, line); // get line from file "f", save as "line"
+			std::vector<std::string> line_vector = split(line, '\t'); // separate by tabs
+
+			if(! line_vector.empty()) // if line_vector has something in it
+			{
+			    county = line_vector[0];
+			    state = line_vector[1];
+			    fips = line_vector[2];
+			    str_cast(line_vector[3], area);
+			    str_cast(line_vector[4], x);
+			    str_cast(line_vector[5], y);
+
+			    FIPSmap[fips] = new County(fips, x, y);
+			    FIPSvector.emplace_back(FIPSmap[fips]);
+			    FIPSmap[fips]->set_area(area);
+			    //Set parent state.
+
+			    n_counties_loaded += 1;
+			}
+        }
+        f.close();
+        std::cout << n_counties_loaded << " counties created successfully." <<
+                     std::endl;
+	}
+	else
+    {
+        std::cout << "County file not found. Exiting..." << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    //Counties created, now they need farms.
+}
+
+void Grid_manager::readFarms(std::string& farm_fname)
+{
+    farm_map.reserve(850000);
 	std::cout<<std::endl;
-	// read in file of premises
 	int id, tempsize;
 	double x, y;
 	std::string fips;
 	int fcount = 0;
+
 	std::unordered_map<std::string,double> sumSp, sumP, sumQ, constSus, constInf;
 	// initialize each species sum to 0
 	for (auto& s:speciesOnPrems){
@@ -52,7 +162,7 @@ Grid_manager::Grid_manager(std::string &fname, bool xyswitch, std::vector<std::s
 		sumP[s] = 0.0;
 		sumQ[s] = 0.0;
 	}
-	
+
 	// put constant sus/inf values into map by species name
 	int i = 0;
 	for (auto& s:speciesOnPrems){
@@ -61,18 +171,19 @@ Grid_manager::Grid_manager(std::string &fname, bool xyswitch, std::vector<std::s
 		++i;
 	}
 
-	std::ifstream f(fname);
+	std::ifstream f(farm_fname);
 	if(!f){std::cout << "Premises file not found. Exiting..." << std::endl; exit(EXIT_FAILURE);}
 	if(f.is_open())
 	{
-if (verbose>0){std::cout << "Premises file open." << std::endl;}
-if (verbose>1){std::cout << "Loading farms: " << std::endl;}
+        if (verbose>0){std::cout << "Premises file open." << std::endl;}
+        if (verbose>1){std::cout << "Loading farms: " << std::endl;}
+
 		while(! f.eof())
 		{
 			std::string line;
 			getline(f, line); // get line from file "f", save as "line"
 			std::vector<std::string> line_vector = split(line, '\t'); // separate by tabs
-			
+
 			if(! line_vector.empty()) // if line_vector has something in it
 			{
 				str_cast(line_vector[0], id);
@@ -84,8 +195,16 @@ if (verbose>1){std::cout << "Loading farms: " << std::endl;}
 					str_cast(line_vector[2], x);
 					str_cast(line_vector[3], y);
 				}
+				//check that the county of the farm exists
+				if(FIPSmap.find(fips) == FIPSmap.end())
+                {
+                    std::cout << "The fips " << fips << ", which is in the premises data, " <<
+                                 "cannot be found among the loaded counties. Skipping this farm." <<
+                                  std::endl;
+                    continue;
+                }
 				// write farm pointer to private var farm_map
-				farm_map[id] = new Farm(id, x, y, fips); 
+				farm_map[id] = new Farm(id, x, y, fips);
 				++fcount;
 				// add species counts - check that number of columns is as expected
 				if(line_vector.size() < 4+speciesOnPrems.size()){
@@ -105,22 +224,31 @@ if (verbose>1){std::cout << "Loading farms: " << std::endl;}
 					sumP[sp] += pow(double(tempsize),p);
 					// get susceptibility ("q") for this species
 					double q = speciesSus.at(colcount-4);
-					sumQ[sp] += pow(double(tempsize),q);					
+					sumQ[sp] += pow(double(tempsize),q);
 					// if there are animals of this species, add to fips-species list to sort by population later
 					if (tempsize>0){
 						fipsSpeciesMap[fips][sp].emplace_back(farm_map.at(id));
 					}
 					++colcount;
 				}
-				
-				// write farm pointer to fips map
-				FIPSmap[fips].emplace_back(farm_map.at(id));
-				
+
+				// Add farm to its corresponding county object
+                try
+                {
+                    FIPSmap.at(fips)->add_farm(farm_map.at(id));
+                }
+                catch(std::exception& e)
+                {
+                    std::cout << "When adding premises " << id << " to county " << fips << "." <<
+                              e.what() << std::endl;
+                }
+
+
 				// compare/replace limits of xy plane
 				if (fcount>1){// if this is not the first farm
 					if (x < std::get<0>(xylimits)){std::get<0>(xylimits) = x;} // x min
 					else if (x > std::get<1>(xylimits)){std::get<1>(xylimits) = x;} // x max
-					
+
 					if (y < std::get<2>(xylimits)){std::get<2>(xylimits) = y;} // y min
 					else if (y > std::get<3>(xylimits)){std::get<3>(xylimits) = y;} // y max
 					}
@@ -128,77 +256,39 @@ if (verbose>1){std::cout << "Loading farms: " << std::endl;}
 if (verbose>1){std::cout << "Initializing xy limits.";}
 					xylimits = std::make_tuple(x,x,y,y);
 					// initialize min & max x value, min & max y value
-					} 
+                }
 
 			} // close "if line_vector not empty"
 		} // close "while not end of file"
+		f.close();
 	} // close "if file is open"
-if (verbose>1){
-	std::cout << "x min = " << std::get<0>(xylimits) << std::endl;
-	std::cout << "x max = " << std::get<1>(xylimits) << std::endl;
-	std::cout << "y min = " << std::get<2>(xylimits) << std::endl;
-	std::cout << "y max = " << std::get<3>(xylimits) << std::endl;
-}
-	
-	f.close();
-if (verbose>0){std::cout << farm_map.size() << " farms in " << FIPSmap.size() 
-	<< " counties loaded. Premises file closed." << std::endl;
-}
 
-	// copy farmlist from farm_map (will be changed as grid is created)
-if (verbose>1){std::cout << "Copying farms from farm_map to farmList..." << std::endl;}
+
+
+    // copy farmlist from farm_map (will be changed as grid is created)
+    if (verbose>1){std::cout << "Copying farms from farm_map to farmList..." << std::endl;}
 	for (auto& prem: farm_map) {farmList.emplace_back(prem.second);} // "second" value from map is Farm pointer
-	 
+
 	// sort farmList by ID for faster matching/subset removal
 	std::sort(farmList.begin(),farmList.end(),sortByID<Farm*>);
-	// sort within each FIPS map element by farm size (population) for each species
-	// (for use in Shipment manager, but this pre-calculates to save run time)
-	for (auto& sp:speciesOnPrems){
-		std::sort(fipsSpeciesMap[fips][sp].begin(),fipsSpeciesMap[fips][sp].end(),comparePop(sp)); // comparePop struct defined in Grid_manager.h
-	}	
-	
-	// calculate xiP and xiQ
+
+    // calculate xiP and xiQ
 	for (auto& sp:sumP){
 		// sp.first is species name, sp.second is sum of each (herd size^p)
 		xiP[sp.first] = constInf.at(sp.first)*(sumSp[sp.first]/sp.second); // infectiousness normalizer
-std::cout<<"xi_p for "<<sp.first<<": "<<xiP.at(sp.first)<<std::endl;
-	}
-	for (auto& sp:sumQ){
+        std::cout<<"xi_p for "<<sp.first<<": "<<xiP.at(sp.first)<<std::endl;
+    }
+    for (auto& sp:sumQ){
 		// sp.first is species name, sp.second is sum of each (herd size^q)
 		xiQ[sp.first] = constSus.at(sp.first)*(sumSp[sp.first]/sp.second); // susceptibility normalizer
-std::cout<<"xi_q for "<<sp.first<<": "<<xiQ.at(sp.first)<<std::endl;
-	}
-//////////////////// use USDOSv1 values directly
-// 	for (auto& sp:sumP){
-// 		xiP[sp.first] = 0.0000002177; // infectiousness normalizer
-// if (verbose>1){std::cout<<"xi_p for "<<sp.first<<": "<<xiP.at(sp.first)<<std::endl;}
-// 	}
-// 	for (auto& sp:sumQ){
-// 		xiQ[sp.first] = 0.0000002086; // susceptibility normalizer
-// if (verbose>1){std::cout<<"xi_q for "<<sp.first<<": "<<xiQ.at(sp.first)<<std::endl;}
-// 	}	
-//////////////////// use other values
-// 	for (auto& sp:sumP){
-// 		// sp.first is species name, sp.second is sum of each (herd size^p)
-// 		xiP[sp.first] = 0.00082*(sumSp[sp.first]/sp.second); // sum of indivs/sum of herd size^p
-// if (verbose>0){std::cout<<"xi_p for "<<sp.first<<": "<<xiP.at(sp.first)<<std::endl;}
-// 	}
-// 	for (auto& sp:sumQ){
-// 		xiQ[sp.first] = 5.7*(sumSp[sp.first]/sp.second);; // // sum of indivs/sum of herd size^q
-// if (verbose>0){std::cout<<"xi_q for "<<sp.first<<": "<<xiQ.at(sp.first)<<std::endl;}
-// 	}	
-	
-	// calculate and store farm susceptibility and infectiousness
+        std::cout<<"xi_q for "<<sp.first<<": "<<xiQ.at(sp.first)<<std::endl;
+    }
+
+    // calculate and store farm susceptibility and infectiousness
 	for (auto& f:farm_map){
 		set_FarmSus(f.second);
 		set_FarmInf(f.second);
 	}
-}
-
-Grid_manager::~Grid_manager()
-{
-	for (auto f:farm_map){delete f.second;}
-	for (auto gc:allCells){delete gc.second;}
 }
 
 std::vector<Farm*> Grid_manager::getFarms(std::tuple<int,double,double,double> cellSpecs, const unsigned int maxFarms/*=0*/)
@@ -212,20 +302,40 @@ if(verbose==2){std::cout << "Getting farms in cell..." << std::endl;}
     double y = std::get<2>(cellSpecs);
     double s = std::get<3>(cellSpecs);
     std::vector<Farm*> inCell;
-        
+
     // look for farms in cell, those falling on grid boundaries are included, will be removed from list when cell is committed to avoid double counting
-    
+
     for (auto i:farmList){
     	if ((i->get_x() >= x) && (i->get_x() <= x+s) // if within x bounds of cell
     		&& (i->get_y() >= y) && (i->get_y() <= y+s)) // and within y bounds of cell
     		{ // farm is within the cell
     		inCell.emplace_back(i);
-    		if (maxFarms!=0 && inCell.size() > maxFarms){break;} 
+    		if (maxFarms!=0 && inCell.size() > maxFarms){break;}
     		// saves time on retrieving farms if cell will be split & re-checked anyway
     		}
     }
     // (pointers to) farms in inCell should still be sorted by x-coordinate
     return(inCell);
+}
+
+void Grid_manager::initFips()
+{
+    std::vector<std::string> to_delete;
+    for(auto c : FIPSmap)
+    {
+        if(c.second->get_n_farms() == 0)
+            to_delete.emplace_back(c.first);
+    }
+
+    for(auto it = to_delete.begin(); it != to_delete.end(); it++)
+        FIPSmap.erase(*it);
+
+    std::cout << "Deleted " << to_delete.size() <<
+                 " counties that had no farms." << std::endl;
+
+    std::cout << "Calculating shipping probabilities..." << std::endl;
+    for(County* c : FIPSvector)
+        c->init_probabilities(FIPSvector, ship_kernel);
 }
 
 void Grid_manager::removeParent(std::stack< std::tuple<int,double,double,double> >& queue)
@@ -234,7 +344,7 @@ void Grid_manager::removeParent(std::stack< std::tuple<int,double,double,double>
     queue.pop();
 }
 
-void Grid_manager::addOffspring(std::tuple<int,double,double,double> cellSpecs, 
+void Grid_manager::addOffspring(std::tuple<int,double,double,double> cellSpecs,
 	std::stack< std::tuple<int,double,double,double> >& queue)
 // offspring cells are quadrants of parent cell
 {
@@ -242,7 +352,7 @@ void Grid_manager::addOffspring(std::tuple<int,double,double,double> cellSpecs,
     double x = std::get<1>(cellSpecs);
     double y = std::get<2>(cellSpecs);
     double s = std::get<3>(cellSpecs);
-    
+
     // lower left quadrant: same x/y, side/2
     auto lowerLeft = std::make_tuple(0, x, y, s/2);
     // lower right quadrant: add side/2 to x, same y, side/2
@@ -251,7 +361,7 @@ void Grid_manager::addOffspring(std::tuple<int,double,double,double> cellSpecs,
     auto upperLeft = std::make_tuple(0, x, y+s/2, s/2);
     // upper right quadrant: add side/2 to x and y, side/2
     auto upperRight = std::make_tuple(0, x+s/2, y+s/2, s/2);
-    
+
     // add offspring cells to queue (in reverse order so lower left is first)
     queue.emplace(upperRight);
     queue.emplace(upperLeft);
@@ -269,16 +379,16 @@ void Grid_manager::commitCell(std::tuple<int,double,double,double> cellSpecs, st
     y = std::get<2>(cellSpecs);
     s = std::get<3>(cellSpecs);
     std::vector<Farm*> farms = farmsInCell;
-    
+
     grid_cell* cellToAdd = new grid_cell(id, x, y, s, farms);
-    
+
     allCells.emplace(id,cellToAdd); // add to map of all committed cells, with id as key
     committedFarms += farmsInCell.size();
     assignCellIDtoFarms(id,farmsInCell);
     removeFarmSubset(farmsInCell, farmList); // in shared_functions.cpp
 }
 
-void Grid_manager::splitCell(std::tuple<int,double,double,double>& cellSpecs, 
+void Grid_manager::splitCell(std::tuple<int,double,double,double>& cellSpecs,
 	std::stack< std::tuple<int,double,double,double> >& queue)
 {
     removeParent(queue);
@@ -302,12 +412,12 @@ void Grid_manager::initiateGrid(const unsigned int in_maxFarms, const int minCut
  	int cellCount = 0;
     std::stack<std::tuple<int,double,double,double>> queue;// temporary list of cells to check for meeting criteria for commitment
     std::vector<Farm*> farmsInCell; // vector of (pointers to) farms in working cell - using vector to get to specific elements
-        
+
     double min_x = std::get<0>(xylimits)-0.1;
     double max_x = std::get<1>(xylimits)+0.1;
     double min_y = std::get<2>(xylimits)-0.1;
     double max_y = std::get<3>(xylimits)+0.1;
-    
+
     double side_x = max_x - min_x;
     double side_y = max_y - min_y;
     if(verbose==2)
@@ -318,12 +428,12 @@ void Grid_manager::initiateGrid(const unsigned int in_maxFarms, const int minCut
 
     // use whichever diff is larger, x or y
     if (side_y > side_x)
-       side_x = side_y; 
+       side_x = side_y;
     if(verbose==2){std::cout << "Using larger value " << side_x << std::endl;}
-    
+
     // add cell specifications to temporary tuple
     std::tuple<int,double,double,double> cellSpecs = std::make_tuple(cellCount, min_x, min_y, side_x);
-    if(verbose==2){std::cout << "cellSpecs: " << std::get<0>(cellSpecs) <<", "<< std::get<1>(cellSpecs) 
+    if(verbose==2){std::cout << "cellSpecs: " << std::get<0>(cellSpecs) <<", "<< std::get<1>(cellSpecs)
     	<<", "<< std::get<2>(cellSpecs) <<", "<< std::get<3>(cellSpecs) << std::endl;}
 
     // add initial cell to the queue
@@ -333,7 +443,7 @@ void Grid_manager::initiateGrid(const unsigned int in_maxFarms, const int minCut
     while(queue.size()>0)
     {
     if(verbose==2){std::cout << std::endl << "Queue length = " << queue.size() << std::endl;}
-    
+
     cellSpecs = queue.top(); // set first in queue as working cell
 
 	if(verbose==2){
@@ -374,7 +484,7 @@ void Grid_manager::initiateGrid(const unsigned int in_maxFarms, const int minCut
         else if (farmsInCell.empty()){
         // cell has no farms at all - remove from queue w/o committing
             queue.pop(); // remove parent cell from front of queue
-            if(verbose==2){std::cout << "No farms, removed cell, queue length = " 
+            if(verbose==2){std::cout << "No farms, removed cell, queue length = "
             	<< queue.size() << std::endl;}
         }
     }
@@ -384,14 +494,14 @@ void Grid_manager::initiateGrid(const unsigned int in_maxFarms, const int minCut
 	" and max "<<maxFarms<<" farms. Pre-calculating distances..." << std::endl;
 	if (farm_map.size()!=committedFarms){
 		std::cout<<"ERROR: "<<committedFarms<<" farms committed, expected "
-		<<farm_map.size()<<std::endl; 
+		<<farm_map.size()<<std::endl;
 		for (auto& dropped:farmList){std::cout<<"ID "<<dropped->get_id()<<", x "
 			<<dropped->get_x()<<", y "<<dropped->get_y()<<std::endl;}
 		exit(EXIT_FAILURE);
 		}
 	makeCellRefs();
 	if(verbose>0){std::cout << "Grid initiated using density parameters. ";}
-	
+
 }
 
 void Grid_manager::initiateGrid(std::string& cname)
@@ -411,7 +521,7 @@ void Grid_manager::initiateGrid(std::string& cname)
 			std::string line;
 			getline(f, line); // get line from file "f", save as "line"
 			std::vector<std::string> line_vector = split(line, '\t'); // separated by tabs
-			
+
 			if(! line_vector.empty()) // if line_vector has something in it
 			{ // convert each string piece to double
 				if (verbose==2){std::cout << "Reading cell: ";}
@@ -425,17 +535,17 @@ void Grid_manager::initiateGrid(std::string& cname)
 				if (verbose==2){std::cout << std::get<3>(cellSpecs) << ". ";}
 				// line_vector[4] is num farms-ignored (gets reassigned)
 				farmsInCell = getFarms(cellSpecs);
-				if (verbose==2){std::cout << farmsInCell.size() << " farms assigned to cell." << 			
+				if (verbose==2){std::cout << farmsInCell.size() << " farms assigned to cell." <<
 					std::endl;}
 				if(farmsInCell.empty()){
-					std::cout << "Cell " << std::get<0>(cellSpecs) << " has no farms - ignoring." << 				
+					std::cout << "Cell " << std::get<0>(cellSpecs) << " has no farms - ignoring." <<
 						std::endl;
 					// cell will not be added to list
 					}
-				else if (!farmsInCell.empty()){			
+				else if (!farmsInCell.empty()){
 				// save cell with farms within
-					allCells[std::get<0>(cellSpecs)] = new grid_cell(std::get<0>(cellSpecs), 
-						std::get<1>(cellSpecs), std::get<2>(cellSpecs), std::get<3>(cellSpecs), farmsInCell); 
+					allCells[std::get<0>(cellSpecs)] = new grid_cell(std::get<0>(cellSpecs),
+						std::get<1>(cellSpecs), std::get<2>(cellSpecs), std::get<3>(cellSpecs), farmsInCell);
 					assignCellIDtoFarms(std::get<0>(cellSpecs),farmsInCell);
 					removeFarmSubset(farmsInCell, farmList);
 					}
@@ -459,7 +569,7 @@ void Grid_manager::initiateGrid(double cellSide)
     double max_x = std::get<1>(xylimits);
     double min_y = std::get<2>(xylimits);
     double max_y = std::get<3>(xylimits);
-    
+
     std::unordered_map<int, std::vector<Farm*>> cellFarmMap;
     std::vector<double> xlist, ylist; // list of each x corner, y corner
 	std::vector<int> uniquex; // list of elements of first unique x values
@@ -467,7 +577,7 @@ void Grid_manager::initiateGrid(double cellSide)
 	int cellCount = 0;
     // all x points will be from min_x to max_x by cellSide
     // let max be max + cellside for extra wiggle room, cells w/o farms will be excluded later
-    for (auto x = min_x; x <= (max_x+cellSide); x+=cellSide) 
+    for (auto x = min_x; x <= (max_x+cellSide); x+=cellSide)
     {
     	// all y points will be from min_y to max_y by cellSide
     	for (auto y = min_y; y <= (max_y+cellSide); y+=cellSide)
@@ -484,23 +594,23 @@ void Grid_manager::initiateGrid(double cellSide)
     // compare each farm's coordinates to:
     // unique cell x values (increment according to xChanges)
     // y values once x value is found
-    
+
     std::vector<Farm*> farmListByX(farmList); // farmListByX is a copy of farmList
     std::sort(farmListByX.begin(), farmListByX.end(), sortByX);
     // indices for moving around the cell list
-    int xi = 0; 
+    int xi = 0;
     int i = 0;
     int fcount = 0;
-    
+
     std::vector<int> seedFarms;
-        
+
     for (auto& f:farmListByX)
     {
 		double farmx = f->Farm::get_x();
 		double farmy = f->Farm::get_y();
     	bool cellFound = 0;
     	fcount++;
-    	
+
     	while(!cellFound){
     		// if farm x is...
 			if (farmx >= xlist[uniquex[xi]] && farmx < xlist[uniquex[xi+1]]) // between this and next unique x value
@@ -526,7 +636,7 @@ void Grid_manager::initiateGrid(double cellSide)
 		} // end 1st while cell not found
     } // end for each farm
     std::cout << "Done placing farms." << std::endl;
-   
+
    // commit all cells with farms
    bool printNumFarms = 0;
    std::string allLinesToPrint;
@@ -555,11 +665,11 @@ void Grid_manager::initiateGrid(double cellSide)
 	}
 	}
 
-	std::cout << "Grid loaded with " << actualCellCount << " uniform cells. Pre-calculating distances..." << std::endl;		
+	std::cout << "Grid loaded with " << actualCellCount << " uniform cells. Pre-calculating distances..." << std::endl;
 	makeCellRefs();
 }
 
-std::string Grid_manager::to_string(grid_cell& gc) const 
+std::string Grid_manager::to_string(grid_cell& gc) const
 // overloaded to_string function, makes tab-delim string (one line) specifically for cell
 {
 	std::string toPrint;
@@ -577,9 +687,9 @@ std::string Grid_manager::to_string(grid_cell& gc) const
 		sprintf(temp, "%f\t", *it);
 		toPrint += temp;
 	}
-	
+
 	toPrint.replace(toPrint.end()-1, toPrint.end(), "\n");
-	
+
 	return toPrint;
 }
 
@@ -596,7 +706,7 @@ void Grid_manager::printCells(std::string& pfile) const
 	for(auto it:orderedCells){
 		tabdelim += to_string(*(it.second));
 	}
-	
+
 	std::string ofilename;
 //	ofilename ="unif";
  	char temp[5]; // make temporary storage
@@ -608,8 +718,8 @@ void Grid_manager::printCells(std::string& pfile) const
 	ofilename += temp;
 	ofilename += "c_";
 	ofilename += pfile;
-	
-	std::ofstream f(ofilename); 
+
+	std::ofstream f(ofilename);
 	// will look something like "15f_932c_USprems.txt"
 	if(f.is_open()){
 		f << tabdelim;
@@ -619,7 +729,7 @@ void Grid_manager::printCells(std::string& pfile) const
 */
 }
 
-// void Grid_manager::printVector(std::vector<Farm*>& vec, std::string& fname) const
+// void Grid_manager::printVector(std::vector<Farm*>& vec, std::string& farm_fname) const
 // // temporarily disabled due to incompatible std::to_string use
 // {
 // /*
@@ -629,32 +739,32 @@ void Grid_manager::printCells(std::string& pfile) const
 // 		tabdelim += std::to_string(fid);
 // 		tabdelim += "\n";
 // 	}
-// 	
-// 	std::ofstream f(fname); 
+//
+// 	std::ofstream f(farm_fname);
 // 	if(f.is_open()){
 // 		f << tabdelim;
 // 		f.close();
 // 	}
-// 	std::cout << "Vector printed to " << fname <<std::endl;
+// 	std::cout << "Vector printed to " << farm_fname <<std::endl;
 // */
 // }
 
 // Calculates kernel values for given distances
 double Grid_manager::kernelsq(double distsq)
 // returns kernel value as a function of distance squared
-{	
+{
 	double usedist = distsq;
 	if (usedist==0){usedist = 1;} // units assumed to be m
 	return std::min(1.0, k1/(1+pow(usedist,(k3/2))/k2tok3) );
 }
-	/* 
+	/*
 	to demonstrate this is the same as kernel(dist), run in R:
 	usedist=1:2000
 	k1 = 0.12
 	k2 = 1000
 	k3 = 3
 	# original f(distance)
-	plot(k1 / (1 + (usedist/k2)^k3) ~ usedist) 
+	plot(k1 / (1 + (usedist/k2)^k3) ~ usedist)
 	usq = usedist^2
 	points(usedist, (k1 / (1 + (usq^(k3/2))/(k2^k3))),col="blue",pch="*")
 	*/
@@ -665,7 +775,7 @@ double Grid_manager::shortestCellDist2(grid_cell* cell1, grid_cell* cell2)
 	double cellDist2 = 0; // squared distance between cells
  	int cell1_id = cell1->grid_cell::get_id();
  	int cell2_id = cell2->grid_cell::get_id();
-  if (cell1_id != cell2_id){ // else if comparing to self, distance is already 0 	
+  if (cell1_id != cell2_id){ // else if comparing to self, distance is already 0
 	double cell1_x = 0;
 	double cell1_y = 0;
 	double cell2_x = 0;
@@ -675,19 +785,19 @@ double Grid_manager::shortestCellDist2(grid_cell* cell1, grid_cell* cell2)
 	double cell1_North = cell1->grid_cell::get_y()+cell1->grid_cell::get_s(); // upper boundary of cell1
 	double cell1_West = cell1->grid_cell::get_x(); // leftmost boundary of cell1
 	double cell1_East = cell1->grid_cell::get_x()+cell1->grid_cell::get_s(); // rightmost boundary of cell1
-	
+
 	double cell2_South = cell2->grid_cell::get_y(); // lower boundary of cell2
 	double cell2_North = cell2->grid_cell::get_y()+cell2->grid_cell::get_s(); // upper boundary of cell2
 	double cell2_West = cell2->grid_cell::get_x(); // leftmost boundary of cell2
 	double cell2_East = cell2->grid_cell::get_x()+cell2->grid_cell::get_s(); // rightmost boundary of cell2
-	
+
 	// In comparing cell positions, due to nestedness of sub-cells, cell 1 could be:
 	// Horizontally: W of, E of, or directly above/below all or part of cell2.
 	// Vertically: N of, S of, or directly beside all or part of cell2.
-	
+
 	// Determine horizontal relationship and set x values accordingly:
 	if(verbose>1){std::cout << "Cell " << cell1_id << " is ";}
-	
+
 	if (cell1_East <= cell2_West) // cell1 west of cell2
 		{
  		if(verbose>1){std::cout << "west of and ";}
@@ -709,7 +819,7 @@ double Grid_manager::shortestCellDist2(grid_cell* cell1, grid_cell* cell2)
 		//cell2_x = 0; // already initialized as 0
 		// only use distance between y values
 		}
-	
+
 	// Determine vertical relationship and set y values accordingly:
 	if (cell1_South >= cell2_North) // cell1 north of cell2
 		{
@@ -731,12 +841,12 @@ double Grid_manager::shortestCellDist2(grid_cell* cell1, grid_cell* cell2)
 		//cell1_y = 0; // already initialized as 0
 		//cell2_y = 0; // already initialized as 0
 		// only use distance between x values
-		}	
-	
+		}
+
 	double xDiff = fabs(cell1_x-cell2_x);
 	double yDiff = fabs(cell1_y-cell2_y);
 	std::vector<double> orderedDiffs = orderNumbers(xDiff,yDiff); // in shared_functions.h
-	if (storedDists.count(orderedDiffs[0])==1 && 
+	if (storedDists.count(orderedDiffs[0])==1 &&
 		storedDists.at(orderedDiffs[0]).count(orderedDiffs[1])==1){
 		cellDist2 = storedDists.at(orderedDiffs[0]).at(orderedDiffs[1]);
 	} else {
@@ -745,7 +855,7 @@ double Grid_manager::shortestCellDist2(grid_cell* cell1, grid_cell* cell2)
    	}
   } // end if cells 1 and 2 are different
 
-return cellDist2;	
+return cellDist2;
 }
 
 void Grid_manager::makeCellRefs()
@@ -753,18 +863,18 @@ void Grid_manager::makeCellRefs()
 // gridCellKernel: kernel values between cell 1 (lower number) and cell 2 (higher number),
 // neighbors: cells for which distance = 0.
 // Although all the ID referencing seems a bit much, this is one way to ensure the order of the cells checked
-{	
+{
 	std::unordered_map<grid_cell*, std::unordered_map<int, double> > susxKern;
 
-	for (unsigned int whichCell1=0; whichCell1 != allCells.size(); ++whichCell1){	
-		grid_cell* cell1 = allCells.at(whichCell1);	
+	for (unsigned int whichCell1=0; whichCell1 != allCells.size(); ++whichCell1){
+		grid_cell* cell1 = allCells.at(whichCell1);
 		for (unsigned int whichCell2 = whichCell1; whichCell2 != allCells.size(); ++whichCell2){
 			grid_cell* cell2 = allCells.at(whichCell2);
 			// get distance between grid cells 1 and 2...
 			// if comparing to self, distance=0
-			double shortestDist2 = 0; 
+			double shortestDist2 = 0;
 			if (whichCell2 != whichCell1) { // overwrite if cells are different
-				shortestDist2 = shortestCellDist2(cell1, cell2); 
+				shortestDist2 = shortestCellDist2(cell1, cell2);
 if(verbose>1){std::cout << "Distance between "<<whichCell1<<" & "<<whichCell2<<": "<<shortestDist2<<std::endl;}
 			}
 			// save adjacent neighbors
@@ -773,10 +883,10 @@ if(verbose>1){std::cout << "Distance between "<<whichCell1<<" & "<<whichCell2<<"
 				if (whichCell1 != whichCell2){
 				 cell2->addNeighbor(cell1);
 				}
-			}	
+			}
 			// kernel value between c1, c2
 			double gridValue = kernelsq(shortestDist2);
-if(verbose>1){std::cout << "Kernel between "<<whichCell1<<"&"<<whichCell2<<": "<<gridValue<<std::endl;}			
+if(verbose>1){std::cout << "Kernel between "<<whichCell1<<"&"<<whichCell2<<": "<<gridValue<<std::endl;}
 			// if grid Value is > 0, record in gridCellKernel and as kernel neighbors
 			if (gridValue > 0){
 				// store kernel * max sus (part of all prob calculations)
@@ -785,8 +895,8 @@ if(verbose>1){std::cout << "Kernel between "<<whichCell1<<"&"<<whichCell2<<": "<
 if(verbose>1){std::cout << "Stored in-range sus*kernel: cells "<<whichCell1<<" & "<<whichCell2<<", susxKern: "<<
 	maxS2 * gridValue<<std::endl;}
 
-				// if not comparing to self, calc/store other direction (this was a big bug - double counting self as neighbor)	
-				if (whichCell1 != whichCell2){ 
+				// if not comparing to self, calc/store other direction (this was a big bug - double counting self as neighbor)
+				if (whichCell1 != whichCell2){
 					double maxS1 = cell1->grid_cell::get_maxSus();
  					susxKern[cell2][whichCell1] = maxS1 * gridValue;
  if(verbose>1){std::cout << "Stored in-range sus*kernel: cells "<<whichCell2<<" & "<<whichCell1<<", susxKern: "<<
@@ -795,12 +905,12 @@ if(verbose>1){std::cout << "Stored in-range sus*kernel: cells "<<whichCell1<<" &
 			} // end if gridValue > 0
 		} // end for each cell2
 	} // end for each cell1
-	
+
 	// assign kernel maps to individual cells
 	for (auto& k:susxKern){
 		k.first->take_KernelValues(k.second);
 	}
-	
+
  	if (verbose>0){
  		std::cout << "Kernel distances and neighbors recorded." << std::endl;
  	}
@@ -832,9 +942,9 @@ void Grid_manager::set_FarmSus(Farm* f)
 	int i = 0; // use to keep up with speciesOnPrems element
 	for (auto& sp:speciesOnPrems){
 		double count = f->get_size(sp); // i.e. get_size("beef") gets # of beef cattle on premises
-		double spSus = xiQ.at(sp)*pow(count,speciesSus[i]); // multiply by stored susceptibility value for this species/type		
+		double spSus = xiQ.at(sp)*pow(count,speciesSus[i]); // multiply by stored susceptibility value for this species/type
 		premSus += spSus; // add this species to the total for this premises
-		++i;	
+		++i;
 	}
 	f->set_sus(premSus);
 if (verbose>2){std::cout<<"Farm "<<f->get_id()<<" sus set to "<<premSus<<std::endl;}
@@ -853,7 +963,7 @@ void Grid_manager::set_FarmInf(Farm* f)
 		double spInf = xiP.at(sp)*pow(count,speciesInf[i]); // susceptibility value for this species/type
 		// confirm how to combine species! temporary solution:
 		premInf += spInf; // add this species to the total for this premises
-		++i;	
+		++i;
 	}
 	f->set_inf(premInf);
 if (verbose>2){std::cout<<"Farm "<<f->get_id()<<" inf set to "<<premInf<<std::endl;}

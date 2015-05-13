@@ -1,22 +1,37 @@
-#include <State.h>
+#include "State.h"
+#include "Farm.h"
+#include "County.h"
 
-State::State(double x, double y, std::string name) :
-    Region(x, y), name(name) {}
+State::State(std::string id) :
+    Region(id)
+{
+    type = "state";
+}
+
+State::State(std::string id, double x, double y) :
+    Region(id, x, y)
+{
+    type = "state";
+}
 
 State::~State() {}
 
-void State::set_farms(const std::vector<Farm*>& in_farms)
+void State::set_flow(double flow)
 {
-    member_farms = in_farms;
-    for(auto farm : member_farms)
-    {
-        farm->set_parent_state(this);
-    }
+    this->flow = flow;
+    set_initialized(is_set_flow);
 }
 
-//Adds one single farm that belongs to this state by passing a pointer to it.
-void State::add_farm(Farm* in_farm)
+void State::set_initialized(bool& parameter)
 {
-    member_farms.push_back(in_farm);
-    in_farm->set_parent_state(this);
+    parameter = true;
+    all_initialized();
+}
+
+void State::all_initialized()
+{
+    if(is_set_id and is_set_position and is_set_flow)
+    {
+        state_initialized = true;
+    }
 }

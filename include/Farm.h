@@ -1,6 +1,6 @@
 /* A class describing a premises object.
-One object of this type is created for each premises 
-described by the input data. 
+One object of this type is created for each premises
+described by the input data.
 
 Contains the data members:
 id, a unique integer identifying this premises
@@ -26,18 +26,27 @@ set_speciesCount(std::string species, int count) sets the population for "specie
 #include <unordered_map>
 #include <vector>
 
+#include "Point.h"
+
+
+class County;
+class State;
+
 class Farm
 {
 	private:
 		int id, cellID;
 		double x_coordinate, y_coordinate, sus, inf;
+		Point position;
 		std::string fips;
+		County* parent_county;
+		State* parent_state;
 		std::unordered_map< std::string, int > speciesCounts; // species and counts
 		std::unordered_map< std::string, int > statuses; // used in Control_actions
 		std::unordered_map< std::string, int > start; // used in Status_manager: start times for disease statuses
 		std::unordered_map< std::string, int > end; // used in Status_manager: end times for disease statuses
 		std::string diseaseStatus; // used in Status manager;
-	
+
 	public:
 		Farm(int, double, double, std::string);
 		~Farm();
@@ -49,14 +58,16 @@ class Farm
 		double get_inf() const; // inlined
  		std::string get_fips() const; // inlined
  		std::string get_diseaseStatus() const; //inlined
- 		
+
  		const std::unordered_map< std::string, int >* get_spCounts(); // inlined
  		int get_status(std::string) const; //inlined
  		int get_size(const std::string species) const;
  		int get_start(std::string) const; //inlined
  		int get_end(std::string) const; //inlined
+		County* get_parent_county() const; //Inlined
+ 		State* get_parent_state() const; //Inlined
  		bool beenExposed() const; //inlined
- 		
+
 		void set_cellID(const int cellID);
  		void set_speciesCount(const std::string, int);
  		void set_sus(const double);
@@ -65,6 +76,8 @@ class Farm
  		void set_start(const std::string, const int); //inlined - set start time for disease status
  		void set_end(const std::string, const int); //inlined - set end time for disease status
 		void set_diseaseStatus(std::string&); //inlined
+		void set_parent_county(County* in_county);
+ 		void set_parent_state(State* in_state);
 
 };
 
@@ -108,7 +121,7 @@ inline int Farm::get_status(const std::string s) const
 {
 	return statuses.at(s);
 }
-inline void Farm::set_start(const std::string status, const int t) 
+inline void Farm::set_start(const std::string status, const int t)
 {
 	start[status] = t;
 }
@@ -131,6 +144,14 @@ inline void Farm::set_diseaseStatus(std::string& stat)
 inline bool Farm::beenExposed() const
 {
 	return start.count("exp")==1;
+}
+inline County* Farm::get_parent_county() const
+{
+    return parent_county;
+}
+inline State* Farm::get_parent_state() const
+{
+    return parent_state;
 }
 
 #endif //FARM_H

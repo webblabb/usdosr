@@ -4,30 +4,36 @@
 #define STATE_H
 
 #include <string>
-#include <Region.h>
-#include <Farm.h>
+#include "Region.h"
+
+class Farm;
+class County;
 
 class State : public Region
 {
 public:
-    State(double x, double y, std::string name);
+    State(std::string id);
+    State(std::string name, double x, double y);
     ~State();
-    virtual void set_farms(const std::vector<Farm*>& in_farms);
-    virtual void add_farm(Farm* in_farm);
-    std::string get_name() const; //Inlined
-    double get_flow() const; //Inlined
+
+    void set_flow(double flow);
+
+    double get_flow(); //Inlined
+
 private:
-    std::string name;
     double flow;
+    bool state_initialized = false;
+    bool is_set_flow = false;
+
+    virtual void set_initialized(bool& parameter);
+    virtual void all_initialized();
 };
 
-inline std::string State::get_name() const
+inline double State::get_flow()
 {
-    return name;
-}
+    if(!state_initialized)
+        not_initialized();
 
-inline double State::get_flow() const
-{
     return flow;
 }
 

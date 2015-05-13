@@ -1,5 +1,5 @@
 #include "shared_functions.h"
-
+#include "Farm.h"
 
 
 // Used in gridding (decision making for stepping into cells)
@@ -22,7 +22,7 @@ double norm_rand()
 // Used in gridding (binomial method) to determing # of infected farms
 int draw_binom(int N, double prob)
 // draw from a binomial distribution based on N farms and prob (calc with focalInf & gridKern)
-{		
+{
 	std::binomial_distribution<int> binom_dist(N,prob);
 	static unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count();
 	static std::mt19937 generator(seed); //Mersenne Twister pseudo-random number generator. Generally considered research-grade.
@@ -52,7 +52,7 @@ int normDelay(std::tuple<double, double>& params)
 }
 
 // used in reading in files
-std::vector<std::string> 
+std::vector<std::string>
 	split(const std::string &s, char delim, std::vector<std::string> &elems)
 {
     std::stringstream ss(s);
@@ -67,7 +67,7 @@ std::vector<std::string>
     return elems;
 }
 
-std::vector<std::string> 
+std::vector<std::string>
 	split(const std::string &s, char delim)
 {
     std::vector<std::string> elems;
@@ -83,7 +83,7 @@ void removeFarmSubset(std::vector<Farm*>& subVec, std::vector<Farm*>& fullVec)
 //	std::cout << "Removing "<<subVec.size()<<" farms from list of "<<fullVec.size()<<std::endl;
 
 	// put vectors into fips-indexed maps to speed up matching
-	std::unordered_map< std::string, std::vector<Farm*> > subMap, fullMap; 
+	std::unordered_map< std::string, std::vector<Farm*> > subMap, fullMap;
 	for (auto& sv:subVec){
 		subMap[sv->get_fips()].emplace_back(sv);}
 	for (auto& fv:fullVec){
@@ -106,7 +106,7 @@ void removeFarmSubset(std::vector<Farm*>& subVec, std::vector<Farm*>& fullVec)
 				}
 				it2++;
 			}
-		}	
+		}
 	}
 	// rewrite fullVec
 	std::vector<Farm*> temp;
@@ -114,7 +114,7 @@ void removeFarmSubset(std::vector<Farm*>& subVec, std::vector<Farm*>& fullVec)
 	  for (auto& f2:f1.second){
 		temp.emplace_back(f2);}}
 	fullVec = temp;
-		
+
 	if (expectedSize != fullVec.size()){
 		std::cout << "Error in removeFarmSubset: expected size"<< expectedSize <<
 		", actual size: "<< fullVec.size() <<". Exiting...";
@@ -145,7 +145,7 @@ std::vector<double> stringToNumVec(std::string& toConvert)
     substring.erase(std::remove_if(substring.begin(), substring.end(), isspace), substring.end()); // remove whitespace
 	str_cast(substring,temp); // convert substring to double
     output.emplace_back(temp); // add double to vector
-    
+
     return output;
 }
 
@@ -171,7 +171,7 @@ std::vector<int> stringToIntVec(std::string& toConvert)
     substring.erase(std::remove_if(substring.begin(), substring.end(), isspace), substring.end()); // remove whitespace
 	str_cast(substring,temp); // convert substring to double
     output.emplace_back(temp); // add double to vector
-    
+
     return output;
 }
 
@@ -194,7 +194,7 @@ std::vector<std::string> stringToStringVec(std::string& toConvert)
     substring = toConvert.substr(start, end); // last substring
     substring.erase(std::remove_if(substring.begin(), substring.end(), isspace), substring.end()); // remove whitespace
     output.emplace_back(substring); // add string to vector
-    
+
     return output;
 }
 
@@ -246,7 +246,7 @@ void printLine(std::string& outputFile, std::string& printString)
 	std::ofstream outfile;
 	outfile.open(outputFile, std::ios::app); // append to existing file
 	if(!outfile){std::cout<<"File "<<outputFile<<" not open."<<std::endl;}
-	outfile << printString; 
+	outfile << printString;
 	outfile.close();
 }
 
