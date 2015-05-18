@@ -118,6 +118,9 @@ inline int County::get_control_status(std::string status)
     if(!county_initialized)
         not_initialized();
 
-    return statuses.at(status);
+    if(statuses.find(status) == statuses.end())
+        return 0;
+    else
+        return statuses.at(status);
 }
 #endif // COUNTY_H

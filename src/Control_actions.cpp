@@ -109,21 +109,12 @@ if(verbose>1){std::cout<<f->get_id()<<" updated to "<<c.controlType<<" level "<<
 
 				County* farmfips = f->get_parent_county();
 				std::cout << "6" << std::endl;
-//				if(farmfips->get_control_status("report") == 0) //This county is not yet reported.
-//                {
-//                    farmfips->set_control_status("report", 1);
-//                    countyStatusCounts["report"].at(1)++;
-//                }
+				if(farmfips->get_control_status("report") == 0) //This county is not yet reported.
+                {
+                    farmfips->set_control_status("report", 1);
+                    countyStatusCounts["report"].at(1)++;
+                }
                 std::cout << "7" << std::endl;
-
-//				if (counties.count(farmfips)==0){ // if this county hasn't been encountered yet
-//					// create and add to county map
-//					County* co = new County;
-//					co->fips = farmfips;
-//					co->statuses["report"] = 1; // county is also reported when farm is reported
-//					countyStatusCounts["report"].at(1)++;
-//					counties[farmfips] = co;
-//				}
 
 				// start shipping ban sequence at county level
 				startControlSeq_c(farmfips, "shipBan");
