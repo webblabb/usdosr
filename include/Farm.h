@@ -14,7 +14,7 @@ get_id(), get_cellID return corresponding data member as int.
 get_x(), get_y() return corresponding data member as double.
 get_fips() & get_status(), returns fips/status as string.
 
-set_cellID(int), set_status(std::string), sets the cellID/status to the provided argument.
+set_cellID(int), set_control_status(std::string), sets the cellID/status to the provided argument.
 set_speciesCount(std::string species, int count) sets the population for "species" to "count"
  */
 
@@ -31,6 +31,7 @@ set_speciesCount(std::string species, int count) sets the population for "specie
 
 class County;
 class State;
+class Farm_type;
 
 class Farm
 {
@@ -41,6 +42,7 @@ class Farm
 		std::string fips;
 		County* parent_county;
 		State* parent_state;
+		Farm_type* farm_type;
 		std::unordered_map< std::string, int > speciesCounts; // species and counts
 		std::unordered_map< std::string, int > statuses; // used in Control_actions
 		std::unordered_map< std::string, int > start; // used in Status_manager: start times for disease statuses
@@ -66,18 +68,20 @@ class Farm
  		int get_end(std::string) const; //inlined
 		County* get_parent_county() const; //Inlined
  		State* get_parent_state() const; //Inlined
+ 		Farm_type* get_farm_type() const; //Inlined
  		bool beenExposed() const; //inlined
 
 		void set_cellID(const int cellID);
  		void set_speciesCount(const std::string, int);
  		void set_sus(const double);
  		void set_inf(const double);
- 		void set_status(const std::string, const int);
+ 		void set_control_status(const std::string, const int);
  		void set_start(const std::string, const int); //inlined - set start time for disease status
  		void set_end(const std::string, const int); //inlined - set end time for disease status
 		void set_diseaseStatus(std::string&); //inlined
 		void set_parent_county(County* in_county);
  		void set_parent_state(State* in_state);
+ 		void set_farm_type(Farm_type* ft);
 
 };
 
@@ -152,6 +156,11 @@ inline County* Farm::get_parent_county() const
 inline State* Farm::get_parent_state() const
 {
     return parent_state;
+}
+
+inline Farm_type* Farm::get_farm_type() const
+{
+    return farm_type;
 }
 
 #endif //FARM_H

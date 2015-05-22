@@ -18,12 +18,13 @@
 // included in Grid_manager.h: grid_cell, farm, shared_functions, tuple, utility
 #include "Grid_manager.h"
 #include "County.h"
+#include "Farm_types.h"
 
 
 Grid_manager::Grid_manager(std::string &farm_fname, std::string &fips_fname, bool xyswitch,
     std::vector<std::string>& in_species, std::vector<double>& in_speciesSus,
     std::vector<double>& in_speciesInf,	std::vector<double>& in_speciesSusC,
-    std::vector<double>& in_speciesInfC, std::vector<double>& kernParams) :
+    std::vector<double>& in_speciesInfC, std::vector<double>& kernParams, const Parameters* parameters) :
     xyswitch(xyswitch),
 	speciesOnPrems(in_species),
 	speciesSus(in_speciesSus),
@@ -34,7 +35,8 @@ Grid_manager::Grid_manager(std::string &farm_fname, std::string &fips_fname, boo
 	k1(kernParams.at(0)),
 	k2(kernParams.at(1)),
 	k3(kernParams.at(2)),
-	ship_kernel(490, 0.32, "linear") //<-- TEMPORARY PARAMETERS!!!
+	ship_kernel(490, 0.32, "linear"), //<-- TEMPORARY PARAMETERS!!!
+	parameters(parameters)
 // fills farm_map, farmList, and xylimits
 {
 	k2tok3 = pow(k2,k3);
@@ -215,6 +217,7 @@ void Grid_manager::readFarms(std::string& farm_fname)
 					exit(EXIT_FAILURE);
 				}
 				int colcount = 4; // populations should start at column 4
+				std::string herd = "";
 				for (auto& sp:speciesOnPrems){ // for each species
 					tempsize = stringToNum<int>(line_vector[colcount]); // assign value in column "colcount" to "tempsize"
 					farm_map.at(id)->Farm::set_speciesCount(sp,tempsize); // set number for species at premises
@@ -229,8 +232,16 @@ void Grid_manager::readFarms(std::string& farm_fname)
 					if (tempsize>0){
 						fipsSpeciesMap[fips][sp].emplace_back(farm_map.at(id));
 					}
+                    if(tempsize < 1)
+                        herd += '0';
+                    else
+                        herd += '1';
 					++colcount;
 				}
+
+				//Assign the correct farm type to the farm.
+				Farm_type* this_type = parameters->farm_types->get_type(herd);
+                farm_map.at(id)->set_farm_type(this_type);
 
 				// Add farm to its corresponding county object
                 try
@@ -241,6 +252,7 @@ void Grid_manager::readFarms(std::string& farm_fname)
                 {
                     std::cout << "When adding premises " << id << " to county " << fips << "." <<
                               e.what() << std::endl;
+                    exit(EXIT_FAILURE);
                 }
 
 
@@ -291,6 +303,26 @@ if (verbose>1){std::cout << "Initializing xy limits.";}
 	}
 }
 
+void Grid_manager::initFips()
+{
+    std::vector<std::string> to_delete;
+    for(auto c : FIPSmap)
+    {
+        if(c.second->get_n_farms() == 0)
+            to_delete.emplace_back(c.first);
+    }
+
+    for(auto it = to_delete.begin(); it != to_delete.end(); it++)
+        FIPSmap.erase(*it);
+
+    std::cout << "Deleted " << to_delete.size() <<
+                 " counties that had no farms." << std::endl;
+
+    std::cout << "Calculating shipping probabilities..." << std::endl;
+    for(County* c : FIPSvector)
+        c->init_probabilities(FIPSvector, ship_kernel);
+}
+
 std::vector<Farm*> Grid_manager::getFarms(std::tuple<int,double,double,double> cellSpecs, const unsigned int maxFarms/*=0*/)
 // based on cell specs, finds farms in cell and saves pointers to farmsInCell
 // to do: reformat data structure to a range tree for faster point-in-range searching
@@ -316,26 +348,6 @@ if(verbose==2){std::cout << "Getting farms in cell..." << std::endl;}
     }
     // (pointers to) farms in inCell should still be sorted by x-coordinate
     return(inCell);
-}
-
-void Grid_manager::initFips()
-{
-    std::vector<std::string> to_delete;
-    for(auto c : FIPSmap)
-    {
-        if(c.second->get_n_farms() == 0)
-            to_delete.emplace_back(c.first);
-    }
-
-    for(auto it = to_delete.begin(); it != to_delete.end(); it++)
-        FIPSmap.erase(*it);
-
-    std::cout << "Deleted " << to_delete.size() <<
-                 " counties that had no farms." << std::endl;
-
-    std::cout << "Calculating shipping probabilities..." << std::endl;
-    for(County* c : FIPSvector)
-        c->init_probabilities(FIPSvector, ship_kernel);
 }
 
 void Grid_manager::removeParent(std::stack< std::tuple<int,double,double,double> >& queue)

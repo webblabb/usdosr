@@ -12,6 +12,8 @@
 #include "grid_cell.h"
 #include "shared_functions.h"
 #include "pairwise.h"
+#include "Shipment_kernel.h"
+#include "file_manager.h"
 
 #include <algorithm> // std::sort, std::any_of
 #include <queue> // for checking neighbor cells
@@ -20,7 +22,7 @@
 #include <unordered_map>
 #include <utility> // std::pair
 #include <vector>
-#include "Shipment_kernel.h"
+
 
 class County;
 
@@ -61,6 +63,7 @@ class Grid_manager
 
 		double k1, k2, k3, k2tok3; // local kernel parameters
 		Shipment_kernel ship_kernel;
+		const Parameters* parameters;
 
 		// functions
 		void readFips(std::string& fips_fname); //Reads counties from file.
@@ -106,7 +109,8 @@ class Grid_manager
 			std::vector<double>&, // list of species-specific infectiousness exponents
 			std::vector<double>&,  // list of species-specific susceptibility constants
 			std::vector<double>&, // list of species-specific infectiousness constants
-			std::vector<double>&); // kernel parameters
+			std::vector<double>&, // kernel parameters
+			const Parameters* parameters); //Parameter struct.
 
 		~Grid_manager();
 

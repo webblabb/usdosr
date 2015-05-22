@@ -3,6 +3,7 @@
 #include "Farm.h"
 #include "County.h"
 #include "State.h"
+#include "Farm_types.h"
 
 Farm::Farm(int in_id, double in_x, double in_y, std::string in_fips)
 	:
@@ -32,9 +33,9 @@ void Farm::set_cellID(const int in_cellID)
 	cellID = in_cellID;
 }
 
-void Farm::set_speciesCount(const std::string species, int count)
+void Farm::set_speciesCount(const std::string species, int sp_count)
 {
-	speciesCounts[species] = count;
+	speciesCounts[species] = sp_count;
 }
 
 void Farm::set_sus(const double in_sus)
@@ -47,7 +48,7 @@ void Farm::set_inf(const double in_inf)
 	inf = in_inf;
 }
 
-void Farm::set_status(const std::string s, const int i)
+void Farm::set_control_status(const std::string s, const int i)
 {
 	statuses[s] = i;
 }
@@ -60,4 +61,9 @@ void Farm::set_parent_county(County* in_county)
 void Farm::set_parent_state(State* in_state)
 {
     parent_state = in_state;
+}
+
+void Farm::set_farm_type(Farm_type* in_farm_type)
+{
+    farm_type = in_farm_type;
 }

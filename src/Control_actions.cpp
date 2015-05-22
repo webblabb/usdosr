@@ -57,7 +57,7 @@ std::cout<<"Retreived report params"<<std::endl;
 	  	if (first){ reportParams = cl.at("indexReport").front();  }// use index lag to determine time farm will be reported
 	  	int rTime = t + normDelay(reportParams); // determine time farm will be reported
 std::cout<<"Assigning report time of "<<rTime<<std::endl;
-		f->set_status("report",0); // set farm's control status, 0 = not reported
+		f->set_control_status("report",0); // set farm's control status, 0 = not reported
 		farms.emplace(f); // add to unordered_set
 		nextChange<Farm*> nc{ f, "report", 1 }; // this farm will have "reported" status 1...
 		farmsToChange[rTime].emplace_back(nc); // ...at rTime
@@ -96,7 +96,7 @@ void Control_actions::updates(int t)
         std::cout<<changes.size()<<" farm changes happening today."<<std::endl;
 		for (auto& c:changes){
 			Farm* f = c.unit;
-			f->set_status(c.controlType,c.level);
+			f->set_control_status(c.controlType,c.level);
 			farmStatusCounts.at(c.controlType).at(c.level)++; // add to total count of this status-level
 if(verbose>1){std::cout<<f->get_id()<<" updated to "<<c.controlType<<" level "<<c.level<<std::endl;}
 			// if before end of control sequence for this type, schedule next status update
@@ -149,7 +149,7 @@ void Control_actions::startControlSeq_c(County* co, std::string cType)
 
 void Control_actions::startControlSeq_f(Farm* f, std::string cType)
 {
-	f->set_status(cType,0);
+	f->set_control_status(cType,0);
 	farmStatusCounts.at(cType).at(0)++; // increase count at level 0 (starting sequence)
 	scheduleLevelUp_f(f,cType,1);
 }

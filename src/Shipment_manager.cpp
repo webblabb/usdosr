@@ -80,7 +80,6 @@ void Shipment_manager::countyCountyShipments(std::string oCounty, int method)
 	{
 		case 0:
 			break; // no shipments
-
 		case 1:{
 		//  randomly assign destination counties
 			double random = unif_rand();

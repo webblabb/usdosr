@@ -10,6 +10,7 @@
 #include <stdlib.h>
 
 #include "Control_actions.h"
+#include "Farm_types.h"
 #include "file_manager.h"
 #include "Grid_manager.h"
 #include "Grid_checker.h"
@@ -39,7 +40,7 @@ int main(int argc, char* argv[])
 
 	file_manager fm; // construct file_manager object
 	fm.readConfig(cfile); // reads config file, creates parameters object, and checks for errors
-	const parameters* p = fm.getParams();
+	const Parameters* p = fm.getParams();
 
 	// set values for global,
 	verboseLevel = p->verboseLevel;
@@ -61,7 +62,7 @@ int main(int argc, char* argv[])
 	std::vector<double> susC = p->susConsts;
 	std::vector<double> infC = p->infConsts;
 	std::vector<double> kernelP = p->kernelParams;
-	Grid_manager G(premfile, fipsfile, xyswitch, species, susExp, infExp, susC, infC, kernelP);
+	Grid_manager G(premfile, fipsfile, xyswitch, species, susExp, infExp, susC, infC, kernelP, p);
 
 	// get pointers to full list of farms & cells
 	auto allPrems = G.get_allFarms();
