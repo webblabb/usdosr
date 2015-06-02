@@ -9,7 +9,7 @@
 #include <iostream> // for troubleshooting output
 #include <sstream>
 
-#include "Farm.h" // for Farm* for farm sus/inf
+#include "Farm.h" // for removing farm subset for grid manager
 
 struct County // used in Status and Control
 {
@@ -48,7 +48,7 @@ struct shipment // used in Shipment, Status
 	void addItemTab(std::string&, int);
 	void addItemTab(std::string&, double);
 	void addItemTab(std::string&, std::string);
-	void printLine(std::string&, std::string&, bool overwrite=0);
+	void printLine(std::string&, std::string&);
 
 	
 template<typename T> 

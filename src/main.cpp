@@ -3,13 +3,10 @@
 #include <ctime>
 #include <stdlib.h>
 
-#include "Control_actions.h"
 #include "file_manager.h"
 #include "Grid_manager.h"
 #include "Grid_checker.h"
-#include "shared_functions.h"
 #include "Shipment_manager.h"
-#include "Status_manager.h"
 
 int verboseLevel; // global variable
 
@@ -31,7 +28,7 @@ int main(int argc, char* argv[])
 	}
 
 	file_manager fm; // construct file_manager object
-	fm.readConfig(cfile); // reads config file, creates parameters object, and checks for errors
+	fm.readConfig(cfile); // reads config file, creates parameters struct, and checks for errors
 	const parameters* p = fm.getParams();
 	
 	// set values for global, 
@@ -41,19 +38,10 @@ int main(int argc, char* argv[])
 	int reps = p->replicates;
 	// or are frequently accessed
 	int timesteps = p->timesteps;
-
 	// Read in farms, determine xylimits
 	std::clock_t loading_start = std::clock();
 
-	std::string premfile = p->premFile;
-	bool xyswitch = p->reverseXY;
-	std::vector<std::string> species = p->species; // used in Grid_manager and Shipment_manager construction
-	std::vector<double> susExp = p->susExponents;
-	std::vector<double> infExp = p->infExponents;
-	std::vector<double> susC = p->susConsts;
-	std::vector<double> infC = p->infConsts;
-	std::vector<double> kernelP = p->kernelParams;
-	Grid_manager G(premfile,xyswitch,species,susExp,infExp,susC,infC,kernelP);
+	Grid_manager G(p);
 		
 	// get pointers to full list of farms & cells
 	auto allPrems = G.get_allFarms(); 
@@ -95,7 +83,7 @@ int main(int argc, char* argv[])
 		int fID;
 		std::ifstream f(p->seedPremFile);
 		if(!f){std::cout << "Seed input file not found. Exiting..." << std::endl; exit(EXIT_FAILURE);}
-		if(verbose>0){std::cout << "Loading seed prems.";}
+std::cout << "Loading seed prems from "<<p->seedPremFile<<std::endl;
 			while(! f.eof()){
 				std::string line;
 				getline(f, line); // get line from file "f", save as "line"			
@@ -133,9 +121,9 @@ for (int r=1; r<=reps; r++){
 	int seedType = p->seedMethod;
 	auto lagP = p->lagParams;
 	
-	Status_manager Status(seedFarms, seedType, lagP, allPrems, timesteps, &Control); // seeds initial exposures
-	Shipment_manager Ship(fipsmap, fipsSpeciesMap, p->shipPremAssignment, species);
-	Grid_checker gridCheck(allCells, Status.get_sources(),kernelP);
+	Status_manager Status(seedFarms, seedType, lagP, allPrems, timesteps, &Control); // seeds initial exposures, modify to pass grid manager, p
+	Shipment_manager Ship(fipsmap, fipsSpeciesMap, &Status, p->shipPremAssignment, p->species); // modify to pass grid manager, p
+	Grid_checker gridCheck(allCells, Status.get_sources(),p->kernel);
 
 	int t=0;	
 	int numSuscept, numExposed;	
@@ -167,12 +155,14 @@ if(verbose>1){std::cout<<"Control statuses updated."<<std::endl;}
    		 
 if(verbose>0){std::cout << "Starting grid check (local spread): "<<std::endl;}
   		 std::clock_t gridcheck_start = std::clock();
+  		 
   		 std::vector<Farm*> notSus;	 
-  		 Status.take_notSus(notSus); // simultaneously takes values and clears vector in Status
+  		 Status.newNotSus(notSus); // gets newly not-susceptible farms
 		 gridCheck.stepThroughCells(focalFarms,notSus);
+		 
 		 std::vector<Farm*> gridInf;
-		 gridInf.reserve(840000);
- 		 gridCheck.take_exposed(gridInf); // simultaneously takes values and clears in gridCheck, resetting with reserve of 840k
+		 gridInf.reserve(allPrems->size());
+ 		 gridCheck.take_exposed(gridInf); // simultaneously takes values and clears in gridCheck, resetting with reserve of number of all prems
 		 
   		 std::clock_t gridcheck_end = std::clock();
   		 double gridCheckTimeMS = 1000.0 * (gridcheck_end - gridcheck_start) / CLOCKS_PER_SEC;
@@ -193,11 +183,6 @@ if(verbose>0){std::cout << "Total grid infections: " << gridInf.size() << std::e
 // 			printLine(outShipFile, printString);
 // 		}
  		  		 
-//  		 auto infShips = Ship.get_infFarmShipments(); // need this for later
-//  		 std::cout << infShips.size()<<" infectious shipments, of which "<<std::endl;
-//  		 int banCount = 0;
-//  		 for (auto& shipment:infShips){if(std::get<5>(shipment)==1){banCount++;}}
-//  		 std::cout << banCount<<" were ban-compliant."<<std::endl;
  		std::clock_t ship_end = std::clock();
  		double shipTimeMS = 1000.0 * (ship_end - ship_start) / CLOCKS_PER_SEC;
  		if(verbose>0){std::cout << "CPU time for shipping: " << shipTimeMS << "ms." << std::endl;}	 
@@ -244,7 +229,7 @@ if(verbose>0){std::cout << "Total grid infections: " << gridInf.size() << std::e
 		sumOutFile += "_summary.txt";
 		if (r==1){
 			std::string header = "Rep\tNum_Inf\tDuration\tSeed_Farms\tSeed_FIPS\tRunTimeSec\n";
-			printLine(sumOutFile,header,1); // 1 means file will be overwritten/created
+			printLine(sumOutFile,header);
 		}
 		std::string repOut = Status.formatRepSummary(r,t,repTimeMS);
 		printLine(sumOutFile,repOut);

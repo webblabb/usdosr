@@ -1,9 +1,3 @@
-/* file_manager.cpp
-Dec 23 2014
-
-Reads configuration file and checks for errors. Holds vector of all input parameters.
-*/
-
 #include "file_manager.h"
 
 file_manager::file_manager()
@@ -13,10 +7,12 @@ file_manager::file_manager()
 
 file_manager::~file_manager()
 {
+	delete params.kernel;
 }
 
+/// Reads configuration file, stores parameter values in a character vector.
+/// Checks validity of values and groups closely related parameters.
 void file_manager::readConfig(std::string& cfile)
-// Reads in config file and checks for requirements/inconsistencies
 {
 	pv.emplace_back("0"); // fills in [0] so that line numbers match up with elements
 	// Read in file and store in parameter vector pv (private class variable)
@@ -49,11 +45,11 @@ void file_manager::readConfig(std::string& cfile)
 		// Outputs on/off
 		if (pv[2]=="*" || pv[3]=="*"|| pv[4]=="*"|| pv[5]=="*"|| pv[6]=="*"){
 			std::cout << "Warning: (config 1-5): Output should be specified - setting unspecified (*) to off." << std::endl;
-			if (pv[1]=="*"){pv[2]="0";}
-			if (pv[2]=="*"){pv[3]="0";}
-			if (pv[3]=="*"){pv[4]="0";}
-			if (pv[4]=="*"){pv[5]="0";}
-			if (pv[5]=="*"){pv[6]="0";}
+			if (pv[2]=="*"){pv[2]="0";}
+			if (pv[3]=="*"){pv[3]="0";}
+			if (pv[4]=="*"){pv[4]="0";}
+			if (pv[5]=="*"){pv[5]="0";}
+			if (pv[6]=="*"){pv[6]="0";}
 		}
 		params.printSummary = stringToNum<int>(pv[2]);
 		params.printDetail = stringToNum<int>(pv[3]);
@@ -82,6 +78,7 @@ void file_manager::readConfig(std::string& cfile)
 		if (params.verboseLevel!=0 && params.verboseLevel!=1 && params.verboseLevel!=2){
 			std::cout << "Warning (config 15): Verbose option must be 0, 1 or 2. Setting option to off." << std::endl; 
 			params.verboseLevel = 0;}
+		verbose = params.verboseLevel;	
 		// Pairwise on
 		params.pairwiseOn = stringToNum<int>(pv[16]) ;
 		if (params.pairwiseOn!=0 && params.pairwiseOn!=1){
@@ -91,42 +88,54 @@ void file_manager::readConfig(std::string& cfile)
 		if (params.reverseXY!=0 && params.reverseXY!=1){
 			std::cout << "ERROR (config 17): Reversing x/y must be 0 (y first) or 1 (x first)." << std::endl; exitflag=1;}
 		// pv[18] ... pv[20]
-		// Infectious seed files
-		if (pv[21]=="*" && pv[22]=="*"){
-			std::cout << "ERROR (config 21-22): No infectious premises/county seed file specified." << std::endl; exitflag=1;}
+		// Infectious seed file
+		if (pv[21]=="*"){
+			std::cout << "ERROR (config 21): No infectious premises seed file specified." << std::endl; exitflag=1;}
 		params.seedPremFile = pv[21];
-		params.seedCountyFile = pv[22];
+		// Data-based kernel file (checked against kernel option)
+		params.dataKernelFile = pv[22];
 		// Infection seed method
 		params.seedMethod = stringToNum<int>(pv[23]);
 		// Susceptibility exponents by species
-		params.susExponents = stringToNumVec(pv[24]);
-		checkExit = checkPositive(params.susExponents, 24); if (checkExit==1){exitflag=1;}
-		if (params.susExponents.size() != params.species.size()){
+		std::vector<double> tempVec1 = stringToNumVec(pv[24]);
+		checkExit = checkPositive(tempVec1, 24); if (checkExit==1){exitflag=1;}
+		if (tempVec1.size() != params.species.size()){
 			std::cout<<"ERROR (config 12 & 24): Different numbers of species and susceptibility exponents provided: "<<params.species.size()<<" species and "
-			<<params.susExponents.size()<<" exponents." <<std::endl; exitflag=1;}
+			<<tempVec1.size()<<" exponents." <<std::endl; exitflag=1;}
 		// Infectiousness exponents by species
-		params.infExponents = stringToNumVec(pv[25]);
-		checkExit = checkPositive(params.infExponents, 25); if (checkExit==1){exitflag=1;}
-		if (params.infExponents.size() != params.species.size()){
-			std::cout<<"ERROR (config 25): Different numbers of species and infectiousness exponents provided." <<std::endl; exitflag=1;}
+		std::vector<double> tempVec2 = stringToNumVec(pv[25]);
+		checkExit = checkPositive(tempVec2, 25); if (checkExit==1){exitflag=1;}
+		if (tempVec2.size() != params.species.size()){
+			std::cout<<"ERROR (config 25): Different numbers of species and infectiousness exponents provided." <<std::endl; exitflag=1;}		
 		// Susceptibility constants by species
-		params.susConsts = stringToNumVec(pv[26]);
-		checkExit = checkPositive(params.susConsts, 26); if (checkExit==1){exitflag=1;}
-		if (params.susConsts.size() != params.species.size()){
+		std::vector<double> tempVec3 = stringToNumVec(pv[26]);
+		checkExit = checkPositive(tempVec3, 26); if (checkExit==1){exitflag=1;}
+		if (tempVec3.size() != params.species.size()){
 			std::cout<<"ERROR (config 12 & 26): Different numbers of species and susceptibility constants provided: "<<params.species.size()<<" species and "
-			<<params.susConsts.size()<<" constants." <<std::endl; exitflag=1;}
+			<<tempVec3.size()<<" constants." <<std::endl; exitflag=1;}		
 		// Infectiousness constants by species
-		params.infConsts = stringToNumVec(pv[27]);
-		checkExit = checkPositive(params.infConsts, 27); if (checkExit==1){exitflag=1;}
-		if (params.infConsts.size() != params.species.size()){
+		std::vector<double> tempVec4 = stringToNumVec(pv[27]);
+		checkExit = checkPositive(tempVec4, 27); if (checkExit==1){exitflag=1;}
+		if (tempVec4.size() != params.species.size()){
 			std::cout<<"ERROR (config 12 & 27): Different numbers of species and infectiousness constants provided: "<<params.species.size()<<" species and "
-			<<params.infConsts.size()<<" constants." <<std::endl; exitflag=1;}
+			<<tempVec4.size()<<" constants." <<std::endl; exitflag=1;}
+		// Map exponents and constant values to species
+		int i = 0;
+		for (auto &sp:params.species){
+			params.susExponents[sp] = tempVec1.at(i);
+			params.infExponents[sp] = tempVec2.at(i);
+			params.susConsts[sp] = tempVec3.at(i);
+			params.infConsts[sp] = tempVec4.at(i);
+			++i;
+		}
 		// Kernel type & parameters
-		if (pv[28]=="*"){std::cout << "ERROR (config 28): No diffusion kernel type specified." << std::endl; exitflag=1;}
+		if (pv[28]!="0" && pv[28]!="1"){std::cout << "ERROR (config 28): Kernel type must be 0 (power law) or 1 (data-based)." << std::endl; exitflag=1;}
 		params.kernelType = stringToNum<int>(pv[28]);
+		if (params.dataKernelFile!="*" && params.kernelType!=1){std::cout<<"Warning: Data kernel file provided but kernel type is not set to 1 - file will be ignored." << std::endl;}
+		if (params.kernelType == 1 && params.dataKernelFile=="*"){std::cout<<"ERROR (config 28): Kernel type 1 (data-based) requires file in config 22."<< std::endl; exitflag=1;}
 		params.kernelParams = stringToNumVec(pv[29]);
-		if (params.kernelParams.size() < 3){
-			std::cout<<"ERROR (config 29): Need three kernel parameters." <<std::endl; exitflag=1;}
+		if (params.kernelType == 0 && params.kernelParams.size() < 3){
+			std::cout<<"ERROR (config 29): For kernel type 0, three kernel parameters are required." <<std::endl; exitflag=1;}
 		// Latency parameters
 		checkExit = checkMeanVar(pv[30],30,"latency"); if (checkExit==1){exitflag=1;} // if exit triggered by this check, set exitflag=1
 		std::vector<double> tempVec = stringToNumVec(pv[30]);
@@ -152,7 +161,7 @@ void file_manager::readConfig(std::string& cfile)
 		if (params.shipMethods.size() != params.shipMethodTimeStarts.size()){
 			std::cout << "ERROR (config 41-42): Number of methods and start times provided must be the same ("<<params.shipMethods.size()<<" method(s) and "<<params.shipMethodTimeStarts.size()<<" start time(s) provided)."<<std::endl; exitflag=1;}
 		if (params.shipMethodTimeStarts.at(0) != 1){std::cout << "ERROR (config 42): First county-level shipment method start time must be 1."<<std::endl; exitflag=1;}
-		  // check that each value is between 1 and number of timesteps
+		 // check that each value is between 1 and number of timesteps
 		bool rangeflag = 0;
 		for (auto& t:params.shipMethodTimeStarts){if(t<1 || t>params.timesteps){rangeflag=1;}}
 		if (rangeflag){std::cout << "Warning (config 42): Simulation timespan (config 13) is shorter than largest timepoint for county-level shipment methods - some methods may not be used." << std::endl;}
@@ -189,18 +198,34 @@ void file_manager::readConfig(std::string& cfile)
 			exit(EXIT_FAILURE);
 		}	
 		
-		// Put together infection lag parameters
+		// Group infection lag parameters
 		params.lagParams["latency"] = params.latencyParams; 		//exposed-infectious
 		params.lagParams["infectious"] = params.infectiousParams; 	//infectious-recovered
 		
-		// Put together control-related lag parameters
+		// Group control-related lag parameters
 		params.controlLags["indexReport"].emplace_back(params.indexReportLag); 	//first case exposed-reported
 		params.controlLags["report"].emplace_back(params.reportLag); 				//exposed-reported
-		//... Shipment ban parameters
+
+		// Group shipment ban parameters
 		params.controlLags["shipBan"].emplace_back(std::make_tuple(0,0)); // Level/index 0
 		params.controlLags["shipBan"].emplace_back(params.reportToOrderBan); // Level/index 1: time from report to order
-		params.controlLags["shipBan"].emplace_back(params.orderToCompliance); // Level/index 2: time from order to implementation	
+		params.controlLags["shipBan"].emplace_back(params.orderToCompliance); // Level/index 2: time from order to implementation			
+
+		// Construct kernel object
+		switch (params.kernelType)
+		{
+			case 0:{
+				params.kernel = new Local_spread(0, params.kernelParams);
+				break;
+			}
+			case 1:{
+				params.kernel = new Local_spread(1, params.dataKernelFile);
+				break;
+			}
+		}	
 		
+if (verbose>0){std::cout<<"Parameter loading complete."<<std::endl;}	
+	
 	} else { // if file not found
 		std::cout << "ERROR: Configuration file not found: " << cfile << std::endl <<
 		"Exiting..." << std::endl;

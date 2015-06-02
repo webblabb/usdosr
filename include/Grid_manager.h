@@ -1,17 +1,13 @@
 // Grid_manager.h
-
-//
-//  Creates a map of grid_cell objects, determined by local farm density
-//	Evaluates infection spread via grid cells
 //
 // 7 Apr 2014
 
 #ifndef Grid_manager_h
 #define Grid_manager_h
 
+#include "file_manager.h" // for parameter struct
 #include "grid_cell.h"
-#include "shared_functions.h"
-#include "pairwise.h"
+//#include "pairwise.h"
 
 #include <algorithm> // std::sort, std::any_of
 #include <queue> // for checking neighbor cells
@@ -19,20 +15,21 @@
 #include <tuple>
 #include <unordered_map>
 #include <utility> // std::pair
-#include <vector>
 
 extern int verboseLevel;
 
+///  Creates grid cells determined by local farm density, stores relevant values with Farms
 class Grid_manager
 {
 	private:
-		int verbose;
+		int verbose; ///> Global value of verbose level (unless overridden for this class)
+		
 		// variables for grid creation
-		unsigned int maxFarms;
+		unsigned int maxFarms; ///> Threshold number of premises per cell (cell size takes precedence)
 		std::unordered_map<int, grid_cell*> 
-			allCells; // map of cells in grid
+			allCells; ///> Unordered_map of all cells in grid
 		std::unordered_map<int, Farm*> 
-			farm_map; // Contains all farm objects. Id as key.
+			farm_map; ///> Unordered_map of all premises objects
 		std::unordered_map<std::string, std::vector<Farm*>>
 			FIPSmap; // key is fips code, value is vector of farms within
 		std::unordered_map<std::string, 
@@ -41,23 +38,27 @@ class Grid_manager
  		std::vector<Farm*> 
  			farmList; // vector of pointers to all farms (deleted in chunks as grid is created)
 		std::tuple<double,double,double,double> 
-			xylimits; // [0]x min, [1]x max, [2]y min, [3]y max
-		// variables for infection evaluation			
-		std::unordered_map<int, std::unordered_map<int, double>> 
-			storedDists; // freq-used distances between cell pairs, used in shortestCellDist - use IDs to sort
-		std::vector<std::string> speciesOnPrems; // list of species on all farms provided in prem file
-		std::vector<double> speciesSus, speciesInf, speciesSusC, speciesInfC; // species specific susceptibility and infectiousness exponents and constants, in same order as speciesOnAllFarms
-		std::unordered_map<std::string,std::vector<int>> herdSizes;
-		std::unordered_map<std::string,double> xiP, xiQ;
-		unsigned int committedFarms;
-		
-		double k1, k2, k3, k2tok3; // kernel parameters
+			xylimits; ///< Ranges of premises coordinates: [0]x min, [1]x max, [2]y min, [3]y max
 
+		// variables for infection evaluation			
+		std::vector<std::string> speciesOnPrems; ///< List of species on all farms provided in premises file
+		std::unordered_map<std::string,double> susExponents; ///< Species-specific susceptibility exponents, in same order as speciesOnAllFarms
+		std::unordered_map<std::string,double> infExponents; ///< Species-specific infectiousness exponents, in same order as speciesOnAllFarms
+		std::unordered_map<std::string,double> susValues; ///< Species-specific susceptibility values, in same order as speciesOnAllFarms
+		std::unordered_map<std::string,double> infValues; ///< Species-specific infectiousness values, in same order as speciesOnAllFarms
+		std::unordered_map<std::string,double> normInf; ///< Normalized species-specific infectiousness values, in same order as speciesOnAllFarms
+		std::unordered_map<std::string,double> normSus; ///< Normalized species-specific susceptibility values, in same order as speciesOnAllFarms
+		Local_spread* kernel;
+
+		unsigned int committedFarms; ///< Used to double-check that all loaded premises were committed to a cell
+		int printCellFile;
+		std::string batch; ///< Cells printed to file with name: [batch]_cells.txt
+		
 		// functions		
 		void set_maxFarms(unsigned int in_maxFarms); //inlined
 		std::string to_string(grid_cell&) const;
 		std::vector<Farm*> getFarms(
-			std::tuple<int,double,double,double> cellSpecs,
+			std::tuple<int,double,double,double>& cellSpecs,
 			const unsigned int maxFarms=0); // makes list of farms in a cell (quits early if over max)
 		void removeParent(
 			std::stack< std::tuple<int,double,double,double> >& queue);// removes 1st vector in queue
@@ -71,29 +72,16 @@ class Grid_manager
 			std::tuple<int,double,double,double>& cellSpecs, 
 			std::stack< std::tuple<int,double,double,double> >& queue); // replaces parent cell with subdivided offspring quadrants
  		void assignCellIDtoFarms(int cellID, std::vector<Farm*>& farmsInCell);
- 		double kernelsq(double);
 		double shortestCellDist2(
 			grid_cell* cell1, 
-			grid_cell* cell2); // calculates shortest distance^2 between two cells
-		void makeCellRefs(); // make reference matrices for distance and kernel		
+			grid_cell* cell2); ///> Calculates (shortest distance between two cells)^2
+		void makeCellRefs(); ///> Calculates and stores kernel values and other pre-processing tasks
 		// functions for infection evaluation
-		std::vector<grid_cell*> 
-			IDsToCells(std::vector<int>); // convert vector of IDs to cell pointers
-		grid_cell* 				
-			IDsToCells(int);  // overloaded to accept single ID also
-		void set_FarmSus(Farm*); // used in precalculation and stored with Farm
-		void set_FarmInf(Farm*); // used in precalculation and stored with Farm
+		void set_FarmSus(Farm*); ///> Calculates premises susceptibility and stores in Farm
+		void set_FarmInf(Farm*); ///> Calculates premises infectiousness and stores in Farm
 		
 	public:
-		Grid_manager( // constructor loads premises
-			std::string &fname, // filename of premises
-			bool xyswitch,  // switch x/y columns
-			std::vector<std::string>&, // list of species populations provided
-			std::vector<double>&,  // list of species-specific susceptibility exponents
-			std::vector<double>&, // list of species-specific infectiousness exponents
-			std::vector<double>&,  // list of species-specific susceptibility constants
-			std::vector<double>&, // list of species-specific infectiousness constants
-			std::vector<double>&); // kernel parameters
+		Grid_manager(const parameters*);
 			
 		~Grid_manager();
 		
@@ -110,9 +98,6 @@ class Grid_manager
 		// 3rd way to initiate a grid: specify side length (same units as x/y) for uniform cells
 		void initiateGrid(
 			double cellSide);	
-		
-		void printCells(
-			std::string& pfile) const;
 
 		const std::unordered_map<int, grid_cell*>*
 			get_allCells(); //inlined	
@@ -126,9 +111,11 @@ class Grid_manager
 		const std::unordered_map<std::string, std::unordered_map<std::string, std::vector<Farm*> >>* 
 			get_fipsSpeciesMap(); //inlined
 			
+		void printCells();
+
+			
 };
 
-/////////// for grid creation ///////////
 inline bool sortByX(const Farm* farm1, const Farm* farm2)
 // "compare" function to sort farms by x-coordinate
 // used when assigning farms to uniform cell grid

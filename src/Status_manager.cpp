@@ -1,77 +1,35 @@
-/*
-Status_manager.cpp
-Manages, stores, and retrieves statuses for premises and counties (FIPS). Both are 
-unordered maps with the first key being the status, which is one of:
-(for premises): sus, exp, (exp2), inf, imm
-(for counties): reported, banOrdered, banActive
-
-There are two differences in the premises and county maps. Premises maps have the second key
-being the time, as that is frequently referenced in checking statuses. County maps have
-FIPS as the second key, as the identity of county statuses is less time-sensitive.
-In both maps, the value is time, but in the premises map, this is the END time for that 
-particular status. In the county map, it is the START time for that particular status.
-
-This is set up this way because premises (disease) statuses can only be one of the options
-at a time: susceptible, exposed, infectious, or immune. Conversely, the FIPS statuses are
-nested: those that have an active shipping ban had a ban ordered and those were reported 
-at some point. Thus current statuses are determined by whether the current time is BEFORE
-the premises map time, and AFTER the county map time.
-
-The link between these two maps is the exp2 status at the premises level. This is an 
-exception to the rule that a premises can only have one status at a time, but this is not
-an actual disease status. Rather, this is initiated at the same time as the exp status, 
-but with an end time of when it will be reported. At that time, the appropriate FIPS is 
-initiated as reported.
-
-Status of all premises is initially susceptible, all statuses stored
-in the unordered_map "statusTimeFarms": first key is status (integer), second key
-is end time (the last day for which that status is valid), stored value is vector of farm*.
-Statuses are also stored with the farm object (only for current timepoint) for looking
-up the status of an individual premises.
-*/
-
 #include "Status_manager.h"
-#include "shared_functions.h"
 
 Status_manager::Status_manager(std::vector<Farm*>& seedPool, int numRandomSeed, 
 	std::unordered_map<std::string, std::tuple<double,double>>& in_params, 
-	const std::unordered_map<int, Farm*>* allPrems, //needed for counties
+	const std::unordered_map<int, Farm*>* allPrems, // needed for interfacing with main
 	int endTime,
 	Control_actions* control_in)
 	:
 	params(in_params),
 	control(control_in),
 	allFarms(allPrems),
+	recentNotSus(0),
 	pastEndTime(endTime+100),
 	nPrems(allPrems->size())
-// initialize with arguments:
-// fname: file where seed (initially infectious) farms are listed by ID
-// whichSeed: number of random farms to draw from file (0 uses all)
-// params: vector of tuples containing mean and variance of delays:
-// ...between exposure and infectiousness onset ["latency"]
-// ...between infectiousness onset and recovery ["infectious"]
-// allPrems: reference map of all other premises
-// endTime: last timestep of the simulation (to set temporarily static statuses)
 {
 	verbose = verboseLevel;
-	
-// keep internal list of unique counties that are susceptible, for shipping
-// 	for (auto& p:*allPrems){
-// 		susCounties.emplace(p.second->Farm::get_fips());
-// 	}
-	
+		
 	std::vector<Farm*> focalFarms;
 	if (numRandomSeed!=0){ // select this number from seed pool
 		random_unique(seedPool, abs(numRandomSeed), focalFarms);
-		if (verbose>0){std::cout<<focalFarms.size()<<" initial premises infection(s)."<<std::endl;}
+if (verbose>0){std::cout<<focalFarms.size()<<" initial premises infection(s): ";
+for (auto& sf:focalFarms){
+	std::cout<<sf->Farm::get_id()<<", ";
+}
+	std::cout<<std::endl;
+}
 	} else { // use all of seedPool
 		focalFarms.swap(seedPool);
 	}
 	
-if (verbose>2){std::cout<<"Latency parameters: "<<std::get<0>(params.at("latency"))<<", "<<std::get<1>(params.at("latency"))<<std::endl;}
-	for (auto& f:focalFarms){ // set seed farms as exposed, start control sequence
-		setStatus(f,1,"exp",params.at("latency"),1); // last argument is "first is true - use index lag"	
-if (verbose>2){std::cout<<"Set initial exp status from Stat Man contructor"<<std::endl;}
+	for (auto& f:focalFarms){ // set seed farms as exposed, also starts control sequence
+		setStatus(f,1,"exp",params.at("latency"),1); // last argument says 'first' is true - use index lags
 	}
 	seededFarms = focalFarms; // saved for output	
 		
@@ -99,40 +57,48 @@ std::cout << "Status manager initiated."<<std::endl;
 
 Status_manager::~Status_manager()
 {
-	for (auto& f:allNotSus){delete f.second;}
+	for (auto& f:changedStatus){delete f.second;}
 }
 
-void Status_manager::setStatus(Farm* f_in, int startTime, std::string status, std::tuple<double,double> lag, bool first)
-// adds to notSus lists and control if farm is just starting disease sequence
-// adds to new status lists and assigns end times
-// for permanent statuses, set lag params mean=pastEndTime, var=0
+void Status_manager::addPS(Farm* f)
 {
-	Farm* f = f_in; //pointer copy
-	
-	if (status.compare("exp")==0){ // if farm is becoming exposed (first appearance in Status_manager)
-		int fid = f->Farm::get_id();
-if (verbose>2){std::cout<<"Exposing farm "<<fid<<std::endl;}
-		allNotSus[fid] = new Farm(*f_in);
-		notSus.emplace_back(allNotSus.at(fid)); // gets cleared at each timepoint
-if (verbose>2){std::cout<<"Added to allNotSus and notSus"<<std::endl;}
-		// start control sequence
-		control->addFarm(allNotSus.at(fid),startTime,first);
-if (verbose>1){std::cout<<notSus.size()<<" not sus farms, "<<allNotSus.size()<<" allNotSus farms"<<std::endl;
+	int fid = f->Farm::get_id();
+	changedStatus[fid] = new Prem_status(f);
 }
+
+/// Changes disease status of a farm, and determines time when next disease status begins.
+/// Adds newly exposed farms to the "not susceptible" list to pass to Grid_checker,
+/// and begins control sequence (starting with "reported"). For all other disease statuses,
+/// adds farm to appropriate status list with start and end times. If this is the first
+/// farm listed for a particular status, set the placeholders for that status at the
+/// beginning of the status list.
+/// \param[in]	f	Farm for which status should be changed
+///	\param[in]	startTime	Time at which this status begins (usually immediate)
+/// \param[in]	status	Disease status to which this farm will be set
+///	\param[in]	lag	Tuple of mean, variance of time lag in days until next disease status begins. For permanent statuses (i.e. immune), use mean=pastEndTime, var=0
+/// \param[in]	index	Boolean: is this the first case that will be reported? If so, will use the delayed index case parameters
+void Status_manager::setStatus(Farm* f, int startTime, std::string status, std::tuple<double,double> lag, bool index)
+{
+	int fid = f->Farm::get_id();
+	if (changedStatus.count(fid)==0){addPS(f);} // if a prem_status object doesn't exist for this farm, make one
+	
+	if (status.compare("exp")==0){ // if farm is becoming exposed
+		int fid = f->Farm::get_id();
+		notSus.emplace_back(allFarms->at(fid)); // add to list of non-susceptibles
+		// start control sequence
+		control->addFarm(changedStatus.at(fid),startTime,index); // first indicates index report
 	}	 
 
-	// otherwise, farm is already in Status and f_in is the Status_manager copy
 	// set start and end times for this status
-	f->set_start(status,startTime);
+	changedStatus.at(fid)->set_start(status,startTime);
 	int endTime = startTime+normDelay(lag);
-	f->set_end(status,endTime);
-	f->set_diseaseStatus(status);
+	changedStatus.at(fid)->set_end(status,endTime);
+	changedStatus.at(fid)->set_diseaseStatus(status);
 	// add to appropriate disease-status list
 	bool firstOfStatus = 0;	
 		if (ds.count(status)==0){firstOfStatus=1;}
-	ds[status].farms.emplace_back(f);
-	// add to event time list if not already there
-	eventTimes.emplace(endTime);
+		
+	ds[status].farms.emplace_back(changedStatus.at(fid));
 	if (firstOfStatus){
 		ds.at(status).lo = 0;
 		ds.at(status).hi = 0;
@@ -167,8 +133,8 @@ if (verbose>2){std::cout<<"Next farm starts today."<<std::endl;}
 if (verbose>2){std::cout<<s.one<<" hi at "<<ds.at(s.one).hi;}		
 
 		// check farms from lo to hi for expired statuses, adjusting lo if needed
-		std::vector<Farm*>::iterator lo_it = ds.at(s.one).farms.begin();
-		std::vector<Farm*>::iterator hi_it = ds.at(s.one).farms.begin();
+		std::vector<Prem_status*>::iterator lo_it = ds.at(s.one).farms.begin();
+		std::vector<Prem_status*>::iterator hi_it = ds.at(s.one).farms.begin();
 		std::advance(lo_it, ds.at(s.one).lo); // move iterator to lo
 		std::advance(hi_it, ds.at(s.one).hi); // move iterator to hi
 			
@@ -222,18 +188,18 @@ void Status_manager::shipExposure(std::vector<shipment*>& ships, int time)
 	for (auto& s:ships){
 		s->t = time; // set time of shipment
 		// if source is infectious and destination is susceptible
-		if (allNotSus.count(s->origID)==1){ // if origin farm has at least been exposed
-			if (allNotSus.at(s->origID)->get_diseaseStatus().compare("inf")==0){ // and if origin farm is infectious
-				if (allNotSus.count(s->destID)==0){ // and if dest farm is susceptible
-					s->transmission = 1; // default is 0
+		if (changedStatus.count(s->origID)==1){ // if origin farm has at least had any status change
+			if (changedStatus.at(s->origID)->get_diseaseStatus().compare("inf")==0){ // and if origin farm is infectious
+				if (!isWithin(allFarms->at(s->destID),notSus)){ // and if dest farm is susceptible
+					s->transmission = 1; // overwrite default of 0
 std::cout<<"Exposure via shipment"<<std::endl;
 				}
 			}
 		}	
 		// check with control for shipping ban level
 		s->ban = control->checkShipBan(s);
-		if (s->ban < 3 // if anything other than compliant with a ban (no ban or non-compliant)
-			&& s->transmission == 1){// and transmission direction is correct
+		if (s->ban < 3 // if anything other than compliant with a ban: no ban (0), not yet in effect (1) or non-compliant (2)
+			&& s->transmission == 1){// and transmission is possible
 			toExpose.emplace_back(allFarms->at(s->destID));
 			sources[allFarms->at(s->destID)].emplace_back(std::make_tuple(allFarms->at(s->origID),1)); // 1 is shipping as method of exposure
 		}
@@ -243,38 +209,62 @@ std::cout<<"Exposure via shipment"<<std::endl;
 
 void Status_manager::expose(std::vector<Farm*>& farms, int t)
 {
-std::cout<<"Checking "<<farms.size()<<" farms for exposure"<<std::endl;
 	for (auto& f:farms){
-		// check if farm has already been exposed
-		if (!f->beenExposed()){
+		// check if farm is susceptible
+		if (get_status(f).compare("sus")==0){
 			setStatus(f,t,"exp",params["latency"]); 
 		}
 	}
 }
 
-void Status_manager::premsWithStatus(std::string s, std::vector<Farm*>&output1)
-{ // get all farms with status s between iterators (as of last call to updates)
-
-	std::vector<Farm*> output; // if no s, returns empty vector
-	
-	if (ds.count(s)==1){
-		std::vector<Farm*>::iterator lo_it = ds.at(s).farms.begin() + ds.at(s).lo;
-		std::vector<Farm*>::iterator hi_it = ds.at(s).farms.begin() + ds.at(s).hi +1;
-		std::vector<Farm*> output2(lo_it, hi_it); // return farms in [lo, hi]
-		output2.swap(output); // workaround to use copy initializer with iterators
+std::string Status_manager::get_status(Farm* f) const
+{
+	std::string output;
+	int fid = f->Farm::get_id();
+	if (changedStatus.count(fid)==0){output = "sus";
+	} else {
+		output = changedStatus.at(fid)->get_diseaseStatus();
 	}
-	
- output.swap(output1);
+	return output;
+}
+
+void Status_manager::premsWithStatus(std::string s, std::vector<Farm*>& output2)
+{ // get all farms with status s between iterators (as of last call to updates)	
+	std::vector<Farm*> output1;
+	if (ds.count(s)==1){
+		std::vector<Prem_status*>::iterator lo_it = ds.at(s).farms.begin() + ds.at(s).lo;
+		std::vector<Prem_status*>::iterator hi_it = ds.at(s).farms.begin() + ds.at(s).hi +1;
+		std::vector<Prem_status*> outputPS(lo_it, hi_it); // return farms in [lo, hi]
+		
+		for (auto f:outputPS){
+			output1.emplace_back(allFarms->at(f->get_id()));
+		}
+	}	
+	output1.swap(output2);
 }
 
 int Status_manager::numPremsWithStatus(std::string s)
 { // get # farms with status s (as of last call to updates)
 	int total = 0;
-	if (s.compare("sus")==0){ total = nPrems - allNotSus.size();
+	if (s.compare("sus")==0){ total = nPrems - notSus.size();
 	} else if (ds.count(s)==1){ 
 		total = ds.at(s).hi - ds.at(s).lo +1;
 	} // return number of farms in [lo, hi]
  return total;
+}
+
+/// \param[out] Vector of newly not-susceptible farms
+/// Returns farms that became not-susceptible since this function was last called
+void Status_manager::newNotSus(std::vector<Farm*>& output)
+{
+	// set start point to last endpoint marker (recentNotSus)
+	std::vector<Farm*>::iterator start = std::next(notSus.begin(), recentNotSus); //advance iterator to recentNotSus places past begin()
+	std::vector<Farm*>::iterator end = notSus.end();
+	// return int to end of notSus
+	std::vector<Farm*> recent (start,end);// return farms in [start, end]
+	recent.swap(output);
+	// move recentNotSus to past end of list (will be the beginning for next round)
+	recentNotSus = notSus.size();
 }
 
 void Status_manager::get_seedCos(std::vector<std::string>& output)

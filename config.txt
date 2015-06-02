@@ -7,8 +7,8 @@
 ## 'x' after the value indicates that this feature is not yet functional
 
 ######################## Output settings ########################
-moreuktest #(1) Batch name, used as prefix for output files. Only letters, numbers and underscore.
-1 #(2) Summary output on/off (1/0) - one line per replicate with # infected, duration, seed info, run time
+US #(1) Batch name, used as prefix for output files. Only letters, numbers and underscore.
+0 #(2) Summary output on/off (1/0) - one line per replicate with # infected, duration, seed info, run time
 0 #(3) Detailed infection output on/off (1/0) - one line per exposed premises with time, source of infection, route of infection
 0 #(4)xPrint grid cells on/off (disabled)
 0 #(5)xPrint shipments (disabled). 0: off, 1: premises level, 2: county level, 3: state level
@@ -19,10 +19,10 @@ moreuktest #(1) Batch name, used as prefix for output files. Only letters, numbe
 * #(10)
 
 ######################## General settings ########################
-inputfiles/uk_edited.txt		#(11)~Name of file containing premises ID, FIPS, x, y, population - ie FLAPS_beefdairy_20151201_formatted.txt
-cows,sheep 			#(12)~List of species for which counts are provided in premises file, comma-separated
-365 				#(13)~Timesteps (days) to run
-100 	#(14)~Number of replicates to run (auto-set to 1 if (23) is set to seed county by county).
+inputfiles/FLAPS_beefdairy_20151201_formatted.txt		#(11)~Name of file containing premises ID, FIPS, x, y, population - ie FLAPS_beefdairy_20151201_formatted.txt. Make sure the premises file doesn't have numbers in 1e+05 format (may happen with IDs)
+beef,dairy 			#(12)~List of species for which counts are provided in premises file, comma-separated
+5 				#(13)~Timesteps (days) to run
+1 	#(14)~Number of replicates to run (auto-set to 1 if (23) is set to seed county by county).
 1 	#(15)~Verbose level: Output extra information to console as model runs (0=off, 1=basic steps, 2=debug)
 0 	#(16)x~Pairwise algorithm on (1) or off (0) in addition to gridding (disabled)
 0 	#(17)~Reverse x/y option: in case input file is entered as lat/long (y/x)(set to 1) instead of long/lat (x/y)(set to 0)
@@ -31,17 +31,17 @@ cows,sheep 			#(12)~List of species for which counts are provided in premises fi
 * #(20)
 
 ######################## Infection-related settings ########################
-inputfiles/uk_seeds.txt 	#(21)+Name of file containing PREMISES identifiers from which to seed infection
-* 				#(22)x+Name of file containing COUNTY identifiers from which to seed infection (disabled)
-10 	#(23)~Seed method. 0: use all premises (within provided counties if applicable), (>0) choose this many random premises (within provided counties if applicable), (<0) choose this many seeds _per FIPS_ (changes # of reps to # of FIPS)
-1,1 	#(24)~Susceptibility exponents(q), species-specific & comma-separated in order listed in (12) 0.42,0.49
-1,1 	#(25)~Infectiousness exponents(p), species-specific & comma-separated in order listed in (12) 0.41,0.2
+inputfiles/randomFarms.txt 	#(21)+Name of file containing PREMISES identifiers from which to seed infection
+*	#(22)x+Name of file containing data-based local spread probabilities by distance, ie inputfiles/UKDataKernel.txt
+10000 	#(23)~Seed method. 0: use all premises in file from, (>0) choose this many random premises from file, (<0) choose this many seeds _per county_ (changes # of reps to # of FIPS)
+0.42,0.49 	#(24)~Susceptibility exponents(q), species-specific & comma-separated in order listed in (12) 0.42,0.49
+0.41,0.2 	#(25)~Infectiousness exponents(p), species-specific & comma-separated in order listed in (12) 0.41,0.2
 15.2,1		#(26)~Susceptibility constants(S), species-specific & comma-separated in order listed in (12) 5.7,1
-0.00000023, 0.00000043 #(27)~Infectiousness constants(T), species-specific & comma-separated in order listed in (12)0.00082,0.00083
-0 					#(28)~Kernel type for local (diffusion) spread: k1/(1 + (distance/k2)^k3)
+0.00000043, 0.00000023 #(27)~Infectiousness constants(T), species-specific & comma-separated in order listed in (12)0.00082,0.00083
+0			#(28)~Kernel type for local (diffusion) spread: k1/(1 + (distance/k2)^k3)
 0.089,1600,4.6	#(29)x~Kernel parameters k1, k2, k3
-5,1 		#(30)~Mean, variance (around normal) days from premises exposure to infectiousness (latency duration)
-5,1 		#(31)~Mean, variance (around normal) days from premises infectiousness to immunity (infectiousness duration)
+1,0 		#(30)~Mean, variance (around normal) days from premises exposure to infectiousness (latency duration)
+1,0 		#(31)~Mean, variance (around normal) days from premises infectiousness to immunity (infectiousness duration)
 * #(32)
 * #(33)
 * #(34)
@@ -50,12 +50,12 @@ inputfiles/uk_seeds.txt 	#(21)+Name of file containing PREMISES identifiers from
 ######################## Grid-related settings ########################
 * 				#(36)+Filename containing grid cells (will override other options)
 * 				#(37)+Length of cell side for uniform cells (will override density options)
-10000,100000 	#(38)+Max farms per cell, cell size minimum radius in m
+20000,100000 	#(38)+Max farms per cell, cell size minimum radius in m
 * #(39)
 * #(40)
 
 ######################## Shipment-related settings ########################
-1 	#(41)~Method(s) to generate county-county shipments (USAMM), comma-separated (0= shipments off, 1=random)
+0 	#(41)~Method(s) to generate county-county shipments (USAMM), comma-separated (0= shipments off, 1=random)
 1 	#(42)~Timepoints at which to begin using each of the methods above (first timepoint must be 1), comma-separated
 0 	#(43)~Method to assign shipments to premises within counties (farmFarmMethod): 0: random, 1: like-size to like-size, 2: largest inf to random, 3: random to largest sus, 4: largest inf to largest sus
 * #(44)
@@ -71,8 +71,8 @@ inputfiles/uk_seeds.txt 	#(21)+Name of file containing PREMISES identifiers from
 1,0 	#(52)~Mean, variance (around normal) days from premises exposure to reporting 
 0.5 	#(53)~Shipment ban: Percent compliance (0=no shipment ban)
 0 		#(54)~Shipment ban: County-(0) or state-(1) level ban (state-level not yet tested)
-1,0 	#(55)~Shipment ban: Mean, variance (around normal) days from premises reported to ban initiated
-1,0  	#(56)~Shipment ban: Mean, variance of compliance time lag after ban initiated
+7,0 	#(55)~Shipment ban: Mean, variance (around normal) days from premises reported to ban initiated
+3,0  	#(56)~Shipment ban: Mean, variance of compliance time lag after ban initiated
 * #(57)
 * #(58)
 * #(59)

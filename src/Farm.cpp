@@ -44,7 +44,13 @@ void Farm::set_inf(const double in_inf)
 	inf = in_inf;
 }
 
-void Farm::set_status(const std::string s, const int i)
+Prem_status::Prem_status(Farm* f)
+	:
+	Farm(*f), // call copy constructor of Farm to fill in all other members
+	diseaseStatus("sus")
 {
-	statuses[s] = i;
+}
+
+Prem_status::~Prem_status()
+{
 }

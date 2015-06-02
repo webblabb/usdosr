@@ -1,15 +1,22 @@
+///
+///		file_manager
+///
+
 #ifndef file_manager_h
 #define file_manager_h
 
 #include <fstream>
 #include "shared_functions.h"
+#include "Local_spread.h"
 // shared_functions includes iostream, sstream, string, vector
 
 extern int verboseLevel;
 
-struct parameters{
+/// Contains all parameters loaded from file
+struct parameters
+{
 	// output parameters
-	std::string batch;
+	std::string batch; ///< Prefix for summary and detailed output files
 	int printSummary;
 	int printDetail;
 	int printCells;
@@ -17,7 +24,7 @@ struct parameters{
 	int printControl;
 	
 	// general parameters
-	std::string premFile;
+	std::string premFile; ///< File containing tab-delimited premises data: ID, FIPS, x, y, population
 	std::vector<std::string> species;
 	int timesteps;
 	int replicates;
@@ -27,16 +34,18 @@ struct parameters{
 	
 	// infection parameters
 	std::string seedPremFile;
-	std::string seedCountyFile;
+	std::string dataKernelFile; ///< Name of file containing local spread probabilities by distance (set kernelType to 1)
 	int seedMethod;
-	std::vector<double> susExponents;
-	std::vector<double> infExponents;
-	std::vector<double> susConsts;
-	std::vector<double> infConsts;
-	int kernelType;
-	std::vector<double> kernelParams;
+	std::unordered_map<std::string,double> susExponents; ///< Species-specific exponents for susceptibility (q in USDOSv1)
+	std::unordered_map<std::string,double> infExponents; ///< Species-specific exponents for infectiousness (p in USDOSv1)
+	std::unordered_map<std::string,double> susConsts; ///< Species-specific constants for susceptibility (S in Tildesley ProcB 2008)
+	std::unordered_map<std::string,double> infConsts; ///< Species-specific constants for infectiousness (T in Tildesley ProcB 2008)
 	std::tuple<double,double> latencyParams;
 	std::tuple<double,double> infectiousParams;
+	// local spread kernel object (for grid manager and checker)
+	int kernelType;
+	std::vector<double> kernelParams;
+	Local_spread* kernel;
 	
 	// grid parameters
 	std::string cellFile;
@@ -62,12 +71,13 @@ struct parameters{
 	std::unordered_map< std::string, std::vector<std::tuple<double,double>> > controlLags;
 };
 
+/// Loads and checks parameters from configuration file
 class file_manager
 {
 	private:
 		int verbose;
-		std::vector<std::string> pv; // parameter vector for loading in
-		parameters params; // struct of all parameters
+		std::vector<std::string> pv; ///< parameter vector for reading in from file
+		parameters params;
 		
 		bool checkMeanVar(std::string&, int, std::string);
 		bool checkPositive(std::vector<int>&, int);
@@ -85,4 +95,4 @@ inline const parameters* file_manager::getParams()
 	return &params;
 }
 
-#endif
+#endif // file_manager_h

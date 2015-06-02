@@ -7,12 +7,11 @@
 #ifndef Shipment_manager_h
 #define Shipment_manager_h
 
-// included in Farm.h: string, unordered map, vector
-#include "Farm.h"
-#include "shared_functions.h"
-
 #include <set>
 #include <tuple> // std::tuple
+
+#include "Status_manager.h"
+#include "shared_functions.h"
 
 extern int verboseLevel;
 
@@ -33,6 +32,8 @@ class Shipment_manager
 		// const pointers to Grid_manager objects:
 		const std::unordered_map<std::string, std::vector<Farm*>>* FIPSmap;
 		const std::unordered_map<std::string, std::unordered_map<std::string, std::vector<Farm*> >>* fipsSpeciesMap;
+		// const pointer to Status manager (to access up-to-date premises statuses):
+		Status_manager* S;
 		// used to generate random shipments
 		std::vector<std::string> allFIPS; // list of all possible destination FIPS, based on premises file
 		int farmFarmMethod;
@@ -55,8 +56,9 @@ class Shipment_manager
 		Shipment_manager( // construct with 
 			const std::unordered_map<std::string, std::vector<Farm*>>*, // a map of FIPS codes to farms
 			const std::unordered_map<std::string, std::unordered_map<std::string, std::vector<Farm*> >>*, // sorted populations of species on farms
+			Status_manager*,
 			int, // farm assignment method
-			std::vector<std::string>&); // list of species on premises
+			const std::vector<std::string>&); // list of species on premises
 		
 		~Shipment_manager();
 		

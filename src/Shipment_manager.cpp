@@ -9,12 +9,14 @@
 Shipment_manager::Shipment_manager(
 	const std::unordered_map<std::string, std::vector<Farm*>>* in_FIPSmap,
 	const std::unordered_map<std::string, std::unordered_map<std::string, std::vector<Farm*> >>* fipsSpMap, 
+	Status_manager* in_S,
 	int ffm,
-	std::vector<std::string>& speciesOnPrems
+	const std::vector<std::string>& speciesOnPrems
 	)
 	:
 	FIPSmap(in_FIPSmap),
 	fipsSpeciesMap(fipsSpMap),
+	S(in_S),
 	farmFarmMethod(ffm),
 	species(speciesOnPrems)
 {	
@@ -110,7 +112,7 @@ Farm* Shipment_manager::largestStatus(std::vector<Farm*>& premVec, std::string& 
 	bool found = 0;
 	auto i = premVec.back(); // start at end of sorted vector (largest prem) and work backwards
 	while (found==0){
-		if(i->get_diseaseStatus().compare(status)==0){ // if prem has this status, stop and return this prem
+		if(S->get_status(i).compare(status)==0){ // if prem has this status, stop and return this prem
 			found = 1;
 		} else if ( i>premVec.front() ){i--; // keep moving backwards
 		} else if ( i==premVec.front() ){ i = premVec.back(); found = 1;} // if no prems have this status, return largest

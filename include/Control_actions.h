@@ -24,11 +24,10 @@
 #ifndef Control_actions_h
 #define Control_actions_h
 
-#include "shared_functions.h"
-
-#include <iterator> // std::distance in updates
 #include <map>
 #include <unordered_set>
+
+#include "shared_functions.h"
 
 extern int verboseLevel;
 
@@ -48,18 +47,17 @@ class Control_actions
 		std::unordered_map< std::string, std::vector<std::tuple<double,double>> > cl; // control parameters
 		std::unordered_map< std::string, int> cTypeMax; // maximum level for each control type
 		
-		std::unordered_map<int, std::vector< nextChange<Farm> >> farmsToChange; // key: times that require action, value: specifics of action for farms
+		std::unordered_map<int, std::vector< nextChange<Prem_status> >> farmsToChange; // key: times that require action, value: specifics of action for farms
 		std::unordered_map<int, std::vector< nextChange<County> >> countiesToChange; // key: times that require action, value: specifics of action for counties
 		
-		std::unordered_set<Farm*> farms; // any farms that enter the control system
 		std::unordered_map< std::string, County* > counties; // mapped by fips
 		
 		std::unordered_map<std::string, std::vector<int>> farmStatusCounts; // counts of farms in each status
 		std::unordered_map<std::string, std::vector<int>> countyStatusCounts;
 		
-		void scheduleLevelUp_f(Farm*, std::string, int, int);
+		void scheduleLevelUp_f(Prem_status*, std::string, int, int);
 		void scheduleLevelUp_c(County*, std::string, int, int);
-		void startControlSeq_f(Farm*, std::string, int);
+		void startControlSeq_f(Prem_status*, std::string, int);
 		void startControlSeq_c(County*, std::string, int);	
 		
 		double compliance_shipBan();
@@ -67,8 +65,8 @@ class Control_actions
 	public:
 		Control_actions(std::unordered_map< std::string, std::vector<std::tuple<double,double>> >&);
 		~Control_actions();
-		void addFarm(std::vector<Farm*>&, int, bool first=0); // uses regular lag params unless first=1 (default=0)
-		void addFarm(Farm*, int, bool first=0); // overloaded for single farm
+		void addFarm(std::vector<Prem_status*>&, int, bool index=0); // uses regular lag params unless first=1 (default=0)
+		void addFarm(Prem_status*, int, bool index=0); // overloaded for single farm
 		void updates(int);
 		int getNfarms(std::string, int) const; // inlined, total farms with this status (control type-level)
 		int getNcounties(std::string, int) const; // inlined, total farms with this status (control type-level)

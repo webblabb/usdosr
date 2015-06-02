@@ -32,10 +32,12 @@ int draw_binom(int N, double prob)
 double oneMinusExp(double x)
 // based on algo found at http://www.johndcook.com/blog/cpp_expm1/
 {
-	if (fabs(x) < 1e-5){
-			return -(x + 0.5*x*x); // two-term Taylor approx for x<1e-5
+	if (x == 0){
+		return 0;
+	} else if (std::abs(x) < 1e-5){
+		return -(x + 0.5*x*x); // two-term Taylor approx for x<1e-5
 	} else {
-			return -(exp(x) - 1.0);
+		return -(exp(x) - 1.0);
 	}
 }
 
@@ -241,16 +243,13 @@ void addItemTab(std::string& outString, std::string toAdd){
 }
 
 // function for printing (adding) output to specified file
-void printLine(std::string& outputFile, std::string& printString, bool overwrite)
+void printLine(std::string& outputFile, std::string& printString)
 {
 	std::ofstream outfile;
-	if (!overwrite){
-		outfile.open(outputFile, std::ios::app); // append to existing file
-	} else {
-		outfile.open(outputFile); // overwrite/create new file
-	}
+	outfile.open(outputFile, std::ios::app); // append to existing file
 	if(!outfile){std::cout<<"File "<<outputFile<<" not open."<<std::endl;}
 	outfile << printString; 
+	std::flush(outfile);
 	outfile.close();
 }
 

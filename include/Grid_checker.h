@@ -5,6 +5,7 @@
 
 #include "grid_cell.h"
 #include "shared_functions.h"
+#include "Local_spread.h"
 
 extern int verboseLevel;
 
@@ -12,30 +13,27 @@ class Grid_checker
 {
 	private:
 		int verbose;
-		// own copies of cells with farms of disease status
-		std::vector<grid_cell*> susceptible;
-		std::vector<Farm*> exposed; // called from main each timestep and cleared
-		// pointer to Grid_manager object
-		const std::unordered_map<int, grid_cell*>* allCells; // used for reference for infectious
-		// pointer to Status_manager object
-		std::unordered_map< Farm*, std::vector< std::tuple<Farm*,int> >>* sources;
-		double k1, k2, k3, k2tok3; // kernel parameters
-		double kernelsq(double);
-		void binomialEval(Farm*,grid_cell*,grid_cell*,int,std::vector<Farm*>&);
-		// arguments: focal farm, focal cell, comp cell, comp cell ID, output
-
+		std::vector<grid_cell*> susceptible; ///> Local copy of cells, with vectors of susceptible farms within
+		std::vector<Farm*> exposed; ///> List of farms most recently exposed
+		const std::unordered_map<int, grid_cell*>* allCells; ///> Pointer to Grid_manager object, referenced in infection evaluation among cells
+		std::unordered_map< Farm*, std::vector< std::tuple<Farm*,int> >>* sources; ///> Pointer to Status_manager object
+		Local_spread* kernel;
 		
+		void binomialEval(Farm*,grid_cell*,grid_cell*,int,std::vector<Farm*>&); ///> Evaluates transmission from a focal farm to all susceptible farms in a cell
+		void pairwise(Farm*,grid_cell*,grid_cell*,int,std::vector<Farm*>&); ///> Evaluates transmission from a focal farm to all susceptible farms in a cell
+
 	public:
-		Grid_checker(const std::unordered_map<int, grid_cell*>*,  // allCells
-			std::unordered_map< Farm*, std::vector< std::tuple<Farm*,int> >>*, //sources to write to
-			std::vector<double>&); //sources
+		///> Makes local copy of all grid_cells, initially set as susceptible to check local spread against
+		Grid_checker(const std::unordered_map<int, grid_cell*>*,
+			std::unordered_map< Farm*, std::vector< std::tuple<Farm*,int> >>*,
+			Local_spread*);
 		~Grid_checker();
 		
 		void stepThroughCells(
 			std::vector<Farm*>&, // infectious
 			std::vector<Farm*>&); //non-susceptible
 			
-		void take_exposed(std::vector<Farm*>&); //inlined - called from main and cleared each timestep
+		void take_exposed(std::vector<Farm*>&); // inlined - called from main and cleared each timestep
 };
 
 inline void Grid_checker::take_exposed(std::vector<Farm*>& output){
