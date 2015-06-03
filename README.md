@@ -21,5 +21,10 @@ A simplified overview of the processes executed in "main.cpp".
     17. Evaluate shipment spread @Status_manager, @Control_actions
     18. (Print transmission details for this timestep)
   19. (Print summary for this replicate)
+End main simulation loop
 
-## End main simulation loop
+## Generating documentation
+Download and install Doxygen at: http://www.stack.nl/~dimitri/doxygen/download.html
+Run the doxywizard
+From the File menu, choose Open, and find the doxyfile within this repository
+The configuration settings will be loaded into the doxywizard. Run to generate documentation.
