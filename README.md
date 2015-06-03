@@ -24,7 +24,7 @@ A simplified overview of the processes executed in "main.cpp".
 End main simulation loop
 
 ## Generating documentation
-Download and install Doxygen at: http://www.stack.nl/~dimitri/doxygen/download.html
-Run the doxywizard
-From the File menu, choose Open, and find the doxyfile within this repository
-The configuration settings will be loaded into the doxywizard. Run to generate documentation.
+- Download and install Doxygen at: http://www.stack.nl/~dimitri/doxygen/download.html
+- Run the doxywizard
+- From the File menu, choose Open, and find the doxyfile within this repository. The configuration settings will be loaded into the doxywizard
+- Run to generate documentation.
