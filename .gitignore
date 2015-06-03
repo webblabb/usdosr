@@ -19,29 +19,27 @@
 *.exe
 *.out
 *.app
-
 a
 
+# Miscellaneous files
 *.r
 .Rapp.history
-
 *.png
 *.txt
 !config.txt
 !FLAPS_beefdairy_20151201_formatted.txt
 !randomFarms.txt
+
 *.docx
 *.pdf
-
-
 *.aux
-
 *.log
-
 *.gz
-
 *.tex
+*.xlsx
 
 .DS_Store
 
-*.xlsx
+# Folders with Doxygen files (can be re-generated using doxyfile)
+html/
+latex/
