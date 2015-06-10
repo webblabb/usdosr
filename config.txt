@@ -27,7 +27,7 @@ beef,dairy 			#(12)~List of species for which counts are provided in premises fi
 0 	#(16)x~Pairwise algorithm on (1) or off (0) in addition to gridding (disabled)
 0 	#(17)~Reverse x/y option: in case input file is entered as lat/long (y/x)(set to 1) instead of long/lat (x/y)(set to 0)
 inputfiles/FIPS_20151805.txt #(18)~Name of file containing fips name, state name, area (m2), x, y. Tab separated.
-inputfiles/species_shipment_weights.txt #(19) ~Name of file containing probabilities to send shipments between farms of different species combination.
+inputfiles/fips_weights.txt #~Name of file containing fips number, and a weight for each species, tab separated. (19)
 * #(20)
 
 ######################## Infection-related settings ########################

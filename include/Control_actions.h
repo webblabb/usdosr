@@ -74,7 +74,7 @@ class Control_actions
 		void updates(int);
 		int getNfarms(std::string, int) const; // inlined, total farms with this status (control type-level)
 		int getNcounties(std::string, int) const; // inlined, total farms with this status (control type-level)
-		int checkShipBan(shipment*);
+		int checkShipBan(Shipment*);
 
 };
 

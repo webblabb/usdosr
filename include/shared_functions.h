@@ -18,7 +18,7 @@ class Farm; // for Farm* for farm sus/inf
 //	std::unordered_map<std::string, int> statuses; // for control type and level
 //};
 
-struct shipment // used in Shipment, Status
+struct Shipment // used in Shipment, Status
 {
 	int t; // time of shipment
 	int origID; // premises ID of shipment origin
@@ -33,12 +33,14 @@ struct shipment // used in Shipment, Status
 	double unif_rand();
 	double norm_rand();
 	int draw_binom(int, double);
+	unsigned int generate_distribution_seed();
 	double oneMinusExp(double);
  	int normDelay(std::tuple<double, double>&);
 	std::vector<std::string>
 		split(const std::string&, char, std::vector<std::string>&);
 	std::vector<std::string>
 		split(const std::string&, char);
+    void skipBOM(std::ifstream &in);
 	std::string to_string(Farm*);
  	void removeFarmSubset(std::vector<Farm*>&, std::vector<Farm*>&);
 	std::vector<double> stringToNumVec(std::string&);
@@ -78,7 +80,10 @@ T randomFrom(std::vector<T>& vec)
 {
 	int maxSize = vec.size();
 	double rUnif = unif_rand();
-		if (rUnif ==1 ){rUnif=0.999;} // avoids assigning actual maxSize value (out of range)
+    if (rUnif ==1 )
+    {
+        rUnif=0.999; // avoids assigning actual maxSize value (out of range)
+    }
 	int rIndex = (int) floor(rUnif*maxSize);
 	return vec[rIndex];
 }

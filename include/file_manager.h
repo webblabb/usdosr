@@ -7,8 +7,6 @@
 
 extern int verboseLevel;
 
-class Farm_types;
-
 struct Parameters{
 	// output parameters
 	std::string batch;
@@ -21,7 +19,7 @@ struct Parameters{
 	// general parameters
 	std::string premFile;
 	std::string fipsFile;
-	std::string shipWeightsFile;
+	std::string fips_weights;
 	std::vector<std::string> species;
 	int timesteps;
 	int replicates;
@@ -64,7 +62,6 @@ struct Parameters{
 	// related parameter sets
 	std::unordered_map< std::string, std::tuple<double,double> > lagParams;
 	std::unordered_map< std::string, std::vector<std::tuple<double,double>> > controlLags;
-    Farm_types* farm_types;
 };
 
 class file_manager
@@ -74,8 +71,6 @@ class file_manager
 		std::vector<std::string> pv; // parameter vector for loading in
 		Parameters params; // struct of all parameters
 
-
-        void readShipWeights();
 		bool checkMeanVar(std::string&, int, std::string);
 		bool checkPositive(std::vector<int>&, int);
 		bool checkPositive(std::vector<double>&, int);

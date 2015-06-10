@@ -54,6 +54,7 @@ class Farm
 		~Farm();
 		int get_id() const; // inlined
 		int get_cellID() const; // inlined
+		Farm_type* get_farm_type() const; //inlined
 		double get_x() const; // inlined
 		double get_y() const; // inlined
 		double get_sus() const; // inlined
@@ -68,10 +69,11 @@ class Farm
  		int get_end(std::string) const; //inlined
 		County* get_parent_county() const; //Inlined
  		State* get_parent_state() const; //Inlined
- 		Farm_type* get_farm_type() const; //Inlined
  		bool beenExposed() const; //inlined
+ 		int get_n_shipments() const;
 
 		void set_cellID(const int cellID);
+		void set_farm_type(Farm_type* in_type);
  		void set_speciesCount(const std::string, int);
  		void set_sus(const double);
  		void set_inf(const double);
@@ -80,10 +82,9 @@ class Farm
  		void set_end(const std::string, const int); //inlined - set end time for disease status
 		void set_diseaseStatus(std::string&); //inlined
 		void set_parent_county(County* in_county);
- 		void set_parent_state(State* in_state);
- 		void set_farm_type(Farm_type* ft);
-
 };
+
+
 
 inline int Farm::get_id() const
 {
@@ -92,6 +93,10 @@ inline int Farm::get_id() const
 inline int Farm::get_cellID() const
 {
 	return cellID;
+}
+inline Farm_type* Farm::get_farm_type() const
+{
+    return farm_type;
 }
 inline double Farm::get_x() const
 {
@@ -153,14 +158,29 @@ inline County* Farm::get_parent_county() const
 {
     return parent_county;
 }
-inline State* Farm::get_parent_state() const
+
+class Farm_type
 {
-    return parent_state;
+public:
+    Farm_type(int index, std::string herd, std::vector<std::string> in_species);
+    ~Farm_type();
+    int get_index() const; //inlined
+    std::string get_species() const; //inlined
+private:
+    int index = 0;
+    std::string herd;
+    std::string species; //ie dairy, beef
+
+};
+
+inline int Farm_type::get_index() const
+{
+    return index;
 }
 
-inline Farm_type* Farm::get_farm_type() const
+inline std::string Farm_type::get_species() const
 {
-    return farm_type;
+    return species;
 }
 
 #endif //FARM_H

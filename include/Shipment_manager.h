@@ -44,7 +44,7 @@ class Shipment_manager
 		// the following are recreated/rewritten at each timestep
 		std::vector<coShipment>
 			countyShipmentList; // coShipment defined above
-		std::vector<shipment*> // shipment defined in shared_functions.h
+		std::vector<Shipment*> // shipment defined in shared_functions.h
 			farmShipmentList;
 		int startRecentShips, startCoRecentShips; // indicates index in shipmentList where the most recent set of shipments starts
 
@@ -52,6 +52,7 @@ class Shipment_manager
 		void countyCountyShipments(std::string, int); // determines county-county movements & volumes
 		Farm* largestStatus(std::vector<Farm*>&, std::string&); // finds largest premises with "status", from vector sorted by population
 		void farmFarmShipments(); // assigns county shipments to individual farms
+        Shipment* generateInfectiousShipment(Farm* origin_farm);
 
 	public:
 		Shipment_manager( // construct with
@@ -62,7 +63,7 @@ class Shipment_manager
 
 		~Shipment_manager();
 
-		void makeShipments(std::vector<Farm*>&, int, std::vector<shipment*>&); // generates and returns farm-level shipments
+		std::vector<Shipment*> makeShipments(std::vector<Farm*>&, int); // generates and returns farm-level shipments
 		std::string formatOutput(int, int); // formats output to string
 
 };

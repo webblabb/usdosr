@@ -12,7 +12,6 @@
 #include "grid_cell.h"
 #include "shared_functions.h"
 #include "pairwise.h"
-#include "Shipment_kernel.h"
 #include "file_manager.h"
 
 #include <algorithm> // std::sort, std::any_of
@@ -25,6 +24,7 @@
 
 
 class County;
+class State;
 
 extern int verboseLevel;
 
@@ -40,6 +40,11 @@ class Grid_manager
 			farm_map; // Contains all farm objects. Id as key.
 //		std::unordered_map<std::string, std::vector<Farm*>>
 //			FIPSmap; // key is fips code, value is vector of farms within
+		std::unordered_map<std::string, State*>
+            state_map; //Contains states, name as key.
+        std::map<std::string, std::vector<double>> a_map; //Stores a-parameters for states
+        std::map<std::string, std::vector<double>> b_map; //Stores b-parameters for states
+		std::map<std::string, std::vector<double>> shipment_volume_map; //Stores shipment volumes for the states.
 		std::unordered_map<std::string, County*>
 			FIPSmap; // key is fips code, value is county object
         std::vector<County*>
@@ -60,15 +65,19 @@ class Grid_manager
 		std::unordered_map<std::string,std::vector<int>> herdSizes;
 		std::unordered_map<std::string,double> xiP, xiQ;
 		unsigned int committedFarms;
+		std::unordered_map<std::string, Farm_type*> farm_types;
 
 		double k1, k2, k3, k2tok3; // local kernel parameters
-		Shipment_kernel ship_kernel;
 		const Parameters* parameters;
 
 		// functions
-		void readFips(std::string& fips_fname); //Reads counties from file.
+		std::vector<double> read_replicate_file(std::string fname); //This is temporary until data is read from a database.
+		void getReplicateData(); //Gets replicate-specific data (a, b & state shipments/t)
+		void readStates(std::string state_file); //Reads states & flows from file.
+		void readFips_and_states(); //Reads counties from file.
 		void readFarms(std::string& farm_fname); //Does all the reading of premises-file
-		void initFips(); //Removes counties without farms.
+		void initFips(); //Removes counties without farms and sets shipping probs.
+		void initStates(); //Initiates all farm shipment probs in the states.
 		void set_maxFarms(unsigned int in_maxFarms); //inlined
 		std::string to_string(grid_cell&) const;
 		std::vector<Farm*> getFarms(
@@ -98,11 +107,11 @@ class Grid_manager
 			IDsToCells(int);  // overloaded to accept single ID also
 		void set_FarmSus(Farm*); // used in precalculation and stored with Farm
 		void set_FarmInf(Farm*); // used in precalculation and stored with Farm
+		Farm_type* get_farm_type(std::string herd); //Returns a number based on what species are present on a farm.
 
 	public:
 		Grid_manager( // constructor loads premises
 			std::string &fname, // filename of premises
-			std::string &fips_fname, //filename for counties
 			bool xyswitch,  // switch x/y columns
 			std::vector<std::string>&, // list of species populations provided
 			std::vector<double>&,  // list of species-specific susceptibility exponents

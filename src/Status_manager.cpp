@@ -213,7 +213,7 @@ void Status_manager::localExposure(std::vector<Farm*>& farms, int t)
 	expose(toExpose, t);
 }
 
-void Status_manager::shipExposure(std::vector<shipment*>& ships, int time)
+void Status_manager::shipExposure(std::vector<Shipment*>& ships, int time)
 // filters for any control measures impacting shipment spread
 // records sources of infection in sources
 // shipment has t, farm origID, farm destID, origin FIPS, dest FIPS, species, ban (0-2)

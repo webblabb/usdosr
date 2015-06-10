@@ -28,6 +28,7 @@ To create a complete county:
 
 
 class Farm;
+class Farm_type;
 class State;
 class Shipment_kernel;
 
@@ -40,37 +41,49 @@ public:
 
     void set_farms(const std::vector<Farm*>& in_farms);
     void add_farm(Farm* in_farm);
-    void init_probabilities(std::vector<County*>& in_counties, Shipment_kernel& k); //Incomplete
+    void init_probabilities(std::vector<County*>& in_counties); //Incomplete
     void set_area(double in_area);
+    void set_weights(std::vector<double> in_weights);
     void set_parent_state(State* target);
     void set_control_status(std::string status, int level);
+    void set_all_counties(std::vector<County*> in_counties);
 
     double get_area(); //Inlined
-    int get_n_farms(); //Inlined
+    size_t get_n_farms(); //Inlined
+    size_t get_n_farms(Farm_type* ft); //Inlined
     const std::vector<Farm*>& get_farms(); //Inlined
+    std::vector<Farm*>& get_farms(Farm_type* ft);
     std::unordered_map<std::string, int> get_statuses(); //Inlined
     int get_control_status(std::string status); //Inlined
     State* get_parent_state(); //Inlined
-    County* get_shipment_destination();
+    County* get_shipment_destination(Farm_type* ft);
+    double get_weight(Farm_type* in_type);
+    //std::vector<Farm*>* get_farms_of_type(Farm_type* in_farm_type);
 
     void calculate_centroid();
-
     void print_bools();
+    //bool is_present(Farm_type* farm_type);
 
 private:
     double area;
     State* parent_state;
     std::vector<Farm*> member_farms;
+    std::vector<double> weights;
+    std::unordered_map<Farm_type*, std::vector<Farm*>> farms_by_type;
+    //std::vector<Farm_type*> present_farm_types;
     std::unordered_map <County*, double> county_distances;
     std::unordered_map<std::string, int> statuses; // for control type and level
-    Alias_table<County*> county_probabilities;
+    std::vector<Shipment_kernel*> shipment_kernels; //By farm type index.
+    std::vector<Alias_table<County*>> county_probabilities; //By farm type index.
     std::vector<Farm*> infected_farms;
     std::vector<Farm*> susceptible_farms;
+    std::vector<County*> all_counties;
 
     bool county_initialized = false;
     bool is_set_area = false;
     bool is_set_state = false;
     bool is_set_shipment = false;
+    bool is_set_weights = false;
 
     virtual void set_initialized(bool& parameter);
     virtual void all_initialized();
@@ -84,9 +97,14 @@ inline double County::get_area()
     return area;
 }
 
-inline int County::get_n_farms()
+inline size_t County::get_n_farms()
 {
-    return(int(member_farms.size()));
+    return member_farms.size();
+}
+
+inline size_t County::get_n_farms(Farm_type* ft)
+{
+    return farms_by_type[ft].size();
 }
 
 inline const std::vector<Farm*>& County::get_farms()

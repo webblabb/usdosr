@@ -2,8 +2,8 @@
 #include <County.h>
 #include <iostream>
 
-Shipment_kernel::Shipment_kernel(double a, double b, std::string type) :
-    a(a), b(b)
+Shipment_kernel::Shipment_kernel(double a, double b, std::string type, bool binning_on) :
+    a(a), b(b), binning_on(binning_on)
 {
     if(type == "linear")
     {
@@ -24,6 +24,7 @@ Shipment_kernel::Shipment_kernel(double a, double b, std::string type) :
 
     a_sq = a*a;
     b_half = b * 0.5;
+    set_bins();
 }
 
 Shipment_kernel::~Shipment_kernel() {}
@@ -49,7 +50,80 @@ double Shipment_kernel::distance(County* c1, County* c2, std::string type)
     {
         return (this->*d_function)(c1, c2);
     }
+}
 
+void Shipment_kernel::set_bin_size(double in_size)
+{
+    //Sets the size of each bin
+    bin_size = in_size;
+}
+
+void Shipment_kernel::set_longest_distance(double in_dist)
+{
+    //Maximum distance to bin for.
+    longest_distance = in_dist;
+}
+
+void Shipment_kernel::set_bins()
+{
+    bins.clear();
+    int n_bins = int(longest_distance / bin_size) + 1;
+    bins.reserve(n_bins);
+    for(int i = 0; i < n_bins; i++)
+    {
+        bins.push_back(i*bin_size);
+    }
+}
+
+double Shipment_kernel::get_bin(double d)
+{
+    //Binary search for the correct bin of d
+    bool done = false;
+    int lower = 0; //Lower index of current sub-vector
+    int upper = bins.size() - 1; //Upper index of current sub-vector
+    int mid = 0;
+    int n_tries = 0;
+
+    do
+    {
+        mid = lower + int(ceil((upper-lower) / 2)); //Get mid index of current sub-vector.
+        if(d == bins[mid])
+        {
+            done = true;
+            return bins[mid];
+        }
+        else if(d > bins[mid])
+        {
+            lower = mid;
+        }
+        else if(d < bins[mid])
+        {
+            upper = mid;
+        }
+        if(abs(upper - lower) == 1)
+        {
+            double udiff = abs(bins[upper] - d);
+            double ldiff = abs(bins[lower] - d);
+            if(ldiff < udiff)
+            {
+                done = true;
+                return bins[lower];
+            }
+            else
+            {
+                done = true;
+                return bins[upper];
+            }
+        }
+        n_tries += 1;
+        if(n_tries >= 100)
+        {
+            std::cout << "Stuck in when getting bin for distance " << d << ". Exiting..." << std::endl;
+            exit(EXIT_FAILURE);
+        }
+    } while(!done);
+
+    return -1;
 }
 
 double Shipment_kernel::linear_distance_kernel(double d)
@@ -76,6 +150,11 @@ double Shipment_kernel::linear_euclidean(County* c1, County* c2)
         d = sqrt((p1->x - p2->x) * (p1->x - p2->x) +
                 (p1->y - p2->y) * (p1->y - p2->y));
     }
+
+    if(binning_on)
+    {
+        d = get_bin(d);
+    }
     return d;
 }
 
@@ -92,6 +171,11 @@ double Shipment_kernel::quadratic_euclidean(County* c1, County* c2)
         const Point* p2 = c2->get_centroid();
         d = ((p1->x - p2->x) * (p1->x - p2->x) +
             (p1->y - p2->y) * (p1->y - p2->y));
+    }
+
+    if(binning_on)
+    {
+        d = get_bin(d);
     }
     return d;
 }

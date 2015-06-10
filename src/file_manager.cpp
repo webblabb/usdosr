@@ -6,8 +6,6 @@ Reads configuration file and checks for errors. Holds vector of all input parame
 
 #include <unordered_set>
 #include "file_manager.h"
-#include "Farm_types.h"
-
 
 file_manager::file_manager()
 {
@@ -16,7 +14,6 @@ file_manager::file_manager()
 
 file_manager::~file_manager()
 {
-    delete params.farm_types;
 }
 
 void file_manager::readConfig(std::string& cfile)
@@ -98,11 +95,10 @@ void file_manager::readConfig(std::string& cfile)
 		if (pv[18] == "*"){
             std::cout << "ERROR (config 18): No county data file specified." << std::endl; exitflag=1;}
 		params.fipsFile = pv[18];
-		//Species shipment weights
 		if (pv[19] == "*"){
-                std::cout << "ERROR (config 19): No file with species shipment weights specified." << std::endl; exitflag=1;}
-		params.shipWeightsFile = pv[19];
-		// pv[20]
+            std::cout << "ERROR (config 19): No fips shipping weights file specified." << std::endl; exitflag=1;}
+		params.fips_weights = pv[19];
+		//pv[20];
 		// Infectious seed files
 		if (pv[21]=="*" && pv[22]=="*"){
 			std::cout << "ERROR (config 21-22): No infectious premises/county seed file specified." << std::endl; exitflag=1;}
@@ -217,43 +213,6 @@ void file_manager::readConfig(std::string& cfile)
 		"Exiting..." << std::endl;
 		exit(EXIT_FAILURE);
 	}
-
-	readShipWeights();
-}
-
-void file_manager::readShipWeights()
-{
-    params.farm_types = new Farm_types(params.species);
-    std::ifstream f(params.shipWeightsFile);
-    if(!f)
-    {
-        std::cout << "Shipment species weights file not found. Exiting..." <<
-                  std::endl;
-        exit(EXIT_FAILURE);
-    }
-    if(f.is_open())
-    {
-        while(!f.eof())
-        {
-            std::string line;
-            std::stringstream ss_line;
-			getline(f, line); // get line from file "f", save as "line"
-			ss_line << line;
-			getline(ss_line, line, '#');
-			line.erase(std::remove_if(line.begin(), line.end(), isspace), line.end());
-			std::vector<std::string> line_vector = split(line, ';'); // separate by ;
-			if(!line_vector.empty())
-            {
-                //Turn both the from-group and the to-group into unordered sets:
-                std::vector<std::string> from_vector = split(line_vector[0], ',');
-                //std::unordered_set<std::string> from_set(from_vector.begin(), from_vector.end());
-                std::vector<std::string> to_vector = split(line_vector[1], ',');
-                //std::unordered_set<std::string> to_set(to_vector.begin(), to_vector.end());
-                double weight = stringToNum<double>(line_vector[2]);
-                params.farm_types->add_weight(from_vector, to_vector, weight);
-            }
-        }
-    }
 }
 
 bool file_manager::checkMeanVar(std::string& s, int lineNum, std::string paramDesc)

@@ -29,6 +29,11 @@ int draw_binom(int N, double prob)
 	return binom_dist(generator);
 }
 
+unsigned int generate_distribution_seed()
+{
+    return std::chrono::system_clock::now().time_since_epoch().count();
+}
+
 double oneMinusExp(double x)
 // based on algo found at http://www.johndcook.com/blog/cpp_expm1/
 {
@@ -73,6 +78,21 @@ std::vector<std::string>
     std::vector<std::string> elems;
     split(s, delim, elems);
     return elems;
+}
+
+// Skips the Byte Order Mark (BOM) that defines UTF-8 in some text files.
+// Credit to user 'Contango' at stackoverflow.com
+void skipBOM(std::ifstream &in)
+{
+    char test[3] = {0};
+    in.read(test, 3);
+    if ((unsigned char)test[0] == 0xEF &&
+        (unsigned char)test[1] == 0xBB &&
+        (unsigned char)test[2] == 0xBF)
+    {
+        return;
+    }
+    in.seekg(0);
 }
 
 // used in commitCell in grid initiation
@@ -249,4 +269,6 @@ void printLine(std::string& outputFile, std::string& printString)
 	outfile << printString;
 	outfile.close();
 }
+
+
 

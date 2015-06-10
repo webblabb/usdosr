@@ -17,11 +17,11 @@
 #include <exception>
 // included in Grid_manager.h: grid_cell, farm, shared_functions, tuple, utility
 #include "Grid_manager.h"
+#include "State.h"
 #include "County.h"
-#include "Farm_types.h"
+#include "shared_functions.h"
 
-
-Grid_manager::Grid_manager(std::string &farm_fname, std::string &fips_fname, bool xyswitch,
+Grid_manager::Grid_manager(std::string &farm_fname, bool xyswitch,
     std::vector<std::string>& in_species, std::vector<double>& in_speciesSus,
     std::vector<double>& in_speciesInf,	std::vector<double>& in_speciesSusC,
     std::vector<double>& in_speciesInfC, std::vector<double>& kernParams, const Parameters* parameters) :
@@ -35,20 +35,17 @@ Grid_manager::Grid_manager(std::string &farm_fname, std::string &fips_fname, boo
 	k1(kernParams.at(0)),
 	k2(kernParams.at(1)),
 	k3(kernParams.at(2)),
-	ship_kernel(490, 0.32, "linear"), //<-- TEMPORARY PARAMETERS!!!
 	parameters(parameters)
 // fills farm_map, farmList, and xylimits
 {
 	k2tok3 = pow(k2,k3);
 	verbose = 1; // manual control to override verboseLevel
 
-    readFips(fips_fname);
+    getReplicateData();
+    readFips_and_states();
     readFarms(farm_fname);
+    initStates();
     initFips();
-
-    if (verbose>0){std::cout << farm_map.size() << " farms in " << FIPSmap.size()
-	<< " counties loaded. Premises file closed." << std::endl;
-    }
 
 	allCells.reserve(800);
 
@@ -90,29 +87,78 @@ if (verbose>1){
 // if (verbose>0){std::cout<<"xi_q for "<<sp.first<<": "<<xiQ.at(sp.first)<<std::endl;}
 // 	}
 
-
-	//Start initialization of counties.
-	if(verbose > 0)
-        std::cout << "Initializing " << FIPSmap.size() << " counties..." << std::endl;
 }
 
 Grid_manager::~Grid_manager()
 {
-    for (auto c:FIPSmap){delete c.second;}
-	for (auto f:farm_map){delete f.second;}
-	for (auto gc:allCells){delete gc.second;}
+    for (auto s : state_map){delete s.second;}
+    for (auto c : FIPSmap){delete c.second;}
+	for (auto f : farm_map){delete f.second;}
+	for (auto gc : allCells){delete gc.second;}
+	for (auto ft : farm_types){delete ft.second;}
 }
 
-void Grid_manager::readFips(std::string& fips_fname)
+std::vector<double> Grid_manager::read_replicate_file(std::string fname)
 {
+    std::vector<double> result_vector;
+    std::ifstream f(fname);
+    if(f.is_open())
+    {
+        //Get only first line of file
+        skipBOM(f);
+        std::string line;
+        getline(f, line);
+        std::vector<std::string> line_vector = split(line, ',');
+
+        if(!line_vector.empty())
+        {
+            //Save convert each element from string to double and store in a_vector
+            result_vector.resize(line_vector.size(), 0.0);
+            for(size_t i = 0; i < line_vector.size(); i++)
+            {
+                double temp_double;
+                str_cast(line_vector[i], temp_double);
+                result_vector[i] = temp_double;
+            }
+        }
+        f.close();
+    }
+    else
+    {
+        std::cout << "Error reading " << fname << ". Exiting..." << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    return result_vector;
+}
+
+void Grid_manager::getReplicateData()
+{
+    //This currently reads replicate data (a, b & state shipments/t) from files.
+    //This should be changed to get the data from a database instead.
+
+    a_map["beef"] = read_replicate_file("inputfiles/temp_a_beef.csv");
+    b_map["beef"] = read_replicate_file("inputfiles/temp_b_beef.csv");
+    a_map["dairy"] = read_replicate_file("inputfiles/temp_a_dairy.csv");
+    b_map["dairy"] = read_replicate_file("inputfiles/temp_b_dairy.csv");
+    shipment_volume_map["beef"] = read_replicate_file("inputfiles/temp_n_beef.csv");
+    shipment_volume_map["dairy"] = read_replicate_file("inputfiles/temp_n_dairy.csv");
+}
+
+void Grid_manager::readFips_and_states()
+{
+    std::clock_t fips_load_start = std::clock();
     FIPSmap.reserve(3500);
+    int state_code;
     std::string county, state, fips;
     double area, x, y;
     int n_counties_loaded = 0;
+    int n_states_loaded = 0;
 
-    std::ifstream f(fips_fname);
+    std::ifstream f(parameters->fipsFile);
 	if(f.is_open())
 	{
+	    skipBOM(f);
 	    while(!f.eof())
         {
             std::string line;
@@ -123,33 +169,50 @@ void Grid_manager::readFips(std::string& fips_fname)
 			{
 			    county = line_vector[0];
 			    state = line_vector[1];
-			    fips = line_vector[2];
+                fips = line_vector[2];
+			    str_cast(fips.substr(0,2), state_code);
 			    str_cast(line_vector[3], area);
 			    str_cast(line_vector[4], x);
 			    str_cast(line_vector[5], y);
 
-			    FIPSmap[fips] = new County(fips, x, y);
-			    FIPSvector.emplace_back(FIPSmap[fips]);
-			    FIPSmap[fips]->set_area(area);
-			    //Set parent state.
+                County* new_county = new County(fips, x, y);
+			    FIPSmap[fips] = new_county;
+			    FIPSvector.emplace_back(new_county);
+			    new_county->set_area(area);
+
+			    // Add county to its corresponding state object
+			    if(state_map.find(state) != state_map.end())
+                {
+                    new_county->set_parent_state(state_map.at(state));
+                }
+                else
+                {
+                    state_map[state] = new State(state, state_code);
+                    n_states_loaded += 1;
+                    new_county->set_parent_state(state_map.at(state));
+                }
 
 			    n_counties_loaded += 1;
 			}
         }
         f.close();
-        std::cout << n_counties_loaded << " counties created successfully." <<
-                     std::endl;
 	}
 	else
     {
         std::cout << "County file not found. Exiting..." << std::endl;
         exit(EXIT_FAILURE);
     }
+
+    std::clock_t fips_load_end = std::clock();
+    std::cout << n_counties_loaded << " counties and " << n_states_loaded << " states created successfully in " <<
+              1000.0 * (fips_load_end - fips_load_start) / CLOCKS_PER_SEC <<
+              "ms." << std::endl;
     //Counties created, now they need farms.
 }
 
 void Grid_manager::readFarms(std::string& farm_fname)
 {
+    std::clock_t farm_load_start = std::clock();
     farm_map.reserve(850000);
 	std::cout<<std::endl;
 	int id, tempsize;
@@ -177,8 +240,8 @@ void Grid_manager::readFarms(std::string& farm_fname)
 	if(!f){std::cout << "Premises file not found. Exiting..." << std::endl; exit(EXIT_FAILURE);}
 	if(f.is_open())
 	{
-        if (verbose>0){std::cout << "Premises file open." << std::endl;}
-        if (verbose>1){std::cout << "Loading farms: " << std::endl;}
+	    skipBOM(f);
+        if (verbose>0){std::cout << "Premises file open, loading premises." << std::endl;}
 
 		while(! f.eof())
 		{
@@ -207,6 +270,7 @@ void Grid_manager::readFarms(std::string& farm_fname)
                 }
 				// write farm pointer to private var farm_map
 				farm_map[id] = new Farm(id, x, y, fips);
+
 				++fcount;
 				// add species counts - check that number of columns is as expected
 				if(line_vector.size() < 4+speciesOnPrems.size()){
@@ -218,6 +282,7 @@ void Grid_manager::readFarms(std::string& farm_fname)
 				}
 				int colcount = 4; // populations should start at column 4
 				std::string herd = "";
+				bool herd_found = false;
 				for (auto& sp:speciesOnPrems){ // for each species
 					tempsize = stringToNum<int>(line_vector[colcount]); // assign value in column "colcount" to "tempsize"
 					farm_map.at(id)->Farm::set_speciesCount(sp,tempsize); // set number for species at premises
@@ -233,15 +298,31 @@ void Grid_manager::readFarms(std::string& farm_fname)
 						fipsSpeciesMap[fips][sp].emplace_back(farm_map.at(id));
 					}
                     if(tempsize < 1)
+                    {
                         herd += '0';
+                    }
                     else
-                        herd += '1';
+                    {
+                        if(herd_found == false)
+                        {
+                            herd += '1';
+                            herd_found = true;
+                        }
+                        else
+                        {
+                            std::cout<<"ERROR: premises " << id << " has more than one species present." <<std::endl;
+                            std::cout<<"Exiting..."<<std::endl;
+                            exit(EXIT_FAILURE);
+                        }
+                    }
+
 					++colcount;
+
 				}
 
 				//Assign the correct farm type to the farm.
-				Farm_type* this_type = parameters->farm_types->get_type(herd);
-                farm_map.at(id)->set_farm_type(this_type);
+                Farm_type* farm_type = get_farm_type(herd);
+                farm_map[id]->set_farm_type(farm_type);
 
 				// Add farm to its corresponding county object
                 try
@@ -288,12 +369,12 @@ if (verbose>1){std::cout << "Initializing xy limits.";}
 	for (auto& sp:sumP){
 		// sp.first is species name, sp.second is sum of each (herd size^p)
 		xiP[sp.first] = constInf.at(sp.first)*(sumSp[sp.first]/sp.second); // infectiousness normalizer
-        std::cout<<"xi_p for "<<sp.first<<": "<<xiP.at(sp.first)<<std::endl;
+        //std::cout<<"xi_p for "<<sp.first<<": "<<xiP.at(sp.first)<<std::endl;
     }
     for (auto& sp:sumQ){
 		// sp.first is species name, sp.second is sum of each (herd size^q)
 		xiQ[sp.first] = constSus.at(sp.first)*(sumSp[sp.first]/sp.second); // susceptibility normalizer
-        std::cout<<"xi_q for "<<sp.first<<": "<<xiQ.at(sp.first)<<std::endl;
+        //std::cout<<"xi_q for "<<sp.first<<": "<<xiQ.at(sp.first)<<std::endl;
     }
 
     // calculate and store farm susceptibility and infectiousness
@@ -301,10 +382,60 @@ if (verbose>1){std::cout << "Initializing xy limits.";}
 		set_FarmSus(f.second);
 		set_FarmInf(f.second);
 	}
+
+	std::clock_t farm_load_end = std::clock();
+    std::cout << fcount << " premises successfully loaded in " <<
+              1000.0 * (farm_load_end - farm_load_start) / CLOCKS_PER_SEC <<
+              "ms." << std::endl;
 }
 
 void Grid_manager::initFips()
 {
+    std::clock_t fips_init_start = std::clock();
+
+    //Get and set the shipping weights for the counties
+    std::cout << "Reading fips shipping weights..." << std::endl;
+    std::ifstream f(parameters->fips_weights);
+    if(f.is_open())
+    {
+        skipBOM(f);
+        while(! f.eof())
+		{
+		    std::string line;
+			double temp_double;
+			getline(f, line); // get line from file "f", save as "line"
+			std::vector<std::string> line_vector = split(line, '\t'); // separate by tabs
+
+			if(! line_vector.empty()) // if line_vector has something in it
+			{
+				std::string fips = line_vector[0];
+				std::vector<double> weights;
+                for(auto it = line_vector.begin() + 1; it != line_vector.end(); it++)
+                {
+                    str_cast(*it, temp_double);
+                    weights.push_back(temp_double);
+                }
+                if(FIPSmap.find(fips) != FIPSmap.end())
+                {
+                    FIPSmap[fips]->set_weights(weights);
+                }
+                else
+                {
+                    std::cout << "The fips " << fips << " in " << parameters->fips_weights <<
+                                 " was not found in " << parameters->fipsFile <<
+                                 ". Ignoring this and continuing anyway." << std::endl;
+                }
+			}
+		}
+		f.close();
+    }
+    else
+    {
+        std::cout << "No file with shipment weights for counties found. Exiting..." << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    //Remove counties without any premises
     std::vector<std::string> to_delete;
     for(auto c : FIPSmap)
     {
@@ -316,11 +447,36 @@ void Grid_manager::initFips()
         FIPSmap.erase(*it);
 
     std::cout << "Deleted " << to_delete.size() <<
-                 " counties that had no farms." << std::endl;
+                 " counties that had no premises." << std::endl;
 
-    std::cout << "Calculating shipping probabilities..." << std::endl;
+
+    //provide each county with a vector of pointers to all other counties so
+    //it has access to them.
     for(County* c : FIPSvector)
-        c->init_probabilities(FIPSvector, ship_kernel);
+        c->set_all_counties(FIPSvector);
+
+    std::clock_t fips_init_end = std::clock();
+    std::cout << "Counties initiated in " <<
+              1000.0 * (fips_init_end - fips_init_start) / CLOCKS_PER_SEC <<
+              "ms." << std::endl;
+}
+
+void Grid_manager::initStates()
+{
+    for(auto current_state : state_map)
+    {
+        //Set all the replicate specific data once for each farm type.
+        int state_code = current_state.second->get_code();
+        for(auto ft_pair : farm_types)
+        {
+            std::string type_str = ft_pair.second->get_species(); //Get species as a string (beef, dairy)
+            current_state.second->set_a(a_map[type_str][state_code-1], ft_pair.second);
+            current_state.second->set_b(b_map[type_str][state_code-1], ft_pair.second);
+            //std::cout << "Adding " << shipment_volume_map[type_str][state_code-1] << " to state with code " << state_code << std::endl;
+            current_state.second->set_shipment_volume(shipment_volume_map[type_str][state_code-1], ft_pair.second);
+        }
+        current_state.second->init_poisson();
+    }
 }
 
 std::vector<Farm*> Grid_manager::getFarms(std::tuple<int,double,double,double> cellSpecs, const unsigned int maxFarms/*=0*/)
@@ -979,4 +1135,27 @@ void Grid_manager::set_FarmInf(Farm* f)
 	}
 	f->set_inf(premInf);
 if (verbose>2){std::cout<<"Farm "<<f->get_id()<<" inf set to "<<premInf<<std::endl;}
+}
+
+Farm_type* Grid_manager::get_farm_type(std::string herd)
+{
+    if(farm_types.find(herd) == farm_types.end())
+    {
+        //This farm type has not been created yet
+        int index = 0;
+        for(size_t i = 0; i < herd.size(); i++)
+        {
+            if(herd[i] == '1')
+            {
+                index = i;
+                break;
+            }
+        }
+        farm_types[herd] = new Farm_type(index, herd, parameters->species);
+        return farm_types[herd];
+    }
+    else
+    {
+        return farm_types[herd];
+    }
 }

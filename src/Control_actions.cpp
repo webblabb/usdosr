@@ -108,13 +108,11 @@ if(verbose>1){std::cout<<f->get_id()<<" updated to "<<c.controlType<<" level "<<
 				//std::string farmfips = f->get_fips();
 
 				County* farmfips = f->get_parent_county();
-				std::cout << "6" << std::endl;
 				if(farmfips->get_control_status("report") == 0) //This county is not yet reported.
                 {
                     farmfips->set_control_status("report", 1);
                     countyStatusCounts["report"].at(1)++;
                 }
-                std::cout << "7" << std::endl;
 
 				// start shipping ban sequence at county level
 				startControlSeq_c(farmfips, "shipBan");
@@ -160,7 +158,7 @@ double Control_actions::compliance_shipBan()
 	return 0.5;
 }
 
-int Control_actions::checkShipBan(shipment* ship)
+int Control_actions::checkShipBan(Shipment* ship)
 {
 	int level = 0; // returned if no ban in place
 	if (counties.count(ship->origFIPS)==1){

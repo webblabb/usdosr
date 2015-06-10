@@ -1,6 +1,7 @@
 #ifndef KERNEL_F_H
 #define KERNEL_F_H
 
+#include <vector>
 #include <string>
 #include <iostream>
 
@@ -28,17 +29,26 @@ typedef double (Shipment_kernel::*k_fun_ptr)(double); //Kernel function pointer
 typedef double (Shipment_kernel::*d_fun_ptr)(County*, County*); //Distance function pointer
 
 public:
-    Shipment_kernel(double a, double b, std::string type = "linear");
+    Shipment_kernel(double a, double b, std::string type = "linear", bool binning_on = false);
     ~Shipment_kernel();
     double kernel(County* c1, County* c2);
     double distance(County* c1, County* c2, std::string type = "linear");
+    void set_bin_size(double in_size);
+    void set_longest_distance(double in_dist);
     void test(double d);
 
 private:
-    double a, b, a_sq, b_half;
+    double a, b;
+    bool binning_on;
+    double a_sq, b_half;
+    double bin_size = 20000;
+    double longest_distance = 6000000;
+    std::vector<double> bins;
     k_fun_ptr k_function;
     d_fun_ptr d_function;
 
+    void set_bins();
+    double get_bin(double d);
     double linear_distance_kernel(double d);
     double quadratic_distance_kernel(double sq_d);
     double linear_euclidean(County* c1, County* c2);

@@ -75,7 +75,7 @@ class Status_manager
 
 		int nextEvent(int);
 		void localExposure(std::vector<Farm*>&, int);
-		void shipExposure(std::vector<shipment*>&, int);
+		void shipExposure(std::vector<Shipment*>&, int);
 		void expose(std::vector<Farm*>&, int);
 
 		void take_notSus(std::vector<Farm*>&); //inlined
