@@ -1,6 +1,6 @@
 // Control_rules.h
-// This is where rules for control actions are specified and control progression is tracked. 
-// For example, 
+// This is where rules for control actions are specified and control progression is tracked.
+// For example,
 //  - cull all premises within a 10 km radius of any infected premises
 //  - ban all shipments from the county or state of an infected premises
 //  - comply with bans, culls, etc. at a given percentage
@@ -34,10 +34,12 @@ extern int verboseLevel;
 template <typename T>
 struct nextChange
 { // a struct to specify what needs to be changed and how, stored at a given time in _ToChange
-	T* unit;
+	T unit;
 	std::string controlType;
 	int level;
 };
+
+class County;
 
 class Control_actions
 // Control_actions use pointers to Farms from Status
@@ -46,22 +48,21 @@ class Control_actions
 		int verbose;
 		std::unordered_map< std::string, std::vector<std::tuple<double,double>> > cl; // control parameters
 		std::unordered_map< std::string, int> cTypeMax; // maximum level for each control type
-		
+
 		std::unordered_map<int, std::vector< nextChange<Prem_status> >> farmsToChange; // key: times that require action, value: specifics of action for farms
-		std::unordered_map<int, std::vector< nextChange<County> >> countiesToChange; // key: times that require action, value: specifics of action for counties
-		
+		std::unordered_map<int, std::vector< nextChange<County*> >> countiesToChange; // key: times that require action, value: specifics of action for counties
+
 		std::unordered_map< std::string, County* > counties; // mapped by fips
-		
+
 		std::unordered_map<std::string, std::vector<int>> farmStatusCounts; // counts of farms in each status
 		std::unordered_map<std::string, std::vector<int>> countyStatusCounts;
-		
+
 		void scheduleLevelUp_f(Prem_status*, std::string, int, int);
 		void scheduleLevelUp_c(County*, std::string, int, int);
 		void startControlSeq_f(Prem_status*, std::string, int);
-		void startControlSeq_c(County*, std::string, int);	
-		
+		void startControlSeq_c(County*, std::string, int);
 		double compliance_shipBan();
-		
+
 	public:
 		Control_actions(std::unordered_map< std::string, std::vector<std::tuple<double,double>> >&);
 		~Control_actions();
@@ -70,13 +71,13 @@ class Control_actions
 		void updates(int);
 		int getNfarms(std::string, int) const; // inlined, total farms with this status (control type-level)
 		int getNcounties(std::string, int) const; // inlined, total farms with this status (control type-level)
-		int checkShipBan(shipment*);
+		int checkShipBan(Shipment*);
 
 };
 
 inline int Control_actions::getNfarms(std::string ctype, int level) const
 { // initialized to 0 in case ctype doesn't exist
-	return farmStatusCounts.at(ctype).at(level); 
+	return farmStatusCounts.at(ctype).at(level);
 }
 
 inline int Control_actions::getNcounties(std::string ctype, int level) const

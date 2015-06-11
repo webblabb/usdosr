@@ -6,8 +6,9 @@
 #include <algorithm> // for std::max_element (susceptibility/infectiousness)
 
 #include "grid_cell.h"
+#include "Farm.h"
 
-grid_cell::grid_cell(const int in_id, const double in_x, const double in_y, 
+grid_cell::grid_cell(const int in_id, const double in_x, const double in_y,
 	const double in_s, const std::vector<Farm*> in_farms)
 	:
 	id(in_id),
@@ -21,7 +22,7 @@ grid_cell::grid_cell(const int in_id, const double in_x, const double in_y,
 	std::vector <double> allInf;
 	for (auto& f:in_farms){
 		allSus.emplace_back(f->Farm::get_sus()); // get farm's susceptibility and add to vector
-		allInf.emplace_back(f->Farm::get_inf()); // get farm's infectiousness and add to vector		
+		allInf.emplace_back(f->Farm::get_inf()); // get farm's infectiousness and add to vector
 		}
 
     // max_element "returns an iterator pointing to the element with the largest value"
