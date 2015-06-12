@@ -75,7 +75,7 @@ class Grid_manager
 		void getReplicateData(); //Gets replicate-specific data (a, b & state shipments/t)
 		void readStates(std::string state_file); //Reads states & flows from file.
 		void readFips_and_states(); //Reads counties from file.
-		void readFarms(std::string& farm_fname); //Does all the reading of premises-file
+		void readFarms(const std::string& farm_fname); //Does all the reading of premises-file
 		void initFips(); //Removes counties without farms and sets shipping probs.
 		void initStates(); //Initiates all farm shipment probs in the states.
 		void set_maxFarms(unsigned int in_maxFarms); //inlined

@@ -14,9 +14,8 @@
 #include "County.h"
 #include "shared_functions.h"
 
-<<<<<<< HEAD
 ///> Loads premises from file, calculates summary statistics
-Grid_manager::Grid_manager(const parameters* p)
+Grid_manager::Grid_manager(const Parameters* p)
 	:
 	speciesOnPrems(p->species),
 	susExponents(p->susExponents),
@@ -26,14 +25,14 @@ Grid_manager::Grid_manager(const parameters* p)
 	kernel(p->kernel),
 	committedFarms(0),
 	printCellFile(p->printCells),
-	batch(p->batch)
+	batch(p->batch),
 	parameters(p)
 {
 	verbose = 1; // manual control to override verboseLevel
 
     getReplicateData();
     readFips_and_states();
-    readFarms(farm_fname);
+    readFarms(parameters->premFile);
     initStates();
     initFips();
 
@@ -200,7 +199,7 @@ void Grid_manager::readFips_and_states()
     //Counties created, now they need farms.
 }
 
-void Grid_manager::readFarms(std::string& farm_fname)
+void Grid_manager::readFarms(const std::string& farm_fname)
 {
     std::clock_t farm_load_start = std::clock();
     farm_map.reserve(850000);
@@ -237,10 +236,10 @@ void Grid_manager::readFarms(std::string& farm_fname)
 			{
 				str_cast(line_vector[0], id);
 				fips = line_vector[1];
-				if (p->reverseXY){ // file is lat, then long (y, then x)
+				if (parameters->reverseXY){ // file is lat, then long (y, then x)
 					str_cast(line_vector[2], y);
 					str_cast(line_vector[3], x);
-				} else if (!p->reverseXY){ // file is long, then lat (x, then y)
+				} else if (!parameters->reverseXY){ // file is long, then lat (x, then y)
 					str_cast(line_vector[2], x);
 					str_cast(line_vector[3], y);
 				}

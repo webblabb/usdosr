@@ -117,7 +117,7 @@ std::cout << "Loading seed prems from "<<p->seedPremFile<<std::endl;
         Control_actions Control(cParams);
 
         if (p->seedMethod < 0){ // if choosing seeds by county, choose county based on rep number
-            seedFarms = fipsmap->at(FIPSlist.at(r));
+            seedFarms = fipsmap->at(FIPSlist.at(r))->get_farms();
         }
         int seedType = p->seedMethod;
         auto lagP = p->lagParams;

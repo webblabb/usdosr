@@ -51,7 +51,7 @@ public:
     double get_area(); //Inlined
     size_t get_n_farms(); //Inlined
     size_t get_n_farms(Farm_type* ft); //Inlined
-    const std::vector<Farm*>& get_farms(); //Inlined
+    std::vector<Farm*> get_farms(); //Inlined
     std::vector<Farm*>& get_farms(Farm_type* ft);
     std::unordered_map<std::string, int> get_statuses(); //Inlined
     int get_control_status(std::string status); //Inlined
@@ -107,7 +107,7 @@ inline size_t County::get_n_farms(Farm_type* ft)
     return farms_by_type[ft].size();
 }
 
-inline const std::vector<Farm*>& County::get_farms()
+inline std::vector<Farm*> County::get_farms()
 {
     if(!county_initialized)
         not_initialized();

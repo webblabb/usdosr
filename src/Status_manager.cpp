@@ -226,7 +226,6 @@ std::string Status_manager::get_status(Farm* f) const
 	return output;
 }
 
-<<<<<<< HEAD
 void Status_manager::premsWithStatus(std::string s, std::vector<Farm*>& output2)
 { // get all farms with status s between iterators (as of last call to updates)
 	std::vector<Farm*> output1;
