@@ -11,14 +11,14 @@
 class Farm
 {
 	protected: // allows access from derived class Prem_status
-		int id,	/// Unique integer identifier read from premises file
-			cellID; /// Integer identifier of grid_cell assigned to this premises during grid creation
-		double x_coordinate, /// x-coordinate from projected longitude (same units as local spread kernel)
-			y_coordinate, /// y-coordinate from projected latitude (same units as local spread kernel)
-			sus, /// Calculated total susceptibility of this premises
-			inf; /// Calculated total infectiousness of this premises
-		std::string fips; /// County identifier (FIPS code)
-		std::unordered_map< std::string, int > speciesCounts; /// Numbers of animals of each type, keyed by types
+		int id,	///< Unique integer identifier read from premises file
+			cellID; ///< Integer identifier of grid_cell assigned to this premises during grid creation
+		double x_coordinate, ///< x-coordinate from projected longitude (same units as local spread kernel)
+			y_coordinate, ///< y-coordinate from projected latitude (same units as local spread kernel)
+			sus, ///< Calculated total susceptibility of this premises
+			inf; ///< Calculated total infectiousness of this premises
+		std::string fips; ///< County identifier (FIPS code)
+		std::unordered_map< std::string, int > speciesCounts; ///< Numbers of animals of each type, keyed by types
 	
 	public:
 		Farm(int, double, double, std::string);

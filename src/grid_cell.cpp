@@ -1,12 +1,11 @@
-//
-//  grid_cell.cpp
-//
 #include <iostream>
 #include <vector>
 #include <algorithm> // for std::max_element (susceptibility/infectiousness)
 
 #include "grid_cell.h"
 
+/// Constructed with cell dimensions and premises within. Calculates and stores maximum 
+/// transmission values (for overestimating transmission probabilities).
 grid_cell::grid_cell(const int in_id, const double in_x, const double in_y, 
 	const double in_s, const std::vector<Farm*> in_farms)
 	:
@@ -16,15 +15,13 @@ grid_cell::grid_cell(const int in_id, const double in_x, const double in_y,
 	s(in_s),
 	farms(in_farms)
 {
-// calculate maximum susceptibility/infectiousness for farms within cell
+	// Add all farms' susceptibility and infectiousness to respective vectors and find max
 	std::vector <double> allSus;
 	std::vector <double> allInf;
 	for (auto& f:in_farms){
-		allSus.emplace_back(f->Farm::get_sus()); // get farm's susceptibility and add to vector
-		allInf.emplace_back(f->Farm::get_inf()); // get farm's infectiousness and add to vector		
+		allSus.emplace_back(f->Farm::get_sus()); // add farm's susceptibility to vector
+		allInf.emplace_back(f->Farm::get_inf()); // add farm's infectiousness to vector		
 		}
-
-    // max_element "returns an iterator pointing to the element with the largest value"
 	maxSus = *std::max_element(allSus.begin(),allSus.end());
 	maxInf = *std::max_element(allInf.begin(),allInf.end());
 	}
@@ -38,6 +35,7 @@ void grid_cell::addNeighbor(grid_cell* in_neighbor)
 	neighbors.emplace_back(in_neighbor);
 }
 
+///> Swaps contents of the empty member map for calculated kernel*susceptibility values
 void grid_cell::take_KernelValues(std::unordered_map<int, double>& in_kern)
 {
 	susxKern.swap(in_kern);

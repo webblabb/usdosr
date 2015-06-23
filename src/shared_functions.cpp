@@ -1,9 +1,5 @@
 #include "shared_functions.h"
 
-
-
-// Used in gridding (decision making for stepping into cells)
-// Used in pairwise evaluations in main
 double unif_rand()
 {
 	static std::uniform_real_distribution<double> unif_dist(0.0, 1.0);
@@ -11,7 +7,7 @@ double unif_rand()
 	static std::mt19937 generator(seed); //Mersenne Twister pseudo-random number generator. Generally considered research-grade.
 	return unif_dist(generator);
 }
-// Used in Status_manager to determine status duration
+
 double norm_rand()
 {
 	static std::normal_distribution<double> norm_dist(0,1);
@@ -19,9 +15,11 @@ double norm_rand()
 	static std::mt19937 generator(seed); //Mersenne Twister pseudo-random number generator. Generally considered research-grade.
 	return norm_dist(generator);
 }
-// Used in gridding (binomial method) to determing # of infected farms
+
+/// Used in gridding (binomial method) to determing # of infected farms
+/// \param[in]	N	Number of trials (premises in cell)
+///	\param[in]	prob	Probability of success for all trials (pmax for all premises in cell)
 int draw_binom(int N, double prob)
-// draw from a binomial distribution based on N farms and prob (calc with focalInf & gridKern)
 {		
 	std::binomial_distribution<int> binom_dist(N,prob);
 	static unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count();
@@ -29,31 +27,31 @@ int draw_binom(int N, double prob)
 	return binom_dist(generator);
 }
 
+/// Based on algorithm described at http://www.johndcook.com/blog/cpp_expm1/
+/// \param[in]	x	Exponent values
 double oneMinusExp(double x)
-// based on algo found at http://www.johndcook.com/blog/cpp_expm1/
 {
 	if (x == 0){
 		return 0;
 	} else if (std::abs(x) < 1e-5){
-		return -(x + 0.5*x*x); // two-term Taylor approx for x<1e-5
+		return -(x + 0.5*x*x);
 	} else {
 		return -(exp(x) - 1.0);
 	}
 }
 
-// used by status_manager and control_rules
+/// Used by Status_manager and Control_rules to determine status level progression times
+///	\param[in]	params	Tuple of two doubles, the mean and variance
 int normDelay(std::tuple<double, double>& params)
-// determine length of period drawn from normal distribution
 {
 	double mean = std::get<0>(params);
 	double var = std::get<1>(params);
-	double normDraw = norm_rand()*var + mean; // scaled to # drawn from N(0,1)
+	double normDraw = norm_rand()*var + mean; // scale # drawn from N(0,1) to mean and variance
 	int draw = (int)(normDraw+0.5); // round up to nearest day
 	if(draw<1){draw = 1;}
 	return draw;
 }
 
-// used in reading in files
 std::vector<std::string> 
 	split(const std::string &s, char delim, std::vector<std::string> &elems)
 {
@@ -77,54 +75,6 @@ std::vector<std::string>
     return elems;
 }
 
-// used in commitCell in grid initiation
-void removeFarmSubset(std::vector<Farm*>& subVec, std::vector<Farm*>& fullVec)
-// remove farms in first vector from second vector
-{
-	unsigned int expectedSize = fullVec.size()-subVec.size();
-//	std::cout << "Removing "<<subVec.size()<<" farms from list of "<<fullVec.size()<<std::endl;
-
-	// put vectors into fips-indexed maps to speed up matching
-	std::unordered_map< std::string, std::vector<Farm*> > subMap, fullMap; 
-	for (auto& sv:subVec){
-		subMap[sv->get_fips()].emplace_back(sv);}
-	for (auto& fv:fullVec){
-		fullMap[fv->get_fips()].emplace_back(fv);}
-
-	for (auto& sub:subMap){
-		// for each fips in subset list
-		std::string fips = sub.first;
-		// if needed, sort both lists of farms in this FIPS, by ID
-		std::sort(sub.second.begin(),sub.second.end(),sortByID<Farm*>);
-		std::sort(fullMap.at(fips).begin(),fullMap.at(fips).end(),sortByID<Farm*>);
-		// iterate through full list, erasing matching sub as found
-		auto it2 = fullMap.at(fips).begin();
-		for(auto it = sub.second.begin(); it != sub.second.end(); it++){
-		// loop through each farm in this FIPS
-			while (it2 != fullMap.at(fips).end()){ // while end of full list not reached
-				if(*it2 == *it){ // finds match in farmList to farmInCell
-					fullMap.at(fips).erase(it2); // remove from farmList
-					break; // start at next farm instead of looping over again
-				}
-				it2++;
-			}
-		}	
-	}
-	// rewrite fullVec
-	std::vector<Farm*> temp;
-	for (auto& f1:fullMap){
-	  for (auto& f2:f1.second){
-		temp.emplace_back(f2);}}
-	fullVec = temp;
-		
-	if (expectedSize != fullVec.size()){
-		std::cout << "Error in removeFarmSubset: expected size"<< expectedSize <<
-		", actual size: "<< fullVec.size() <<". Exiting...";
-		exit(EXIT_FAILURE);
-	}
-
-}
-
 std::vector<double> stringToNumVec(std::string& toConvert)
 {
 	std::vector<double> output;
@@ -138,14 +88,14 @@ std::vector<double> stringToNumVec(std::string& toConvert)
     {
         substring = toConvert.substr(start, end - start);
         substring.erase(std::remove_if(substring.begin(), substring.end(), isspace), substring.end()); // remove whitespace
-        str_cast(substring,temp); // convert substring to double
+        temp = stringToNum<double>(substring); // convert substring to double
         output.emplace_back(temp); // add double to vector
         start = end + delim.length(); // set end(+delimiter) as new start point
         end = toConvert.find(delim, start); // find new endpoint
     }
     substring = toConvert.substr(start, end); // last substring
     substring.erase(std::remove_if(substring.begin(), substring.end(), isspace), substring.end()); // remove whitespace
-	str_cast(substring,temp); // convert substring to double
+	temp = stringToNum<double>(substring); // convert substring to double
     output.emplace_back(temp); // add double to vector
     
     return output;
@@ -164,14 +114,14 @@ std::vector<int> stringToIntVec(std::string& toConvert)
     {
         substring = toConvert.substr(start, end - start);
         substring.erase(std::remove_if(substring.begin(), substring.end(), isspace), substring.end()); // remove whitespace
-        str_cast(substring,temp); // convert substring to double
+        temp = stringToNum<int>(substring); // convert substring to double
         output.emplace_back(temp); // add double to vector
         start = end + delim.length(); // set end(+delimiter) as new start point
         end = toConvert.find(delim, start); // find new endpoint
     }
     substring = toConvert.substr(start, end); // last substring
     substring.erase(std::remove_if(substring.begin(), substring.end(), isspace), substring.end()); // remove whitespace
-	str_cast(substring,temp); // convert substring to double
+	temp = stringToNum<int>(substring); // convert substring to double
     output.emplace_back(temp); // add double to vector
     
     return output;
@@ -200,7 +150,6 @@ std::vector<std::string> stringToStringVec(std::string& toConvert)
     return output;
 }
 
-// convert vector of one type (int) to comma-separated string
 std::string vecToCommaSepString(const std::vector<int> vecToPaste)
 {
 	std::string output;
@@ -213,7 +162,6 @@ std::string vecToCommaSepString(const std::vector<int> vecToPaste)
 	return output;
 }
 
-// overload for vector of strings
 std::string vecToCommaSepString(const std::vector<std::string> vecToPaste)
 {
 	std::string output;
@@ -242,7 +190,7 @@ void addItemTab(std::string& outString, std::string toAdd){
 	outString +="\t";
 }
 
-// function for printing (adding) output to specified file
+/// Adds a formatted string (including tabs, newline) to an output file
 void printLine(std::string& outputFile, std::string& printString)
 {
 	std::ofstream outfile;

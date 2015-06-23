@@ -8,7 +8,7 @@
 #include "Grid_checker.h"
 #include "Shipment_manager.h"
 
-int verboseLevel; // global variable
+int verboseLevel; // global variable determining console output
 
 int main(int argc, char* argv[])
 {
@@ -28,13 +28,13 @@ int main(int argc, char* argv[])
 	}
 
 	file_manager fm; // construct file_manager object
-	fm.readConfig(cfile); // reads config file, creates parameters struct, and checks for errors
+	fm.readConfig(cfile); // reads config file, fills parameters struct, and checks for errors
 	const parameters* p = fm.getParams();
 	
 	// set values for global, 
 	verboseLevel = p->verboseLevel; 
 	int verbose = verboseLevel; // override global value for main here if desired
-	// and local variables that might be changed 
+	// set local variables that might be changed due to config options
 	int reps = p->replicates;
 	// or are frequently accessed
 	int timesteps = p->timesteps;
@@ -80,7 +80,6 @@ int main(int argc, char* argv[])
 	std::unordered_map<int, std::string> FIPSlist; // used if numRandomSeed < 0
 	if (p->seedMethod >= 0){
 		// read in initially infected prems from file
-		int fID;
 		std::ifstream f(p->seedPremFile);
 		if(!f){std::cout << "Seed input file not found. Exiting..." << std::endl; exit(EXIT_FAILURE);}
 std::cout << "Loading seed prems from "<<p->seedPremFile<<std::endl;
@@ -88,7 +87,7 @@ std::cout << "Loading seed prems from "<<p->seedPremFile<<std::endl;
 				std::string line;
 				getline(f, line); // get line from file "f", save as "line"			
 				if(! line.empty()){ // if line has something in it
-					str_cast(line, fID);
+					int fID = stringToNum<int>(line);
 					seedFarms.emplace_back(allPrems->at(fID));
 				} // close "if line_vector not empty"
 			} // close "while not end of file"
@@ -109,17 +108,16 @@ std::cout << "Loading seed prems from "<<p->seedPremFile<<std::endl;
 //~~~~~~~~~~~~~~~~~~ Loop starts here
 for (int r=1; r<=reps; r++){
 	std::clock_t rep_start = std::clock();
-	// load initially infected farms and instantiate Status manager
-	// note that initial farms are started as infectious rather than exposed
-	
-	auto cParams = p->controlLags;
- 	Control_actions Control(cParams);
+	// Instantiate control_actions for this replicate	
+ 	Control_actions Control(p);
 	
 	if (p->seedMethod < 0){ // if choosing seeds by county, choose county based on rep number
 		seedFarms = fipsmap->at(FIPSlist.at(r));
 	}
 	int seedType = p->seedMethod;
 	auto lagP = p->lagParams;
+	// load initially infected farms and instantiate Status manager
+	// note that initial farms are started as infectious rather than exposed
 	
 	Status_manager Status(seedFarms, seedType, lagP, allPrems, timesteps, &Control); // seeds initial exposures, modify to pass grid manager, p
 	Shipment_manager Ship(fipsmap, fipsSpeciesMap, &Status, p->shipPremAssignment, p->species); // modify to pass grid manager, p

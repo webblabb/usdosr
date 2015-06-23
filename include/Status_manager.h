@@ -1,8 +1,3 @@
-///
-///		\class Status_manager
-///
-///		Keeps track of disease statuses during a simulation.
-
 #ifndef Status_manager_h
 #define Status_manager_h
 
@@ -30,10 +25,12 @@ struct statusShift
 	std::tuple<double,double> lagToTwo; ///< Mean and variance of lag time from old to new
 };
 
+///> 	Keeps track of disease and control statuses during a simulation.
+/// 	Filters exposures from local and shipment spread with any control measures in place.
 class Status_manager
 {
 	private:
-		int verbose;
+		int verbose; ///< Can be set to override global setting for console output
 		
 		std::vector<statusShift> diseaseSeq; ///< Sequence of disease statuses and associated lag times
 		std::unordered_map<std::string, std::tuple<double,double>> params; ///< Map of mean/variance of times spent in ["latency"]: exposed-to-infectious, and ["infectious"]: infectious-to-recovered 

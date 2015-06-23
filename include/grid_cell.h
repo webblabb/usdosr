@@ -1,30 +1,27 @@
-//  grid_cell.h
-//
-// Defines grid_cell objects, each with coordinates of corner, susceptibility/infectiousness,
-// vectors of farms within, neighbors, and kernel values to cells in range according to pcell-cell
-
 #ifndef grid_cell_h
 #define grid_cell_h
 
 #include "shared_functions.h" // for isWithin function in struct farmInList
 
+///> Defines grid_cell objects
+/// Each cell has x-y coordinates of lower left corner, max susceptibility/infectiousness,
+/// vectors of premises within, neighbors, and kernel values to other cells according to
+/// its most infectious premises.
 class grid_cell
 {
     private:
     	int id;
-        double x, y, s, maxSus, maxInf; // x and y are coordinates for lower left corner
+        double x, y, s, maxSus, maxInf;
         std::vector<Farm*> farms;
         std::vector<grid_cell*> neighbors;
-        std::unordered_map<int, double> susxKern; // index is int because cells are copied in replicates and referred to by id rather than pointer
+        std::unordered_map<int, double> susxKern; // key is int because cells are copied in replicates and referred to by id rather than pointer
     
     public:
 		grid_cell(const int, const double, const double, const double, const std::vector<Farm*>);
 		~grid_cell();
 
-	// in alphabetical order by function name
         void addNeighbor(grid_cell*);
-        bool canInfect(int) const; //inlined
-        std::vector<Farm*> get_farms() const; // inlined - not pointers because modifiable copy is needed
+        std::vector<Farm*> get_farms() const; // inlined
 		int get_id() const; //inlined
         double get_maxInf() const; //inlined
         double get_maxSus() const; //inlined
@@ -40,10 +37,7 @@ class grid_cell
 
 };
 
-
-inline bool grid_cell::canInfect(int) const {
-	return (susxKern.count(id)==1);} 
-
+///> Used to copy grid_cells in Grid_checker, otherwise would return pointer
 inline std::vector<Farm*> grid_cell::get_farms() const {
 	return farms;}
 	
@@ -73,7 +67,8 @@ inline double grid_cell::get_y() const {
 
 inline double grid_cell::kernelTo(int id) const {
 	return susxKern.at(id);}
-	
+
+///> Identifies if a Farm* is present in a list of ID numbers
 struct farmIDpresent // used in removeFarmSubset function with Farm*
 {
 	farmIDpresent(const std::vector<int> id_list) : ids(id_list) {} // constructor

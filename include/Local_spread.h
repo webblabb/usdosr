@@ -7,24 +7,28 @@
 
 extern int verboseLevel;
 
+///> Defines relationship between distance and transmission risk
+/// May be defined as a function or read in as an external file. Constructors perform 
+/// one-time initial calculations (i.e. operations on parameters or squaring distances) 
+/// and store them with the instance.
 class Local_spread
 {
 	private:
-		int verbose;
-		int kType; // kernel type
-		std::vector<double> kp; // kernel parameters
-		std::string datafile; // file containing data-based risk
-		std::map<double,double> distProb; // key is distance (m) squared, value is probability	
+		int verbose; ///< Can be set to override global setting for console output
+		int kType; ///< Kernel type
+		std::vector<double> kp; ///< Kernel parameters
+		std::string datafile; ///< File containing distances and associated probabilities
+		std::map<double,double> distProb; ///< Map with key of distance (m) squared, value is probability	
 		
 	public:
-		/// Constructs a kernel with power law parameters
+		///> Constructs a kernel from an equation (determined by variable kType)
 		Local_spread(int kernelType, 
 			std::vector<double> kparams = std::vector<double>());
-		/// Constructs a kernel from external file
+		///> Constructs a kernel from external file
 		Local_spread(int kernelType, 
 			std::string fname);
 		~Local_spread();
-		/// Returns kernel value at distance
+		///> Calculates or matches kernel value according to form defined at construction
 		double atDistSq(double);
 };
 	

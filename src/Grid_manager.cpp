@@ -58,14 +58,14 @@ if (verbose>1){std::cout << "Loading farms: " << std::endl;}
 			
 			if(! line_vector.empty()) // if line_vector has something in it
 			{
-				str_cast(line_vector[0], id);
+				id = stringToNum<int>(line_vector[0]);
 				fips = line_vector[1];
 				if (p->reverseXY){ // file is lat, then long (y, then x)
-					str_cast(line_vector[2], y);
-					str_cast(line_vector[3], x);
+					y = stringToNum<double>(line_vector[2]);
+					x = stringToNum<double>(line_vector[3]);
 				} else if (!p->reverseXY){ // file is long, then lat (x, then y)
-					str_cast(line_vector[2], x);
-					str_cast(line_vector[3], y);
+					x = stringToNum<double>(line_vector[2]);
+					y = stringToNum<double>(line_vector[3]);
 				}
 				// write farm pointer to private var farm_map
 				farm_map[id] = new Farm(id, x, y, fips); 
@@ -556,6 +556,53 @@ std::string Grid_manager::to_string(grid_cell& gc) const
 	toPrint.replace(toPrint.end()-1, toPrint.end(), "\n");
 	
 	return toPrint;
+}
+
+/// Used in commitCell in grid initiation. Probably can be moved to Grid_manager
+void Grid_manager::removeFarmSubset(std::vector<Farm*>& subVec, std::vector<Farm*>& fullVec)
+{
+	unsigned int expectedSize = fullVec.size()-subVec.size();
+//	std::cout << "Removing "<<subVec.size()<<" farms from list of "<<fullVec.size()<<std::endl;
+
+	// put vectors into fips-indexed maps to speed up matching
+	std::unordered_map< std::string, std::vector<Farm*> > subMap, fullMap; 
+	for (auto& sv:subVec){
+		subMap[sv->get_fips()].emplace_back(sv);}
+	for (auto& fv:fullVec){
+		fullMap[fv->get_fips()].emplace_back(fv);}
+
+	for (auto& sub:subMap){
+		// for each fips in subset list
+		std::string fips = sub.first;
+		// if needed, sort both lists of farms in this FIPS, by ID
+		std::sort(sub.second.begin(),sub.second.end(),sortByID<Farm*>);
+		std::sort(fullMap.at(fips).begin(),fullMap.at(fips).end(),sortByID<Farm*>);
+		// iterate through full list, erasing matching sub as found
+		auto it2 = fullMap.at(fips).begin();
+		for(auto it = sub.second.begin(); it != sub.second.end(); it++){
+		// loop through each farm in this FIPS
+			while (it2 != fullMap.at(fips).end()){ // while end of full list not reached
+				if(*it2 == *it){ // finds match in farmList to farmInCell
+					fullMap.at(fips).erase(it2); // remove from farmList
+					break; // start at next farm instead of looping over again
+				}
+				it2++;
+			}
+		}	
+	}
+	// rewrite fullVec
+	std::vector<Farm*> temp;
+	for (auto& f1:fullMap){
+	  for (auto& f2:f1.second){
+		temp.emplace_back(f2);}}
+	fullVec = temp;
+		
+	if (expectedSize != fullVec.size()){
+		std::cout << "Error in removeFarmSubset: expected size"<< expectedSize <<
+		", actual size: "<< fullVec.size() <<". Exiting...";
+		exit(EXIT_FAILURE);
+	}
+
 }
 
 /// Gets shortest distance between two cells and squares that distance (for input to kernel)

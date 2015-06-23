@@ -1,3 +1,5 @@
+/// \file
+
 #ifndef shared_functions_h
 #define shared_functions_h
 
@@ -11,56 +13,46 @@
 
 #include "Farm.h" // for removing farm subset for grid manager
 
+///> (Probably temporary) County structure to track control progress levels
 struct County // used in Status and Control
 {
 	std::string fips;
-	std::unordered_map<std::string, int> statuses; // for control type and level
+	std::unordered_map<std::string, int> statuses; ///< Map with key of control type and value of level
 };
 
-struct shipment // used in Shipment, Status
+///> Shipment generated from USAMM
+/// Used in Shipment_manager, Status_manager
+struct shipment
 {
-	int t; // time of shipment
-	int origID; // premises ID of shipment origin
-	int destID; // premises ID of shipment destination
-	std::string origFIPS;
-	std::string destFIPS;
-	std::string species;
-	bool transmission; // if this is from an infectious to a susceptible premises
-	int ban; // 0 = no ban, 1 = ban ordered but not active, 2 ban ordered & active, 3 = ban active & compliant
+	int t; ///< Time of shipment
+	int origID; ///< Premises ID of shipment origin
+	int destID; ///< Premises ID of shipment destination
+	std::string origFIPS; ///< County ID of shipment origin
+	std::string destFIPS; ///< County ID of shipment destination
+	std::string species; ///< Species or animal type in shipment
+	bool transmission; ///< T/F: this is from an infectious to a susceptible premises
+	int ban; ///< Ban level: 0 = no ban, 1 = ban ordered but not active, 2 ban ordered & active, 3 = ban active & compliant
 };
 
-	double unif_rand();
-	double norm_rand();
-	int draw_binom(int, double);
-	double oneMinusExp(double);
- 	int normDelay(std::tuple<double, double>&);
+	double unif_rand(); ///< Uniform distribution random number generator
+	double norm_rand(); ///< Normal distribution random number generator
+	int draw_binom(int, double); ///< Draw number of successes from a binomial distribution
+	double oneMinusExp(double); ///< Calculates \f$1 - e^x\f$ using a two-term Taylor approximation for x<1e-5
+ 	int normDelay(std::tuple<double, double>&); ///< Return a period of time, drawn from a normal distribution
 	std::vector<std::string>
 		split(const std::string&, char, std::vector<std::string>&);
 	std::vector<std::string> 
 		split(const std::string&, char);
 	std::string to_string(Farm*);
- 	void removeFarmSubset(std::vector<Farm*>&, std::vector<Farm*>&);
-	std::vector<double> stringToNumVec(std::string&);
-	std::vector<int> stringToIntVec(std::string&);
-	std::vector<std::string> stringToStringVec(std::string&);
-	std::string vecToCommaSepString(const std::vector<int> vecToPaste);
-	std::string vecToCommaSepString(const std::vector<std::string> vecToPaste);
-	void addItemTab(std::string&, int);
-	void addItemTab(std::string&, double);
-	void addItemTab(std::string&, std::string);
-	void printLine(std::string&, std::string&);
-
-	
-template<typename T> 
-void str_cast(const std::string &s, T &ref)
-	// str_cast(s, v) casts a number represented as a string and stores it in v,
-	// v can be any type that can store numericals such as int, double etc.
-{
-	std::stringstream convert;
-	convert << s;
-	if(!(convert >> ref))
-		ref = -1;
-}
+	std::vector<double> stringToNumVec(std::string&); ///< Converts comma-separated string to vector of doubles
+	std::vector<int> stringToIntVec(std::string&); ///< Converts comma-separated string to vector of integers
+	std::vector<std::string> stringToStringVec(std::string&); ///< Converts comma-separated string to vector of strings
+	std::string vecToCommaSepString(const std::vector<int> vecToPaste); ///< Converts vector of integers to a comma-separated string
+	std::string vecToCommaSepString(const std::vector<std::string> vecToPaste); ///< Overloaded version converts vector of strings to a comma-separated string
+	void addItemTab(std::string&, int); ///< Adds tab after an integer (converted to character)
+	void addItemTab(std::string&, double); ///< Overloaded version adds tab after a double (converted to character)
+	void addItemTab(std::string&, std::string); ///< Overloaded version adds tab after a string
+	void printLine(std::string&, std::string&); ///< Generic print function used by a variety of output files
 
 template<typename T> 
 T stringToNum(const std::string& text)
@@ -71,22 +63,28 @@ T stringToNum(const std::string& text)
 	return result;
 }
 
-// choose a random element from a vector
+///> Chooses a single random element from a vector
+///	\param[in]	vec		Vector of values from which to choose
 template<typename T> 
 T randomFrom(std::vector<T>& vec)
 {
 	int maxSize = vec.size();
 	double rUnif = unif_rand();
-		if (rUnif ==1 ){rUnif=0.999;} // avoids assigning actual maxSize value (out of range)
 	int rIndex = (int) floor(rUnif*maxSize);
+	
+	if (rUnif == 1){rIndex = vec.size()-1;} // Return last element (rather than out-of-range vec[maxSize])
+	
 	return vec[rIndex];
 }
 
-// choose multiple random elements from a vector based on the Fisher-Yates shuffling algorithm:
-// num_random selected random values are copied to output, 
-// selected values are swapped to the end of the vector so they're not selected again
-// Used in Grid_manager to select binomial-success farms
-// Used in Shipping_manager to select random premises in counties
+///> Chooses multiple random elements from a vector based on the Fisher-Yates shuffling algorithm.
+/// num_random selected random values are copied to output, 
+/// selected values are swapped to the end of the vector so they're not selected again
+/// Used in Grid_manager to select binomial-success farms
+/// Used in Shipping_manager to select random premises in counties
+/// \param[in]	elements	Vector of values from which to choose
+///	\param[in]	num_random	Number of values to choose
+/// \param[out] output1		Vector of randomly chosen values
 template<typename T> 
 void random_unique(std::vector<T> elements, int num_random, std::vector<T>& output1) 
 	// elements not referenced (&) because we're rearranging it
@@ -110,7 +108,7 @@ void random_unique(std::vector<T> elements, int num_random, std::vector<T>& outp
  output.swap(output1);	
 }
 	
-// check if something is in a vector
+///> Checks if an item is within a vector of items
 template<typename T> 
 bool isWithin(const T target, const std::vector<T> vec)
 {
@@ -123,30 +121,11 @@ bool isWithin(const T target, const std::vector<T> vec)
 	return found;
 }
 
-// combine multiple vectors and remove any duplicates
-// input is vector of vectors to combine
-template<typename T> 
-std::vector<T> uniqueFrom(std::vector<std::vector<T>>& vec)
-{
-	int totalElements = 0;
-	std::unordered_map<T,int> combinedMap;
-	for (auto& v1:vec){
-		for (auto& v2:v1){
-			totalElements++;
-			if (combinedMap.count(v2)==0){combinedMap[v2]=1;}
-		}
-	}
-	std::vector<T> toReturn;
-	for (auto& cm:combinedMap){
-		toReturn.emplace_back(cm.first);
-	}
-// 	std::cout << totalElements-combinedMap.size() <<" duplicate elements removed. ";
-	return toReturn;
-}
-
-// determine which element's range a number falls into
-// arguments are the number to match and vector of ordered maximums for each element
-// returns largest element of elementMaxes that is less than or = toMatch
+///> Determine which element's range a number falls into
+/// Used in determining which (shipment) method to use at a given time
+/// \param[in]	toMatch			Value to be matched
+/// \param[in]	elementMaxes	Sorted vector of maximums for each element
+/// \returns largest element of elementMaxes that is less than or = toMatch
 template<typename T> 
 int whichElement(T& toMatch, std::vector<T>& elementMaxes)
 {
@@ -176,11 +155,11 @@ int whichElement(T& toMatch, std::vector<T>& elementMaxes)
 	return match;
 }
 
+///> Function that compares Farm IDs for sorting
+/// Used with grid_cell*s in grid checker: stepThroughCells. Must be defined outside of 
+/// class in order to be used with std::sort
 template<typename T> 
 inline bool sortByID(const T item1, const T item2)
-// "compare" function to sort farms by ID
-//  used with grid_cell*s in grid checker: stepThroughCells
-// must be defined outside of class, or else sort doesn't work
 {
 	return (item1 -> get_id()) < (item2 -> get_id());
 }

@@ -1,7 +1,3 @@
-// Grid_manager.h
-//
-// 7 Apr 2014
-
 #ifndef Grid_manager_h
 #define Grid_manager_h
 
@@ -18,25 +14,25 @@
 
 extern int verboseLevel;
 
-///  Creates grid cells determined by local farm density, stores relevant values with Farms
+///>  Creates grid cells determined by local farm density, stores relevant values with Farms
 class Grid_manager
 {
 	private:
-		int verbose; ///> Global value of verbose level (unless overridden for this class)
+		int verbose; ///< Can be set to override global setting for console output
 		
 		// variables for grid creation
-		unsigned int maxFarms; ///> Threshold number of premises per cell (cell size takes precedence)
+		unsigned int maxFarms; ///< Threshold number of premises per cell (cell size takes precedence)
 		std::unordered_map<int, grid_cell*> 
-			allCells; ///> Unordered_map of all cells in grid
+			allCells; ///< Unordered_map of all cells in grid
 		std::unordered_map<int, Farm*> 
-			farm_map; ///> Unordered_map of all premises objects
+			farm_map; ///< Unordered_map of all premises objects
 		std::unordered_map<std::string, std::vector<Farm*>>
-			FIPSmap; // key is fips code, value is vector of farms within
+			FIPSmap; ///< Key is fips code, value is vector of farms within
 		std::unordered_map<std::string, 
 			std::unordered_map< std::string, std::vector<Farm*> >> fipsSpeciesMap;
-			// key is fips code, then species name, then sorted by population size
+			///< key is fips code, then species name, then sorted by population size
  		std::vector<Farm*> 
- 			farmList; // vector of pointers to all farms (deleted in chunks as grid is created)
+ 			farmList; ///< vector of pointers to all farms (deleted in chunks as grid is created)
 		std::tuple<double,double,double,double> 
 			xylimits; ///< Ranges of premises coordinates: [0]x min, [1]x max, [2]y min, [3]y max
 
@@ -59,26 +55,28 @@ class Grid_manager
 		std::string to_string(grid_cell&) const;
 		std::vector<Farm*> getFarms(
 			std::tuple<int,double,double,double>& cellSpecs,
-			const unsigned int maxFarms=0); // makes list of farms in a cell (quits early if over max)
+			const unsigned int maxFarms=0); ///< Makes list of farms in a cell (quits early if over max)
 		void removeParent(
-			std::stack< std::tuple<int,double,double,double> >& queue);// removes 1st vector in queue
+			std::stack< std::tuple<int,double,double,double> >& queue);///< Removes 1st item in queue
 		void addOffspring(
 			std::tuple<int,double,double,double> cellSpecs, 
-			std::stack< std::tuple<int,double,double,double> >& queue); // adds subdivided cells to queue
+			std::stack< std::tuple<int,double,double,double> >& queue);
 		void commitCell(
 			std::tuple<int,double,double,double> cellSpecs, 
-			std::vector<Farm*>& farmsInCell); // adds cell as type GridCell to set allCells
+			std::vector<Farm*>& farmsInCell); ///< Adds grid_cell to allCells
 		void splitCell(
 			std::tuple<int,double,double,double>& cellSpecs, 
-			std::stack< std::tuple<int,double,double,double> >& queue); // replaces parent cell with subdivided offspring quadrants
+			std::stack< std::tuple<int,double,double,double> >& queue); ///< Replaces parent cell with subdivided offspring quadrants
  		void assignCellIDtoFarms(int cellID, std::vector<Farm*>& farmsInCell);
+ 		void removeFarmSubset(std::vector<Farm*>&, std::vector<Farm*>&); ///< Remove farms in first vector from second vector
+
+		// functions for infection evaluation
 		double shortestCellDist2(
 			grid_cell* cell1, 
-			grid_cell* cell2); ///> Calculates (shortest distance between two cells)^2
-		void makeCellRefs(); ///> Calculates and stores kernel values and other pre-processing tasks
-		// functions for infection evaluation
-		void set_FarmSus(Farm*); ///> Calculates premises susceptibility and stores in Farm
-		void set_FarmInf(Farm*); ///> Calculates premises infectiousness and stores in Farm
+			grid_cell* cell2); ///< Calculates (shortest distance between two cells)^2
+		void makeCellRefs(); ///< Calculates and stores kernel values and other pre-processing tasks
+		void set_FarmSus(Farm*); ///< Calculates premises susceptibility and stores in Farm
+		void set_FarmInf(Farm*); ///< Calculates premises infectiousness and stores in Farm
 		
 	public:
 		Grid_manager(const parameters*);
@@ -116,10 +114,9 @@ class Grid_manager
 			
 };
 
+/// "Compare" function to sort farms by x-coordinate,
+/// used when assigning farms to uniform cell grid
 inline bool sortByX(const Farm* farm1, const Farm* farm2)
-// "compare" function to sort farms by x-coordinate
-// used when assigning farms to uniform cell grid
-// must be defined outside of class, or else sort doesn't work
 {
 	return (farm1 -> get_x()) < (farm2 -> get_x());
 }
@@ -167,7 +164,7 @@ template<typename T> std::vector<T> orderNumbers(T& number1, T& number2)
 	return ordered;
 }
 
-// used to sort farms by population for a given species/type
+/// Sorts farms by population for a given species/type
 struct comparePop
 {
 	comparePop(std::string in_species) : species(in_species) {}

@@ -1,14 +1,10 @@
-///
-///		file_manager
-///
-
 #ifndef file_manager_h
 #define file_manager_h
 
 #include <fstream>
 #include "shared_functions.h"
 #include "Local_spread.h"
-// shared_functions includes iostream, sstream, string, vector
+// shared_functions includes iostream, sstream, string, vector, parameters definition
 
 extern int verboseLevel;
 
@@ -75,8 +71,8 @@ struct parameters
 class file_manager
 {
 	private:
-		int verbose;
-		std::vector<std::string> pv; ///< parameter vector for reading in from file
+		int verbose; ///< Can be set to override global setting for console output
+		std::vector<std::string> pv; ///< Parameter vector for reading in from file
 		parameters params;
 		
 		bool checkMeanVar(std::string&, int, std::string);

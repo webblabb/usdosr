@@ -1,9 +1,3 @@
-// Shipment_manager.h
-//
-// Predicts shipments from counties with infectious farms
-// Gets called at each timepoint
-// Bans: go into effect "after" shipments determined - for tracking business continuity
-
 #ifndef Shipment_manager_h
 #define Shipment_manager_h
 
@@ -15,25 +9,30 @@
 
 extern int verboseLevel;
 
+/// County-to-county shipment
 struct coShipment{
-	int t; // time of shipment
-	std::string origFIPS; // premises ID of shipment origin
-	std::string destFIPS; // premises ID of shipment destination
+	int t; ///< Time of shipment
+	std::string origFIPS; ///< Premises ID of shipment origin
+	std::string destFIPS; ///< Premises ID of shipment destination
 	std::string species;
-	int volume; // will be 1 most of the time, but allows for multiple shipments between counties in the same t
-	int ban; // 0 = no ban, 1 = ban ordered but non-compliant, 2 = ban ordered & compliant
+	int volume; ///> Generally 1, but allows for multiple shipments between counties in the same t
+	int ban; ///< 0 = no ban, 1 = ban ordered but non-compliant, 2 = ban ordered & compliant
 };
 
+///> Manages the shipments (USAMM) part of the simulation
+/// Predicts shipments from counties with infectious farms
+/// Gets called at each timepoint
+/// Bans: go into effect "after" shipments determined - for tracking business continuity
 class Shipment_manager
 {
 	private:
-		int verbose; 
+		int verbose; ///< Can be set to override global setting for console output
 		
 		// const pointers to Grid_manager objects:
 		const std::unordered_map<std::string, std::vector<Farm*>>* FIPSmap;
 		const std::unordered_map<std::string, std::unordered_map<std::string, std::vector<Farm*> >>* fipsSpeciesMap;
-		// const pointer to Status manager (to access up-to-date premises statuses):
-		Status_manager* S;
+		
+		Status_manager* S; ///< Const pointer to Status manager (to access up-to-date premises statuses)
 		// used to generate random shipments
 		std::vector<std::string> allFIPS; // list of all possible destination FIPS, based on premises file
 		int farmFarmMethod;
@@ -48,22 +47,21 @@ class Shipment_manager
 		int startRecentShips, startCoRecentShips; // indicates index in shipmentList where the most recent set of shipments starts
 
 		// functions
-		void countyCountyShipments(std::string, int); // determines county-county movements & volumes
-		Farm* largestStatus(std::vector<Farm*>&, std::string&); // finds largest premises with "status", from vector sorted by population
-		void farmFarmShipments(); // assigns county shipments to individual farms
+		void countyCountyShipments(std::string, int); ///< Determines county-county movements & volumes
+		Farm* largestStatus(std::vector<Farm*>&, std::string&); ///< Finds largest premises with "status", from vector sorted by population
+		void farmFarmShipments(); ///< Assigns county shipments to individual farms
 	
 	public:
-		Shipment_manager( // construct with 
-			const std::unordered_map<std::string, std::vector<Farm*>>*, // a map of FIPS codes to farms
-			const std::unordered_map<std::string, std::unordered_map<std::string, std::vector<Farm*> >>*, // sorted populations of species on farms
+		Shipment_manager(
+			const std::unordered_map<std::string, std::vector<Farm*>>*, 
+			const std::unordered_map<std::string, std::unordered_map<std::string, std::vector<Farm*> >>*,
 			Status_manager*,
-			int, // farm assignment method
-			const std::vector<std::string>&); // list of species on premises
+			int,
+			const std::vector<std::string>&);
 		
 		~Shipment_manager();
 		
-		void makeShipments(std::vector<Farm*>&, int, std::vector<shipment*>&); // generates and returns farm-level shipments				
-		std::string formatOutput(int, int); // formats output to string
+		void makeShipments(std::vector<Farm*>&, int, std::vector<shipment*>&); ///< Generates and returns farm-level shipments				
 
 };
 

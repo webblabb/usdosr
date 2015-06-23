@@ -1,12 +1,15 @@
 #include "Control_actions.h"
 
-Control_actions::Control_actions(std::unordered_map< std::string, std::vector<std::tuple<double,double>> >& controlParams) // input map of tuples of lag parameters "cl"
+/// Sets delay parameters for reporting and control actions, initializes counts of 
+/// premises/counties in each status level to 0, determines maximum progress levels for
+/// each status (when to stop progressing)
+Control_actions::Control_actions(const parameters* p)
 	:
-	cl(controlParams)
+	cl(p->controlLags)
 {
 	verbose = verboseLevel;
-	// could reserve estimated # of exposures for farms
-	// could reserve total number counties for counties
+	// memory management: could reserve estimated # of exposures for farms (how?)
+	// memory management: could reserve total number counties for counties
 	
 	// set counts to 0 for each status where applicable
 	
@@ -14,8 +17,8 @@ Control_actions::Control_actions(std::unordered_map< std::string, std::vector<st
 	int size = cl.at("report").size()+1; // how many sets of parameters in vector for this control type 
 	// add one because no lag needed for first status
 	std::vector<int> v1 (size, 0); 
-	farmStatusCounts["report"] = v1;
-	countyStatusCounts["report"] = v1;
+	farmStatusCounts["report"] = v1; // Count for each level is zero
+	countyStatusCounts["report"] = v1; // Count for each level is zero
 if(verbose>1){	
 	std::cout<<"Control initiation: Report counts for farms set to ";
 	for (auto&v:farmStatusCounts["report"]){std::cout<<v<<", ";}
@@ -29,12 +32,13 @@ if(verbose>1){
 	// farms can have level 3, "compliant", assigned separately from regular updates
 	size = cl.at("shipBan").size();
 	std::vector<int> v2 (size, 0);
-	countyStatusCounts["shipBan"] = v2;
+	countyStatusCounts["shipBan"] = v2; // Count for each level is zero
 if(verbose>1){		
 	std::cout<<"shipBan counts for county set to ";
 	for (auto&v:countyStatusCounts["shipBan"]){std::cout<<v<<", ";}
 	std::cout<<std::endl;
 }
+	// Determine maximum progress levels - automatic updates will not proceed past this level
 	for (auto& type:cl){ // type.first = control type
 		cTypeMax[type.first] = type.second.size()-1; // maximum level for this control type (subtract 1 to discount 0-index)
 if(verbose>1){std::cout<<"Maximums for control types: "<<type.first<<": "<<cTypeMax[type.first]<<std::endl;}
@@ -47,11 +51,17 @@ Control_actions::~Control_actions()
 	for (auto& c:counties){delete c.second;}
 }
 
-// Add farms to the control system and starts reporting sequence
+/// Adds farms to the control system by starting reporting sequence. Counties are 
+/// automatically added later when the premises becomes reported. Uses regular report lag 
+/// parameters, unless first=1, in which case uses indexReport parameters
+///	\param[in]	fvec	Vector of Prem_statuses for which to begin control sequence
+///	\param[in]	t		Time to use as baseline for scheduling next status update
+///	\param[in]	first	Boolean indicating if this is the first (set of) farm(s) to be reported
+
 void Control_actions::addFarm(std::vector<Prem_status*>& fvec, int t, bool first) // by default "first"=0
 {
 	for (auto& f:fvec){
-	  	std::tuple<double,double> reportParams = cl.at("report").front(); // only one entry, access via front()
+	  	std::tuple<double,double> reportParams = cl.at("report").front(); // only has one entry, access via front()
 	  	if (first){ reportParams = cl.at("indexReport").front();  }// use index lag to determine time farm will be reported
 	  	int rTime = t + normDelay(reportParams); // determine time farm will be reported
 if(verbose>2){std::cout<<"Assigning report time of "<<rTime<<std::endl;}  
@@ -61,7 +71,6 @@ if(verbose>2){std::cout<<"Assigning report time of "<<rTime<<std::endl;}
 	}
 }
 
-// Overload for single farm
 void Control_actions::addFarm(Prem_status* f, int t, bool first) // by default "first"=0
 {
 	std::vector<Prem_status*> fvec;
@@ -72,7 +81,6 @@ void Control_actions::addFarm(Prem_status* f, int t, bool first) // by default "
 
 void Control_actions::updates(int t)
 {
-	// check countiesToChange to see if changes need to be made
 	if (countiesToChange.count(t)==1){ // if any changes happen today (t)
 		std::vector< nextChange<County> >& changes = countiesToChange.at(t); // isolate the farms to be changed
 		for (auto& c:changes){
@@ -88,7 +96,7 @@ if(verbose>1){std::cout<<"Next level-up to "<<c.level+1<<" scheduled."<<std::end
 		}
 	}
 
-	// check indexed item in farmsToChange to see if changes need to be made
+	// check farmsToChange to see if changes need to be made
 	if (farmsToChange.count(t)==1){ // if the next timepoint requiring action is today (t)
 		std::vector< nextChange<Prem_status> >& changes = farmsToChange.at(t); // isolate the farms to be changed
 if(verbose>2){std::cout<<changes.size()<<" farm changes happening today."<<std::endl;}
@@ -121,16 +129,16 @@ if(verbose>1){std::cout<<"Farm "<<f->get_id()<<" updated to "<<c.controlType<<" 
 	}
 }
 
+/// Schedule a status shift (add to the to-do list for farm statuses)
 void Control_actions::scheduleLevelUp_f(Prem_status* f, std::string cType, int level, int t)
-// add a status shift to the to-do list for farms
 {
 	nextChange<Prem_status> next{ f, cType, level };
 	int time = t + normDelay(cl.at(cType).at(level));
 	farmsToChange[time].emplace_back(next);
 }
 
+/// Schedule a status shift (add to the to-do list for county statuses)
 void Control_actions::scheduleLevelUp_c(County* co, std::string cType, int level, int t)
-// add a status shift to the to-do list for counties
 {
 	nextChange<County> next{ co, cType, level };
 	int time = t + normDelay(cl.at(cType).at(level));
@@ -138,13 +146,19 @@ void Control_actions::scheduleLevelUp_c(County* co, std::string cType, int level
 if(verbose>1){std::cout<<"Level up scheduled for "<<cType<<" to level "<<level<<" at "<<time<<std::endl;}
 }
 
+/// \param[in]	co	County for which to begin sequence
+/// \param[in]	cType	Type of control action
+/// \param[in]	t	Current time to use as baseline
 void Control_actions::startControlSeq_c(County* co, std::string cType, int t)
 {
 	co->statuses[cType] = 0;
 	countyStatusCounts.at(cType).at(0)++; // increase count at level 0 (starting sequence)
 	scheduleLevelUp_c(co,cType,1,t);
 }	
-	
+
+/// \param[in]	f	Prem(_status) for which to begin sequence
+/// \param[in]	cType	Type of control action
+/// \param[in]	t	Current time to use as baseline	
 void Control_actions::startControlSeq_f(Prem_status* f, std::string cType, int t)
 {
 	f->set_status(cType,0);
@@ -153,16 +167,20 @@ void Control_actions::startControlSeq_f(Prem_status* f, std::string cType, int t
 }
 	
 double Control_actions::compliance_shipBan()
-// arguments are whatever's needed to decide
+// arguments are whatever is needed to decide - i.e. does it cross state lines?
 {
-	return 0.5; // temp set at 50% compliance
+	return 0.5; // temporarily set at 50% compliance
 }
 
+/// Called from Status_manager to determine whether or not a shipment occurs
+///	\returns 	level of shipBan, where 0 = no ban, 1 = ban ordered but not implemented, 
+///				2 = ban implemented but not compliant, 3 = ban implemented and compliant
 int Control_actions::checkShipBan(shipment* ship)
 {
 	int level = 0; // returned if no ban in place
-	if (counties.count(ship->origFIPS)==1){
-		level = counties.at(ship->origFIPS)->statuses.at("shipBan");
+	if (counties.count(ship->origFIPS)==1 // if the origin county is in the control system
+		&& counties.at(ship->origFIPS)->statuses.count("shipBan")==1){ // and has some level of shipBan
+		level = counties.at(ship->origFIPS)->statuses.at("shipBan"); // get shipBan status
 		if (level == 2){ // if a ban is implemented for this county
 			// determine compliance
 			double banCompliance = compliance_shipBan(); // based on decision rules

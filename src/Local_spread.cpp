@@ -1,12 +1,13 @@
 #include "Local_spread.h"
 
+///	\param[in]	kernelType	Integer specifying type of equation-based kernel. 0 uses 
+///	\f$\frac{k_1}{1+\frac{k_2}{d}^{k_3}}\f$.
 Local_spread::Local_spread(int kernelType, std::vector<double> kparams)
 	:
 	kType(kernelType),
 	kp(kparams)
 {	
-	verbose = verboseLevel; // for manually overriding verboseLevel
-	// one-time calculations upon construction
+	verbose = verboseLevel;
 	switch (kType)
 	{
 		case 0:{ // power law function
@@ -24,14 +25,12 @@ Local_spread::Local_spread(int kernelType, std::vector<double> kparams)
 	}
 }
 
-/// Overloaded constructor to accept a data-based kernel from external file
 Local_spread::Local_spread(int kernelType, std::string fname)
 	:
 	kType(kernelType),
 	datafile(fname)
 {	
-	verbose = verboseLevel; // for manually overriding verboseLevel
-	// one-time calculations upon construction
+	verbose = verboseLevel;
 	switch (kType)
 	{
 		case 1:{ // data-based levels
@@ -66,8 +65,26 @@ Local_spread::~Local_spread()
 {
 }
 
-/// \param[in] distance squared
-/// \returns kernel value
+/// \param[in] distSq	distance squared
+/// \returns kernel value at distance
+///	 
+/// For kType 0: to illustrate that the form of kernel(dist squared):
+/// \f$\frac{k_1}{1+\frac{dsq^{k_3/2}}{k_2^{k_3}}}\f$
+/// gives the same output as kernel(dist):
+/// \f$\frac{k_1}{1+\frac{d}{k_2}^{k_3}}\f$, 
+/// run in R:
+/// \code{.py}
+/// usedist = 1:2000
+/// k1 = 0.089
+///	k2 = 1000
+/// k3 = 3
+/// # original f1(distance)
+/// plot(k1 / (1 + (usedist/k2)^k3) ~ usedist) 
+/// usq = usedist^2
+/// # add points for f2(distance-squared)
+/// points(usedist, (k1 / (1 + (usq^(k3/2))/(k2^k3))),col="blue",pch="*")
+/// \endcode
+
 double Local_spread::atDistSq(double distSq)
 {
 	double k;
@@ -76,17 +93,6 @@ double Local_spread::atDistSq(double distSq)
 		case 0:{ // power law function
 			k = kp.at(0)/(1+pow(distSq,kp.at(3))/kp.at(4));
 			break;
-			/* 
-			to demonstrate this is the same as kernel(dist), run in R:
-			usedist=1:2000
-			k1 = 0.12
-			k2 = 1000
-			k3 = 3
-			# original f(distance)
-			plot(k1 / (1 + (usedist/k2)^k3) ~ usedist) 
-			usq = usedist^2
-			points(usedist, (k1 / (1 + (usq^(k3/2))/(k2^k3))),col="blue",pch="*")
-			*/
 		}
 		case 1:{ // UK data-based levels
 			// if distance is past last value, use last value
