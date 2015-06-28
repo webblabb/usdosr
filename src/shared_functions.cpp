@@ -1,4 +1,5 @@
 #include "shared_functions.h"
+#include "Farm.h"
 
 double unif_rand()
 {
@@ -20,11 +21,17 @@ double norm_rand()
 /// \param[in]	N	Number of trials (premises in cell)
 ///	\param[in]	prob	Probability of success for all trials (pmax for all premises in cell)
 int draw_binom(int N, double prob)
-{		
+// draw from a binomial distribution based on N farms and prob (calc with focalInf & gridKern)
+{
 	std::binomial_distribution<int> binom_dist(N,prob);
 	static unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count();
 	static std::mt19937 generator(seed); //Mersenne Twister pseudo-random number generator. Generally considered research-grade.
 	return binom_dist(generator);
+}
+
+unsigned int generate_distribution_seed()
+{
+    return std::chrono::system_clock::now().time_since_epoch().count();
 }
 
 /// Based on algorithm described at http://www.johndcook.com/blog/cpp_expm1/
@@ -52,7 +59,8 @@ int normDelay(std::tuple<double, double>& params)
 	return draw;
 }
 
-std::vector<std::string> 
+// used in reading in files
+std::vector<std::string>
 	split(const std::string &s, char delim, std::vector<std::string> &elems)
 {
     std::stringstream ss(s);
@@ -67,12 +75,27 @@ std::vector<std::string>
     return elems;
 }
 
-std::vector<std::string> 
+std::vector<std::string>
 	split(const std::string &s, char delim)
 {
     std::vector<std::string> elems;
     split(s, delim, elems);
     return elems;
+}
+
+// Skips the Byte Order Mark (BOM) that defines UTF-8 in some text files.
+// Credit to user 'Contango' at stackoverflow.com
+void skipBOM(std::ifstream &in)
+{
+    char test[3] = {0};
+    in.read(test, 3);
+    if ((unsigned char)test[0] == 0xEF &&
+        (unsigned char)test[1] == 0xBB &&
+        (unsigned char)test[2] == 0xBF)
+    {
+        return;
+    }
+    in.seekg(0);
 }
 
 std::vector<double> stringToNumVec(std::string& toConvert)
@@ -97,7 +120,7 @@ std::vector<double> stringToNumVec(std::string& toConvert)
     substring.erase(std::remove_if(substring.begin(), substring.end(), isspace), substring.end()); // remove whitespace
 	temp = stringToNum<double>(substring); // convert substring to double
     output.emplace_back(temp); // add double to vector
-    
+
     return output;
 }
 
@@ -123,7 +146,7 @@ std::vector<int> stringToIntVec(std::string& toConvert)
     substring.erase(std::remove_if(substring.begin(), substring.end(), isspace), substring.end()); // remove whitespace
 	temp = stringToNum<int>(substring); // convert substring to double
     output.emplace_back(temp); // add double to vector
-    
+
     return output;
 }
 
@@ -146,7 +169,7 @@ std::vector<std::string> stringToStringVec(std::string& toConvert)
     substring = toConvert.substr(start, end); // last substring
     substring.erase(std::remove_if(substring.begin(), substring.end(), isspace), substring.end()); // remove whitespace
     output.emplace_back(substring); // add string to vector
-    
+
     return output;
 }
 
@@ -196,8 +219,7 @@ void printLine(std::string& outputFile, std::string& printString)
 	std::ofstream outfile;
 	outfile.open(outputFile, std::ios::app); // append to existing file
 	if(!outfile){std::cout<<"File "<<outputFile<<" not open."<<std::endl;}
-	outfile << printString; 
+	outfile << printString;
 	std::flush(outfile);
 	outfile.close();
 }
-

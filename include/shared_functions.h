@@ -10,19 +10,9 @@
 #include <fstream> // for printing
 #include <iostream> // for troubleshooting output
 #include <sstream>
+#include <unordered_map>
 
-#include "Farm.h" // for removing farm subset for grid manager
-
-///> (Probably temporary) County structure to track control progress levels
-struct County // used in Status and Control
-{
-	std::string fips;
-	std::unordered_map<std::string, int> statuses; ///< Map with key of control type and value of level
-};
-
-///> Shipment generated from USAMM
-/// Used in Shipment_manager, Status_manager
-struct shipment
+struct Shipment // used in Shipment, Status
 {
 	int t; ///< Time of shipment
 	int origID; ///< Premises ID of shipment origin
@@ -37,12 +27,14 @@ struct shipment
 	double unif_rand(); ///< Uniform distribution random number generator
 	double norm_rand(); ///< Normal distribution random number generator
 	int draw_binom(int, double); ///< Draw number of successes from a binomial distribution
+	unsigned int generate_distribution_seed();
 	double oneMinusExp(double); ///< Calculates \f$1 - e^x\f$ using a two-term Taylor approximation for x<1e-5
  	int normDelay(std::tuple<double, double>&); ///< Return a period of time, drawn from a normal distribution
 	std::vector<std::string>
 		split(const std::string&, char, std::vector<std::string>&);
-	std::vector<std::string> 
+	std::vector<std::string>
 		split(const std::string&, char);
+    void skipBOM(std::ifstream &in);
 	std::string to_string(Farm*);
 	std::vector<double> stringToNumVec(std::string&); ///< Converts comma-separated string to vector of doubles
 	std::vector<int> stringToIntVec(std::string&); ///< Converts comma-separated string to vector of integers
@@ -54,7 +46,7 @@ struct shipment
 	void addItemTab(std::string&, std::string); ///< Overloaded version adds tab after a string
 	void printLine(std::string&, std::string&); ///< Generic print function used by a variety of output files
 
-template<typename T> 
+template<typename T>
 T stringToNum(const std::string& text)
 {
 	std::istringstream ss(text);
@@ -88,10 +80,10 @@ T randomFrom(std::vector<T>& vec)
 template<typename T> 
 void random_unique(std::vector<T> elements, int num_random, std::vector<T>& output1) 
 	// elements not referenced (&) because we're rearranging it
-{		
+{
 	std::vector<T> output;
 	output.reserve(num_random);
-	int endIndex = elements.size(); 
+	int endIndex = elements.size();
 	// endIndex separates non-selected values (elements [0, endIndex-1]) from selected values
 	for (auto i = 1; i<= num_random; i++){
 		// choose random number between 0 and 1
@@ -105,7 +97,7 @@ void random_unique(std::vector<T> elements, int num_random, std::vector<T>& outp
 		std::swap(elements[r], elements[endIndex-1]);
 		endIndex--;
 	}
- output.swap(output1);	
+ output.swap(output1);
 }
 	
 ///> Checks if an item is within a vector of items
@@ -132,11 +124,11 @@ int whichElement(T& toMatch, std::vector<T>& elementMaxes)
 	int match = -1; // the element that will be returned
 	if (toMatch > elementMaxes.back()){
 		std::cout<<"Error: (whichElement): value to match exceeds largest of comparison values. Exiting..."
-		<< std::endl; 
+		<< std::endl;
 		exit(EXIT_FAILURE);}
 	if (elementMaxes.size() < 1){
 		std::cout << "Error (whichElement): Vector of element sizes < 1. Exiting..."
-		<< std::endl; 
+		<< std::endl;
 		exit(EXIT_FAILURE);}
 	if (elementMaxes.size()==1){match=0;}
 	else{

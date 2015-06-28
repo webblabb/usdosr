@@ -1,21 +1,24 @@
 #include "Status_manager.h"
 
+<<<<<<< HEAD
 
 Status_manager::Status_manager(std::vector<Farm*>& seedPool, int numRandomSeed, 
 	std::unordered_map<std::string, std::tuple<double,double>>& in_params, 
+=======
+Status_manager::Status_manager(std::vector<Farm*>& seedPool, int numRandomSeed,
+	std::unordered_map<std::string, std::tuple<double,double>>& in_params,
+>>>>>>> origin/master
 	const std::unordered_map<int, Farm*>* allPrems, // needed for interfacing with main
 	int endTime,
-	Control_actions* control_in)
-	:
-	params(in_params),
-	control(control_in),
-	allFarms(allPrems),
-	recentNotSus(0),
-	pastEndTime(endTime+100),
-	nPrems(allPrems->size())
+	Control_actions* control_in) :
+        params(in_params),
+        control(control_in),
+        allFarms(allPrems),
+        recentNotSus(0),
+        pastEndTime(endTime+100),
+        nPrems(allPrems->size())
 {
 	verbose = verboseLevel;
-		
 	std::vector<Farm*> focalFarms;
 	if (numRandomSeed!=0){ // select this number from seed pool
 		random_unique(seedPool, abs(numRandomSeed), focalFarms);
@@ -28,12 +31,12 @@ for (auto& sf:focalFarms){
 	} else { // use all of seedPool
 		focalFarms.swap(seedPool);
 	}
-	
+
 	for (auto& f:focalFarms){ // set seed farms as exposed, also starts control sequence
 		setStatus(f,1,"exp",params.at("latency"),1); // last argument says 'first' is true - use index lags
 	}
-	seededFarms = focalFarms; // saved for output	
-		
+	seededFarms = focalFarms; // saved for output
+
 if (verbose>1){
 	std::cout<<focalFarms.size()<<" exposed premises initiated. End times for exposed premises: "<<std::endl;
 	for (auto&e : ds.at("exp").farms){
@@ -41,11 +44,11 @@ if (verbose>1){
 	}
 	std::cout<<std::endl;
 }
-		
+
 	// store species for formatting later
 	auto speciesMap = (*focalFarms.begin())->get_spCounts(); // just get species list from first focal farm
 	for (auto& s:(*speciesMap)){species.emplace_back(s.first);}
-	
+
 	// Specify sequence of disease statuses and associated lag times
 	// 1. Exposure to infectiousness
 	statusShift exp_inf {"exp","inf",params.at("infectious")};
@@ -82,13 +85,13 @@ void Status_manager::setStatus(Farm* f, int startTime, std::string status, std::
 {
 	int fid = f->Farm::get_id();
 	if (changedStatus.count(fid)==0){addPS(f);} // if a prem_status object doesn't exist for this farm, make one
-	
+
 	if (status.compare("exp")==0){ // if farm is becoming exposed
 		int fid = f->Farm::get_id();
 		notSus.emplace_back(allFarms->at(fid)); // add to list of non-susceptibles
 		// start control sequence
 		control->addFarm(changedStatus.at(fid),startTime,index); // first indicates index report
-	}	 
+	}
 
 	// set start and end times for this status
 	changedStatus.at(fid)->set_start(status,startTime);
@@ -96,9 +99,9 @@ void Status_manager::setStatus(Farm* f, int startTime, std::string status, std::
 	changedStatus.at(fid)->set_end(status,endTime);
 	changedStatus.at(fid)->set_diseaseStatus(status);
 	// add to appropriate disease-status list
-	bool firstOfStatus = 0;	
+	bool firstOfStatus = 0;
 		if (ds.count(status)==0){firstOfStatus=1;}
-		
+
 	ds[status].farms.emplace_back(changedStatus.at(fid));
 	if (firstOfStatus){
 		ds.at(status).lo = 0;
@@ -131,14 +134,14 @@ if (verbose>2){std::cout<<"Next farm starts today."<<std::endl;}
 				advance = 0;
 			}
 		}
-if (verbose>2){std::cout<<s.one<<" hi at "<<ds.at(s.one).hi;}		
+if (verbose>2){std::cout<<s.one<<" hi at "<<ds.at(s.one).hi;}
 
 		// check farms from lo to hi for expired statuses, adjusting lo if needed
 		std::vector<Prem_status*>::iterator lo_it = ds.at(s.one).farms.begin();
 		std::vector<Prem_status*>::iterator hi_it = ds.at(s.one).farms.begin();
 		std::advance(lo_it, ds.at(s.one).lo); // move iterator to lo
 		std::advance(hi_it, ds.at(s.one).hi); // move iterator to hi
-			
+
 		for (auto it = lo_it; it <= hi_it; it++){ // check each farm* between lo and hi
 			if ( (*it)->get_end(s.one) == t ){ // if validity of this status expires for this farm today
 				setStatus(*it, t, s.two, s.lagToTwo); // start next status for this farm
@@ -146,11 +149,11 @@ if (verbose>2){std::cout<<s.one<<" hi at "<<ds.at(s.one).hi;}
 				lo_it++; // shift lo placemarker forward
 				ds.at(s.one).lo++; // update stored integer
 			}
-		}	
-if (verbose>2){std::cout<<", lo at "<< ds.at(s.one).lo <<std::endl;}		
+		}
+if (verbose>2){std::cout<<", lo at "<< ds.at(s.one).lo <<std::endl;}
 	} // end "if there are farms in this status"
 	} // end "for each disease transition"
-	
+
 	// special case - immune only moves hi forward, because status doesn't expire
 	if(ds.count("imm")==1){
 		bool advance = (ds.at("imm").hi != ds.at("imm").farms.size()-1); // only continue if not at end
@@ -165,7 +168,7 @@ if (verbose>2){std::cout<<", lo at "<< ds.at(s.one).lo <<std::endl;}
 		}
 if (verbose>2){std::cout<<"imm hi at "<<ds.at("imm").hi<<", lo at "<< ds.at("imm").lo << std::endl;}
 	} // end if any imm
-	
+
 	// special case - if any farms vaccinated, add to notSus
 
 }
@@ -179,7 +182,7 @@ void Status_manager::localExposure(std::vector<Farm*>& farms, int t)
 	expose(toExpose, t);
 }
 
-void Status_manager::shipExposure(std::vector<shipment*>& ships, int time)
+void Status_manager::shipExposure(std::vector<Shipment*>& ships, int time)
 // filters for any control measures impacting shipment spread
 // records sources of infection in sources
 // shipment has t, farm origID, farm destID, origin FIPS, dest FIPS, species, ban (0-2)
@@ -196,7 +199,7 @@ void Status_manager::shipExposure(std::vector<shipment*>& ships, int time)
 std::cout<<"Exposure via shipment"<<std::endl;
 				}
 			}
-		}	
+		}
 		// check with control for shipping ban level
 		s->ban = control->checkShipBan(s);
 		if (s->ban < 3 // if anything other than compliant with a ban: no ban (0), not yet in effect (1) or non-compliant (2)
@@ -213,7 +216,7 @@ void Status_manager::expose(std::vector<Farm*>& farms, int t)
 	for (auto& f:farms){
 		// check if farm is susceptible
 		if (get_status(f).compare("sus")==0){
-			setStatus(f,t,"exp",params["latency"]); 
+			setStatus(f,t,"exp",params["latency"]);
 		}
 	}
 }
@@ -230,17 +233,17 @@ std::string Status_manager::get_status(Farm* f) const
 }
 
 void Status_manager::premsWithStatus(std::string s, std::vector<Farm*>& output2)
-{ // get all farms with status s between iterators (as of last call to updates)	
+{ // get all farms with status s between iterators (as of last call to updates)
 	std::vector<Farm*> output1;
 	if (ds.count(s)==1){
 		std::vector<Prem_status*>::iterator lo_it = ds.at(s).farms.begin() + ds.at(s).lo;
 		std::vector<Prem_status*>::iterator hi_it = ds.at(s).farms.begin() + ds.at(s).hi +1;
 		std::vector<Prem_status*> outputPS(lo_it, hi_it); // return farms in [lo, hi]
-		
+
 		for (auto f:outputPS){
 			output1.emplace_back(allFarms->at(f->get_id()));
 		}
-	}	
+	}
 	output1.swap(output2);
 }
 
@@ -248,7 +251,7 @@ int Status_manager::numPremsWithStatus(std::string s)
 { // get # farms with status s (as of last call to updates)
 	int total = 0;
 	if (s.compare("sus")==0){ total = nPrems - notSus.size();
-	} else if (ds.count(s)==1){ 
+	} else if (ds.count(s)==1){
 		total = ds.at(s).hi - ds.at(s).lo +1;
 	} // return number of farms in [lo, hi]
  return total;
@@ -287,7 +290,7 @@ std::string Status_manager::formatRepSummary(int rep, int duration, double repTi
 		seedIDs.emplace_back(sf->Farm::get_id());
 	}
 	std::string seeds = vecToCommaSepString(seedIDs);
-	
+
 	std::vector<std::string> seedFips;
 	get_seedCos(seedFips);
 	std::string seedCos = vecToCommaSepString(seedFips);
@@ -298,7 +301,7 @@ std::string Status_manager::formatRepSummary(int rep, int duration, double repTi
 if(verbose>1){std::cout<<"rep "<<rep;}
 	addItemTab(toPrint, nInf); // # total infectious (includes seeds)
 if(verbose>1){std::cout<<", nInf "<<nInf;}
-	addItemTab(toPrint, duration); // duration of epidemic	
+	addItemTab(toPrint, duration); // duration of epidemic
 if(verbose>1){std::cout<<", duration "<<duration;}
 	addItemTab(toPrint, seeds); // seed farm(s)
 if(verbose>1){std::cout<<", seeds "<<seeds;}
@@ -308,7 +311,7 @@ if(verbose>1){std::cout<<", seedCos "<<seedCos;}
 if(verbose>1){std::cout<<", repTimeSec "<<repTimeS<<std::endl;}
 	toPrint.replace(toPrint.end()-1, toPrint.end(), "\n"); // add line break at end
 if(verbose>1){std::cout<<"toPrint: "<<toPrint<<std::endl;}
-	
+
 	return toPrint;
 }
 
@@ -317,7 +320,7 @@ std::string Status_manager::formatDetails(int rep, int t)
 {
 	std::string toPrint;
 	std::unordered_map< Farm*, std::vector<std::tuple<Farm*, int>> > empty;
-	
+
 	if (sources.size()>0){
 	for (auto& info:sources){
 		int expPrem = info.first->Farm::get_id();

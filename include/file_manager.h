@@ -9,7 +9,7 @@
 extern int verboseLevel;
 
 /// Contains all parameters loaded from file
-struct parameters
+struct Parameters
 {
 	// output parameters
 	std::string batch; ///< Prefix for summary and detailed output files
@@ -18,16 +18,18 @@ struct parameters
 	int printCells;
 	int printShipments;
 	int printControl;
-	
+
 	// general parameters
 	std::string premFile; ///< File containing tab-delimited premises data: ID, FIPS, x, y, population
+	std::string fipsFile;
+	std::string fips_weights;
 	std::vector<std::string> species;
 	int timesteps;
 	int replicates;
 	int verboseLevel;
 	bool pairwiseOn;
 	bool reverseXY;
-	
+
 	// infection parameters
 	std::string seedPremFile;
 	std::string dataKernelFile; ///< Name of file containing local spread probabilities by distance (set kernelType to 1)
@@ -42,17 +44,17 @@ struct parameters
 	int kernelType;
 	std::vector<double> kernelParams;
 	Local_spread* kernel;
-	
+
 	// grid parameters
 	std::string cellFile;
 	std::vector<int> densityParams;
 	int uniformSide;
-	
+
 	// shipment parameters
 	std::vector<int> shipMethods;
 	std::vector<int> shipMethodTimeStarts;
 	int shipPremAssignment;
-	
+
 	// control parameters
 	std::tuple<double,double> indexReportLag;
 	std::tuple<double,double> reportLag;
@@ -61,7 +63,7 @@ struct parameters
 	int banLevel;
 	std::tuple<double,double> reportToOrderBan;
 	std::tuple<double,double> orderToCompliance;
-	
+
 	// related parameter sets
 	std::unordered_map< std::string, std::tuple<double,double> > lagParams;
 	std::unordered_map< std::string, std::vector<std::tuple<double,double>> > controlLags;
@@ -86,7 +88,7 @@ class file_manager
 		void readConfig(std::string&);
 };
 
-inline const parameters* file_manager::getParams()
+inline const Parameters* file_manager::getParams()
 {
 	return &params;
 }

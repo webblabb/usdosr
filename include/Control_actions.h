@@ -40,6 +40,7 @@ struct nextChange
 /// Level 1: vax ordered but not yet implemented
 /// Level 2: vax implemented with some supply restriction
 /// Level 3: vax implemented with more supply
+
 class Control_actions
 {
 	private:
@@ -63,7 +64,7 @@ class Control_actions
 		double compliance_shipBan(); ///< Determine compliance level of a premises with an implemented shipping ban
 		
 	public:
-		Control_actions(const parameters*);
+		Control_actions(const Parameters*);
 		~Control_actions();
 		void addFarm(std::vector<Prem_status*>&, int, bool index=0); ///< Adds premises (and later, counties) to the control system
 		void addFarm(Prem_status*, int, bool index=0); ///< Accepts single farm to add to control system
@@ -78,7 +79,7 @@ class Control_actions
 ///	\param[in]	level	Progress level of control
 inline int Control_actions::getNfarms(std::string ctype, int level) const
 { // initialized to 0 in case ctype doesn't exist
-	return farmStatusCounts.at(ctype).at(level); 
+	return farmStatusCounts.at(ctype).at(level);
 }
 
 /// \param[in]	ctype	Type of control action (i.e. "shipBan")

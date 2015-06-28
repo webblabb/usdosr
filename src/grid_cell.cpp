@@ -3,6 +3,7 @@
 #include <algorithm> // for std::max_element (susceptibility/infectiousness)
 
 #include "grid_cell.h"
+#include "Farm.h"
 
 /// Constructed with cell dimensions and premises within. Calculates and stores maximum 
 /// transmission values (for overestimating transmission probabilities).
