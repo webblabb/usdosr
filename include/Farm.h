@@ -110,7 +110,7 @@ class Prem_status: public Farm
  		int get_end(std::string) const; //inlined
  		std::string get_diseaseStatus() const; //inlined
  		bool beenExposed() const; //inlined
- 		void set_status(const std::string, const int); //inlined - set level for control status
+ 		void set_control_status(const std::string, const int); //inlined - set level for control status
  		void set_start(const std::string, const int); //inlined - set start time for disease status
  		void set_end(const std::string, const int); //inlined - set end time for disease status
 		void set_diseaseStatus(std::string&); //inlined
@@ -134,7 +134,7 @@ inline bool Prem_status::beenExposed() const
 {
 	return start.count("exp")==1;
 }
-inline void Prem_status::set_status(const std::string s, const int level)
+inline void Prem_status::set_control_status(const std::string s, const int level)
 {
 	statuses[s] = level;
 }

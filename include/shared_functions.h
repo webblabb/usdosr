@@ -12,6 +12,8 @@
 #include <sstream>
 #include <unordered_map>
 
+#include "Farm.h"
+
 struct Shipment // used in Shipment, Status
 {
 	int t; ///< Time of shipment

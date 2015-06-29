@@ -43,14 +43,10 @@ Shipment_manager::~Shipment_manager()
 	for (auto& fs:farmShipmentList){delete fs;}
 }
 
-<<<<<<< HEAD
-/// Makes shipments for ALL premises in counties, not just inf/susc provided in arguments.
+/// Makes shipments for infected premises in counties.
 /// County method determines shipments kernel (can change by time).
-/// infFarms determines which farm-level assignments to make.
-void Shipment_manager::makeShipments(std::vector<Farm*>& infFarms, int countyMethod, std::vector<shipment*>& fs)
-=======
-std::vector<Shipment*> Shipment_manager::makeShipments(std::vector<Farm*>& infFarms, int countyMethod)
->>>>>>> origin/master
+void Shipment_manager::makeShipments(std::vector<Farm*>& infFarms, 
+	int countyMethod, std::vector<Shipment*>& output)
 {
     //For each infected farm, get number of shipments, and generate each of those
     //shipments with generateInfectiousShipment()
@@ -78,7 +74,7 @@ std::vector<Shipment*> Shipment_manager::makeShipments(std::vector<Farm*>& infFa
             std::cout << "\tSpecies: " << s->species << std::endl;
         }
     }
-    return new_shipments;
+    output.swap(new_shipments);
 }
 //Old makeShipments below
 //void Shipment_manager::makeShipments(std::vector<Farm*>& infFarms, int countyMethod, std::vector<Shipment*>& fs)
@@ -163,17 +159,6 @@ Farm* Shipment_manager::largestStatus(std::vector<Farm*>& premVec, std::string& 
 /// distribute only between biggest farms in each county (method = 4)
 /// Leaves empty placeholder for ban status - only accounted for when changing status in main.
 void Shipment_manager::farmFarmShipments()
-<<<<<<< HEAD
-=======
-// assigns shipments to farms from one county to another, distributed:
-// randomly (method=0),
-// with probability related to farm size (method=1)
-// from biggest farms in county to random destinations (method=2)
-// from random destinations to biggest farm in county (method=3)
-// distribute only between biggest farms in each county (method = 4)
-// Keeps track of ban status, but otherwise ignores it. Only accounted for when changing status in main.
-//
->>>>>>> origin/master
 {
 	std::vector<coShipment>::iterator cit = countyShipmentList.begin()+startCoRecentShips;
 	// use only the most recent county shipments
@@ -302,9 +287,6 @@ if(verbose>1){std::cout<<"Origin FIPS: "<<oFIPS<<" has "<<oPrems.size()<<" prems
 	} // end for each county-level shipment
 	std::cout<<farmShipmentList.size()-startRecentShips<<" total farm shipments."<<std::endl;
 }
-<<<<<<< HEAD
-
-=======
 
 Shipment* Shipment_manager::generateInfectiousShipment(Farm* origin_farm)
 {
@@ -336,80 +318,3 @@ Shipment* Shipment_manager::generateInfectiousShipment(Farm* origin_farm)
                         origin_type->get_species(),
                         0};
 }
-
-/*
-std::string Shipment_manager::formatOutput(int shipRes, int t)
-{
-// formats one line for output to existing file
-	std::string toPrint;
-	char temp[10];
-
-	if (shipRes==0){ // premises-to-premises shipments
-		std::cout<<farmShipmentList.size()<<" farm shipments."<<std::endl;
-		if (farmShipmentList.size()>0){
-			if (t==1){ // additional steps to print column headings if this is first output
-				toPrint += "Time\t";
-				toPrint += "OriginID\t";
-				toPrint += "DestID\t";
-				toPrint += "NumShips\t";
-				toPrint += "Species\t";
-				toPrint += "Banned\t";
-				toPrint += "Compliant";
-				toPrint.replace(toPrint.end()-1, toPrint.end(), "\n"); // add line break at end
-			}
-
-			for (auto& ships:farmShipmentList){
-				sprintf(temp, "%d\t", t);
-				toPrint += temp;
-				sprintf(temp, "%d\t", std::get<0>(ships));
-				toPrint	+= temp; // origin ID
-				sprintf(temp, "%d\t", std::get<1>(ships));
-				toPrint	+= temp; // destination ID
-				sprintf(temp, "%d\t", std::get<2>(ships));
-				toPrint	+= temp; // shipment volume
-				toPrint	+= std::get<3>(ships);
-				toPrint += "\t"; // species
-				sprintf(temp, "%d\t", std::get<4>(ships));
-				toPrint	+= temp; // banned
-				sprintf(temp, "%d\t", std::get<5>(ships));
-				toPrint	+= temp; // compliant
- 				toPrint.replace(toPrint.end()-1, toPrint.end(), "\n"); // add line break at ends
-			} // end "for each shipment in list"
-		} // end "if there are any shipments"
-	} else if (shipRes==1){
-		if (countyShipmentList.size()>0){
-			// time, origin FIPS, dest FIPS, shipment volume, ban true/false
-			if (t==1){ // additional steps to print column headings if this is first output
-				toPrint += "Time\t";
-				toPrint += "OriginFIPS\t";
-				toPrint += "DestFIPS\t";
-				toPrint += "NumShips\t"; //sum
-				toPrint += "Species\t";
-				toPrint += "Banned\t";
-				toPrint += "NumCompliant\t"; //sum
-				toPrint.replace(toPrint.end()-1, toPrint.end(), "\n"); // add line break at end
-			}
-
-			for (auto& ships:countyShipmentList){
-				sprintf(temp, "%d\t", t);
-				toPrint += temp;
-				toPrint	+= std::get<0>(ships); // origin FIPS
-				toPrint += "\t";
-				toPrint	+= std::get<1>(ships); // destination FIPS
-				toPrint += "\t";
-				sprintf(temp, "%d\t", std::get<2>(ships));
-				toPrint	+= temp; // shipment volume
-				toPrint += std::get<3>(ships); // species
-				toPrint += "\t";
-				sprintf(temp, "%d\t", std::get<4>(ships));
-				toPrint	+= temp; // banned
-				toPrint.replace(toPrint.end()-1, toPrint.end(), "\n"); // add line break at ends
-			} // end "for each shipment in list"
-		} // end "if there are any shipments"
-
-	} else { std::cout<< "Resolution level for printing shipments invalid."<<std::endl; }
-
-	return toPrint;
-}
-*/
->>>>>>> origin/master

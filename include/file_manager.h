@@ -75,7 +75,7 @@ class file_manager
 	private:
 		int verbose; ///< Can be set to override global setting for console output
 		std::vector<std::string> pv; ///< Parameter vector for reading in from file
-		parameters params;
+		Parameters params;
 		
 		bool checkMeanVar(std::string&, int, std::string);
 		bool checkPositive(std::vector<int>&, int);
@@ -84,7 +84,7 @@ class file_manager
 	public:
 		file_manager();
 		~file_manager();
-		const parameters* getParams(); // inlined
+		const Parameters* getParams(); // inlined
 		void readConfig(std::string&);
 };
 

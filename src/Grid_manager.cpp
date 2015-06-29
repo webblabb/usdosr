@@ -74,9 +74,7 @@ std::vector<double> Grid_manager::read_replicate_file(std::string fname)
             result_vector.resize(line_vector.size(), 0.0);
             for(size_t i = 0; i < line_vector.size(); i++)
             {
-                double temp_double;
-                str_cast(line_vector[i], temp_double);
-                result_vector[i] = temp_double;
+                result_vector[i] = stringToNum<double>(line_vector[i]);
             }
         }
         f.close();
@@ -107,9 +105,6 @@ void Grid_manager::readFips_and_states()
 {
     std::clock_t fips_load_start = std::clock();
     FIPSmap.reserve(3500);
-    int state_code;
-    std::string county, state, fips;
-    double area, x, y;
     int n_counties_loaded = 0;
     int n_states_loaded = 0;
 
@@ -125,13 +120,13 @@ void Grid_manager::readFips_and_states()
 
 			if(! line_vector.empty()) // if line_vector has something in it
 			{
-			    county = line_vector[0];
-			    state = line_vector[1];
-                fips = line_vector[2];
-			    str_cast(fips.substr(0,2), state_code);
-			    str_cast(line_vector[3], area);
-			    str_cast(line_vector[4], x);
-			    str_cast(line_vector[5], y);
+			    std::string county = line_vector[0];
+			    std::string state = line_vector[1];
+                std::string fips = line_vector[2];
+			    int state_code = stringToNum<int>(fips.substr(0,2));
+			    double area = stringToNum<double>(line_vector[3]);
+			    double x = stringToNum<double>(line_vector[4]);
+			    double y = stringToNum<double>(line_vector[5]);
 
                 County* new_county = new County(fips, x, y);
 			    FIPSmap[fips] = new_county;
@@ -206,10 +201,10 @@ void Grid_manager::readFarms(const std::string& farm_fname)
 				id = stringToNum<int>(line_vector[0]);
 				fips = line_vector[1];
 
-				if (p->reverseXY){ // file is lat, then long (y, then x)
+				if (parameters->reverseXY){ // file is formatted as: lat, then long (y, then x)
 					y = stringToNum<double>(line_vector[2]);
 					x = stringToNum<double>(line_vector[3]);
-				} else if (!p->reverseXY){ // file is long, then lat (x, then y)
+				} else if (!parameters->reverseXY){ // file is formatted as: long, then lat (x, then y)
 					x = stringToNum<double>(line_vector[2]);
 					y = stringToNum<double>(line_vector[3]);
 				}
@@ -360,7 +355,6 @@ void Grid_manager::initFips()
         while(! f.eof())
 		{
 		    std::string line;
-			double temp_double;
 			getline(f, line); // get line from file "f", save as "line"
 			std::vector<std::string> line_vector = split(line, '\t'); // separate by tabs
 
@@ -370,8 +364,7 @@ void Grid_manager::initFips()
 				std::vector<double> weights;
                 for(auto it = line_vector.begin() + 1; it != line_vector.end(); it++)
                 {
-                    str_cast(*it, temp_double);
-                    weights.push_back(temp_double);
+                    weights.push_back(stringToNum<double>(*it));
                 }
                 if(FIPSmap.find(fips) != FIPSmap.end())
                 {

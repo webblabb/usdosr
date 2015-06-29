@@ -102,8 +102,8 @@ double Shipment_kernel::get_bin(double d)
         }
         if(abs(upper - lower) == 1)
         {
-            double udiff = abs(bins[upper] - d);
-            double ldiff = abs(bins[lower] - d);
+            double udiff = std::abs(bins[upper] - d);
+            double ldiff = std::abs(bins[lower] - d);
             if(ldiff < udiff)
             {
                 done = true;

@@ -38,10 +38,6 @@ class grid_cell
 
 };
 
-///> Used to copy grid_cells in Grid_checker, otherwise would return pointer
-inline bool grid_cell::canInfect(int) const {
-	return (susxKern.count(id)==1);}
-
 inline std::vector<Farm*> grid_cell::get_farms() const {
 	return farms;}
 

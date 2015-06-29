@@ -62,11 +62,11 @@ Control_actions::~Control_actions()
 void Control_actions::addFarm(std::vector<Prem_status*>& fvec, int t, bool first) // by default "first"=0
 {
 	for (auto& f:fvec){
-	  	std::tuple<double,double> reportParams = cl.at("report").front(); // only has one entry, access via front()
-	  	if (first){ reportParams = cl.at("indexReport").front();  }// use index lag to determine time farm will be reported
+	  	std::tuple<double,double> reportParams = cl.at("report").front(); // cl.at("report") only has one entry, access via front()
+	  	if (first){ reportParams = cl.at("indexReport").front();  }// replace with index lag if first=T
 	  	int rTime = t + normDelay(reportParams); // determine time farm will be reported
 if(verbose>2){std::cout<<"Assigning report time of "<<rTime<<std::endl;}
-		f->set_status("report",0); // set farm's control status, 0 = not reported
+		f->set_control_status("report",0); // set farm's control status, 0 = not reported
 		nextChange<Prem_status> nc{ f, "report", 1 }; // this farm will have "reported" status 1...
 		farmsToChange[rTime].emplace_back(nc); // ...at rTime
 	}
@@ -83,7 +83,7 @@ void Control_actions::addFarm(Prem_status* f, int t, bool first) // by default "
 void Control_actions::updates(int t)
 {
 	if (countiesToChange.count(t)==1){ // if any changes happen today (t)
-		std::vector< nextChange<County*> >& changes = countiesToChange.at(t); // isolate the farms to be changed
+		std::vector< nextChange<County> >& changes = countiesToChange.at(t); // isolate the farms to be changed
 		for (auto& c:changes){
 			County* co = c.unit;
 			co->set_control_status(c.controlType, c.level); // set level for this control type
@@ -92,7 +92,7 @@ void Control_actions::updates(int t)
 if(verbose>1){std::cout<<co->get_id()<<" updated to "<<c.controlType<<" level "<<c.level<<std::endl;}
 			// if not at end of control sequence, add next status change to list
 			if (c.level < cTypeMax.at(c.controlType)){ // if at any stage before last
-				scheduleLevelUp_c(co,c.controlType,c.level+1, t);
+				scheduleLevelUp_c(co,c.controlType,c.level+1,t);
 if(verbose>1){std::cout<<"Next level-up to "<<c.level+1<<" scheduled."<<std::endl;}
 			}
 		}
@@ -104,12 +104,12 @@ if(verbose>1){std::cout<<"Next level-up to "<<c.level+1<<" scheduled."<<std::end
 if(verbose>2){std::cout<<changes.size()<<" farm changes happening today."<<std::endl;}
 		for (auto& c:changes){
 			Prem_status* f = c.unit;
-			f->set_status(c.controlType,c.level);
+			f->set_control_status(c.controlType,c.level);
 			farmStatusCounts.at(c.controlType).at(c.level)++; // add to total count of this status-level
 if(verbose>1){std::cout<<"Farm "<<f->get_id()<<" updated to "<<c.controlType<<" level "<<c.level<<std::endl;}
 			// if before end of control sequence for this type, schedule next status update
 			if (c.level < cTypeMax.at(c.controlType)){
-				scheduleLevelUp_f(f,c.controlType,c.level+1);
+				scheduleLevelUp_f(f,c.controlType,c.level+1,t);
 			}
 			// at reporting time, cross-post at county level
 			if (c.controlType.compare("report")==0 && c.level==1){ // if this farm was just reported
@@ -123,7 +123,7 @@ if(verbose>1){std::cout<<"Farm "<<f->get_id()<<" updated to "<<c.controlType<<" 
                 }
 
 				// start shipping ban sequence at county level
-				startControlSeq_c(farmfips, "shipBan");
+				startControlSeq_c(farmfips, "shipBan",t);
 			}
 		}
 	}
@@ -140,7 +140,7 @@ void Control_actions::scheduleLevelUp_f(Prem_status* f, std::string cType, int l
 /// Schedule a status shift (add to the to-do list for county statuses)
 void Control_actions::scheduleLevelUp_c(County* co, std::string cType, int level, int t)
 {
-	nextChange<County*> next{ co, cType, level };
+	nextChange<County> next{ co, cType, level };
 	int time = t + normDelay(cl.at(cType).at(level));
 	countiesToChange[time].emplace_back(next);
 if(verbose>1){std::cout<<"Level up scheduled for "<<cType<<" to level "<<level<<" at "<<time<<std::endl;}

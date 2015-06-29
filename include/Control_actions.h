@@ -19,7 +19,7 @@ struct nextChange
 
 ///> Manages control-action related decisions and effects.
 ///
-/// Defines control actions, tracks progression of control statuses. 
+/// Defines control actions, updates progression of control statuses. 
 /// Examples: 
 ///  - cull all premises within a 10 km radius of any infected premises
 ///  - ban all shipments from the county or state of an infected premises
@@ -71,7 +71,7 @@ class Control_actions
 		void updates(int); ///< Checks countiesToChange and farmsToChange lists to see if any changes need to be made now (time t)
 		int getNfarms(std::string, int) const; // inlined ///< Return the number of premises with given control type and level
 		int getNcounties(std::string, int) const; // inlined ///< Return the number of counties with given control type and level
-		int checkShipBan(shipment*); ///< Determines if a shipment occurs, depending on status and stochastic compliance
+		int checkShipBan(Shipment*); ///< Determines if a shipment occurs, depending on status and stochastic compliance
 
 };
 

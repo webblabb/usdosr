@@ -1,13 +1,7 @@
 #include "Status_manager.h"
 
-<<<<<<< HEAD
-
 Status_manager::Status_manager(std::vector<Farm*>& seedPool, int numRandomSeed, 
 	std::unordered_map<std::string, std::tuple<double,double>>& in_params, 
-=======
-Status_manager::Status_manager(std::vector<Farm*>& seedPool, int numRandomSeed,
-	std::unordered_map<std::string, std::tuple<double,double>>& in_params,
->>>>>>> origin/master
 	const std::unordered_map<int, Farm*>* allPrems, // needed for interfacing with main
 	int endTime,
 	Control_actions* control_in) :

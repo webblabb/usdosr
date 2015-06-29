@@ -63,7 +63,7 @@ class Shipment_manager
 
 		~Shipment_manager();
 
-		void makeShipments(std::vector<Farm*>&, int, std::vector<shipment*>&); ///< Generates and returns farm-level shipments				
+		void makeShipments(std::vector<Farm*>&, int, std::vector<Shipment*>&); ///< Generates and returns farm-level shipments				
 		std::string formatOutput(int, int); // formats output to string
 
 };
