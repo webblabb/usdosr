@@ -29,6 +29,8 @@ a
 !config.txt
 !FLAPS_beefdairy_20151201_formatted.txt
 !randomFarms.txt
+!FIPS_20151805.txt
+!fips_weights.txt
 
 *.docx
 *.pdf
