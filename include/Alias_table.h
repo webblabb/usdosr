@@ -55,7 +55,7 @@ void Alias_table<T>::init(std::vector<T> in_outcomes, std::vector<double> in_pro
 {
     n_elements = in_probabilities.size();
 
-    for(int i = 0; i < in_outcomes.size(); i++)
+    for(size_t i = 0; i < in_outcomes.size(); i++)
     {
         double scaled_p = in_probabilities[i] * n_elements;
         scaled_prob_map.emplace(in_outcomes[i], scaled_p);
