@@ -296,15 +296,15 @@ Shipment* Shipment_manager::generateInfectiousShipment(Farm* origin_farm)
     County* dest_county = origin_county->get_shipment_destination(origin_type);
 
 
-    if(dest_county->get_farms(origin_type).size() == 0)
+    while(dest_county->get_farms(origin_type).size() == 0)
     {
         std::cout << "The destination county (" << dest_county->get_id() <<
                     ") does not contain any farms of type " << origin_type->get_species() <<
                     ", but has a probability of receiving shipments of that type. " <<
                     "This is likely due to the county having an inflow parameter != 0, " <<
                     "while simultaneously no premises of this type in the FLAPS data file " <<
-                    "has this county as its parent. Exiting..." << std::endl;
-        exit(EXIT_FAILURE);
+                    "has this county as its parent. Choosing another..." << std::endl;
+        dest_county = origin_county->get_shipment_destination(origin_type);
     }
 
     //Pick one random element from the dest. countys vector of farms of correct type.
