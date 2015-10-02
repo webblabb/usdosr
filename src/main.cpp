@@ -121,7 +121,7 @@ std::cout << "Loading seed prems from "<<p->seedPremFile<<std::endl;
         auto lagP = p->lagParams;
 
         Status_manager Status(seedFarms, seedType, lagP, allPrems, timesteps, &Control); // seeds initial exposures, modify to pass grid manager, p
-        Shipment_manager Ship(fipsmap, fipsSpeciesMap, &Status, p->shipPremAssignment, p->species); // modify to pass grid manager, p
+        Shipment_manager Ship(fipsmap, fipsSpeciesMap, &Status, p->shipPremAssignment, p->species, p); // modify to pass grid manager, p
         Grid_checker gridCheck(allCells, Status.get_sources(),p->kernel);
 
         int t=0;
@@ -168,14 +168,14 @@ std::cout << "Loading seed prems from "<<p->seedPremFile<<std::endl;
     if(verbose>0){std::cout << "Total grid infections: " << gridInf.size() << std::endl;
         std::cout << "CPU time for checking grid: " << gridCheckTimeMS << "ms." << std::endl;}
 
-             // determine shipments
-             std::clock_t ship_start = std::clock();
-             // assign county-level shipment method according to time
-             auto timeVec = p->shipMethodTimeStarts;
-             int cmElement = whichElement(t, timeVec); // which time span does t fall into
-             int countyMethod = (p->shipMethods).at(cmElement); // get matching shipment method
-             std::vector<Shipment*> fs; // fs = farm shipments
-             Ship.makeShipments(focalFarms, countyMethod, fs);
+            // determine shipments
+            std::clock_t ship_start = std::clock();
+            // assign county-level shipment method according to time
+            auto timeVec = p->shipMethodTimeStarts;
+            int cmElement = whichElement(t, timeVec); // which time span does t fall into
+            int countyMethod = (p->shipMethods).at(cmElement); // get matching shipment method
+            std::vector<Shipment*> fs; // fs = farm shipments
+            Ship.makeShipments(focalFarms, countyMethod, fs);
             std::clock_t ship_end = std::clock();
             double shipTimeMS = 1000.0 * (ship_end - ship_start) / CLOCKS_PER_SEC;
             if(verbose>0){std::cout << "CPU time for shipping: " << shipTimeMS << "ms." << std::endl;}

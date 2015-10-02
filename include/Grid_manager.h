@@ -24,12 +24,13 @@ class Grid_manager
 {
 	private:
 		int verbose; ///< Can be set to override global setting for console output
-		
+
 		// variables for grid creation
 		unsigned int maxFarms; ///< Threshold number of premises per cell (cell size takes precedence)
-		std::unordered_map<int, grid_cell*> 
+		bool shipments_off; ///Keeps track of if shipments are turned off.
+		std::unordered_map<int, grid_cell*>
 			allCells; ///< Unordered_map of all cells in grid
-		std::unordered_map<int, Farm*> 
+		std::unordered_map<int, Farm*>
 			farm_map; ///< Unordered_map of all premises objects
 		std::unordered_map<std::string, State*>
             state_map; //Contains states, name as key.
@@ -80,13 +81,13 @@ class Grid_manager
 		void removeParent(
 			std::stack< std::tuple<int,double,double,double> >& queue);///< Removes 1st item in queue
 		void addOffspring(
-			std::tuple<int,double,double,double> cellSpecs, 
+			std::tuple<int,double,double,double> cellSpecs,
 			std::stack< std::tuple<int,double,double,double> >& queue);
 		void commitCell(
-			std::tuple<int,double,double,double> cellSpecs, 
+			std::tuple<int,double,double,double> cellSpecs,
 			std::vector<Farm*>& farmsInCell); ///< Adds grid_cell to allCells
 		void splitCell(
-			std::tuple<int,double,double,double>& cellSpecs, 
+			std::tuple<int,double,double,double>& cellSpecs,
 			std::stack< std::tuple<int,double,double,double> >& queue); ///< Replaces parent cell with subdivided offspring quadrants
  		void assignCellIDtoFarms(int cellID, std::vector<Farm*>& farmsInCell);
  		void removeFarmSubset(std::vector<Farm*>&, std::vector<Farm*>&); ///< Remove farms in first vector from second vector

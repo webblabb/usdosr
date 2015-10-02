@@ -14,28 +14,47 @@ Shipment_manager::Shipment_manager(
 	const std::unordered_map<std::string, std::unordered_map<std::string, std::vector<Farm*> >>* fipsSpMap,
 	Status_manager* in_S,
 	int ffm,
-	const std::vector<std::string>& speciesOnPrems) :
+	const std::vector<std::string>& speciesOnPrems,
+	const Parameters* p) :
         FIPSmap(in_FIPSmap),
         fipsSpeciesMap(fipsSpMap),
         S(in_S),
         farmFarmMethod(ffm),
-        species(speciesOnPrems)
+        species(speciesOnPrems),
+        parameters(p)
 {
 	verbose = verboseLevel;
-	allFIPS.reserve(FIPSmap->size());
 
-	// copy species
-	// record allFIPS: vector of all possible shipment destinations (counties)
-	// used in generating random shipments
-	for (auto& f:(*FIPSmap)){ // f.first is FIPS, f.second is vector of Farms*s
-		allFIPS.emplace_back(f.first);
+	//Determine if there are no activated shipment methods in parameters.
+	shipments_off = true;
+	for(int m : parameters->shipMethods)
+    {
+        if(m > 0)
+            shipments_off = false;
+    }
 
-		for (auto& s:species){// can remove when USAMM is implemented
-			if (fipsSpeciesMap->at(f.first).count(s)==1){speciesFIPS[s].emplace_back(f.first);}
-		}
-	}
+	if(shipments_off == false)
+    {
+        allFIPS.reserve(FIPSmap->size());
 
-	if(verbose>0){std::cout << "Shipment manager constructed: "<<FIPSmap->size()<<" counties with premises." << std::endl;}
+        // copy species
+        // record allFIPS: vector of all possible shipment destinations (counties)
+        // used in generating random shipments
+        for (auto& f:(*FIPSmap)){ // f.first is FIPS, f.second is vector of Farms*s
+            allFIPS.emplace_back(f.first);
+
+            for (auto& s:species){// can remove when USAMM is implemented
+                if (fipsSpeciesMap->at(f.first).count(s)==1){speciesFIPS[s].emplace_back(f.first);}
+            }
+        }
+
+        if(verbose>0){std::cout << "Shipment manager constructed: "<<FIPSmap->size()<<" counties with premises." << std::endl;}
+    }
+    else
+    {
+        if(verbose>0){std::cout << "Shipment manager constructed but not initialized since shipments are turned off." << std::endl;}
+    }
+
 }
 
 Shipment_manager::~Shipment_manager()
@@ -45,36 +64,45 @@ Shipment_manager::~Shipment_manager()
 
 /// Makes shipments for infected premises in counties.
 /// County method determines shipments kernel (can change by time).
-void Shipment_manager::makeShipments(std::vector<Farm*>& infFarms, 
+void Shipment_manager::makeShipments(std::vector<Farm*>& infFarms,
 	int countyMethod, std::vector<Shipment*>& output)
 {
     //For each infected farm, get number of shipments, and generate each of those
-    //shipments with generateInfectiousShipment()
-    std::vector<Shipment*> new_shipments;
-    for(Farm* current_farm : infFarms)
+    //shipments with generateInfectiousShipment() if shipping is turned on.
+    if(shipments_off == false)
     {
-        int n_shipments = current_farm->get_n_shipments();
-        if(n_shipments > 0)
+        std::vector<Shipment*> new_shipments;
+        for(Farm* current_farm : infFarms)
         {
-            std::cout << n_shipments << " shipments originated from " << current_farm->get_id() << std::endl;
-        }
+            int n_shipments = current_farm->get_n_shipments();
+            if(n_shipments > 0)
+            {
+                std::cout << n_shipments << " shipments originated from " << current_farm->get_id() << std::endl;
+            }
 
-        for(int i = 0; i < n_shipments; i++)
-        {
-            Shipment* s = generateInfectiousShipment(current_farm);
-            new_shipments.push_back(s);
-            farmShipmentList.push_back(s);
+            for(int i = 0; i < n_shipments; i++)
+            {
+                Shipment* s = generateInfectiousShipment(current_farm);
+                new_shipments.push_back(s);
+                farmShipmentList.push_back(s);
 
-            //temp
-            std::cout << "\tTime: " << s->t << std::endl;
-            std::cout << "\tOrigin: " << s->origID << std::endl;
-            std::cout << "\tDestination: " << s->destID << std::endl;
-            std::cout << "\tO fips: " << s->origFIPS << std::endl;
-            std::cout << "\tD fips: " << s->destFIPS << std::endl;
-            std::cout << "\tSpecies: " << s->species << std::endl;
+                //temp
+                std::cout << "\tTime: " << s->t << std::endl;
+                std::cout << "\tOrigin: " << s->origID << std::endl;
+                std::cout << "\tDestination: " << s->destID << std::endl;
+                std::cout << "\tO fips: " << s->origFIPS << std::endl;
+                std::cout << "\tD fips: " << s->destFIPS << std::endl;
+                std::cout << "\tSpecies: " << s->species << std::endl;
+            }
         }
+        output.swap(new_shipments);
     }
-    output.swap(new_shipments);
+    else
+    {
+        std::cout << "An attempt to create shipments was made but denied since "
+                  << "shipments have been disabled in the config file." << std::endl;
+    }
+
 }
 //Old makeShipments below
 //void Shipment_manager::makeShipments(std::vector<Farm*>& infFarms, int countyMethod, std::vector<Shipment*>& fs)
@@ -152,7 +180,7 @@ Farm* Shipment_manager::largestStatus(std::vector<Farm*>& premVec, std::string& 
 }
 
 /// Assigns shipments to farms from one county to another, distributed:
-/// randomly (method=0), 
+/// randomly (method=0),
 /// with probability related to farm size (method=1)
 /// from biggest farms in county to random destinations (method=2)
 /// from random destinations to biggest farm in county (method=3)

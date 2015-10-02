@@ -6,6 +6,7 @@
 
 #include "Status_manager.h"
 #include "shared_functions.h"
+#include "file_manager.h"
 
 extern int verboseLevel;
 
@@ -28,11 +29,11 @@ class Shipment_manager
 {
 	private:
 		int verbose; ///< Can be set to override global setting for console output
-
+        bool shipments_off;
 		// const pointers to Grid_manager objects:
 		const std::unordered_map<std::string, County*>* FIPSmap;
 		const std::unordered_map<std::string, std::unordered_map<std::string, std::vector<Farm*> >>* fipsSpeciesMap;
-		
+
 		Status_manager* S; ///< Const pointer to Status manager (to access up-to-date premises statuses)
 		// used to generate random shipments
 		std::vector<std::string> allFIPS; // list of all possible destination FIPS, based on premises file
@@ -51,19 +52,21 @@ class Shipment_manager
 		void countyCountyShipments(std::string, int); ///< Determines county-county movements & volumes
 		Farm* largestStatus(std::vector<Farm*>&, std::string&); ///< Finds largest premises with "status", from vector sorted by population
 		void farmFarmShipments(); ///< Assigns county shipments to individual farms
-		Shipment* generateInfectiousShipment(Farm* origin_farm);	
-		
+		Shipment* generateInfectiousShipment(Farm* origin_farm);
+		const Parameters* parameters;
+
 	public:
 		Shipment_manager(
 			const std::unordered_map<std::string, County*>* in_FIPSmap, // a map of FIPS codes to farms
 			const std::unordered_map<std::string, std::unordered_map<std::string, std::vector<Farm*> >>* fipsSpMap, // sorted populations of species on farms
 			Status_manager* in_S,
 			int ffm, // farm assignment method
-			const std::vector<std::string>& speciesOnPrems); // list of species on premises
+			const std::vector<std::string>& speciesOnPrems, // list of species on premises
+			const Parameters* p);
 
 		~Shipment_manager();
 
-		void makeShipments(std::vector<Farm*>&, int, std::vector<Shipment*>&); ///< Generates and returns farm-level shipments				
+		void makeShipments(std::vector<Farm*>&, int, std::vector<Shipment*>&); ///< Generates and returns farm-level shipments
 		std::string formatOutput(int, int); // formats output to string
 
 };

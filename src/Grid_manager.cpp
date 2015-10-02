@@ -30,7 +30,18 @@ Grid_manager::Grid_manager(const Parameters* p)
 {
 	verbose = 1;
 
-    getReplicateData();
+	//See if shipments are completely turned off.
+	shipments_off = true;
+	for(int m : parameters->shipMethods)
+    {
+        if(m > 0)
+            shipments_off = false;
+    }
+
+	if(shipments_off == false)
+    {
+        getReplicateData();
+    }
     readFips_and_states();
     readFarms(parameters->premFile);
     initStates();
@@ -346,44 +357,47 @@ void Grid_manager::initFips()
 {
     std::clock_t fips_init_start = std::clock();
 
-    //Get and set the shipping weights for the counties
-    std::cout << "Reading fips shipping weights..." << std::endl;
-    std::ifstream f(parameters->fips_weights);
-    if(f.is_open())
+    //Get and set the shipping weights for the counties if shipments are turned on
+    if(shipments_off == false)
     {
-        skipBOM(f);
-        while(! f.eof())
-		{
-		    std::string line;
-			getline(f, line); // get line from file "f", save as "line"
-			std::vector<std::string> line_vector = split(line, '\t'); // separate by tabs
+        std::cout << "Reading fips shipping weights..." << std::endl;
+        std::ifstream f(parameters->fips_weights);
+        if(f.is_open())
+        {
+            skipBOM(f);
+            while(! f.eof())
+            {
+                std::string line;
+                getline(f, line); // get line from file "f", save as "line"
+                std::vector<std::string> line_vector = split(line, '\t'); // separate by tabs
 
-			if(! line_vector.empty()) // if line_vector has something in it
-			{
-				std::string fips = line_vector[0];
-				std::vector<double> weights;
-                for(auto it = line_vector.begin() + 1; it != line_vector.end(); it++)
+                if(! line_vector.empty()) // if line_vector has something in it
                 {
-                    weights.push_back(stringToNum<double>(*it));
+                    std::string fips = line_vector[0];
+                    std::vector<double> weights;
+                    for(auto it = line_vector.begin() + 1; it != line_vector.end(); it++)
+                    {
+                        weights.push_back(stringToNum<double>(*it));
+                    }
+                    if(FIPSmap.find(fips) != FIPSmap.end())
+                    {
+                        FIPSmap[fips]->set_weights(weights);
+                    }
+                    else
+                    {
+                        std::cout << "The fips " << fips << " in " << parameters->fips_weights <<
+                                     " was not found in " << parameters->fipsFile <<
+                                     ". Ignoring this and continuing anyway." << std::endl;
+                    }
                 }
-                if(FIPSmap.find(fips) != FIPSmap.end())
-                {
-                    FIPSmap[fips]->set_weights(weights);
-                }
-                else
-                {
-                    std::cout << "The fips " << fips << " in " << parameters->fips_weights <<
-                                 " was not found in " << parameters->fipsFile <<
-                                 ". Ignoring this and continuing anyway." << std::endl;
-                }
-			}
-		}
-		f.close();
-    }
-    else
-    {
-        std::cout << "No file with shipment weights for counties found. Exiting..." << std::endl;
-        exit(EXIT_FAILURE);
+            }
+            f.close();
+        }
+        else
+        {
+            std::cout << "No file with shipment weights for counties found. Exiting..." << std::endl;
+            exit(EXIT_FAILURE);
+        }
     }
 
     //Remove counties without any premises
@@ -416,17 +430,21 @@ void Grid_manager::initStates()
 {
     for(auto current_state : state_map)
     {
-        //Set all the replicate specific data once for each farm type.
-        int state_code = current_state.second->get_code();
-        for(auto ft_pair : farm_types)
+        //Set all the shipment-related replicate specific data once for each farm type.
+        //only if transports are active.
+        if(shipments_off == false)
         {
-            std::string type_str = ft_pair.second->get_species(); //Get species as a string (beef, dairy)
-            current_state.second->set_a(a_map[type_str][state_code-1], ft_pair.second);
-            current_state.second->set_b(b_map[type_str][state_code-1], ft_pair.second);
-            //std::cout << "Adding " << shipment_volume_map[type_str][state_code-1] << " to state with code " << state_code << std::endl;
-            current_state.second->set_shipment_volume(shipment_volume_map[type_str][state_code-1], ft_pair.second);
+            int state_code = current_state.second->get_code();
+            for(auto ft_pair : farm_types)
+            {
+                std::string type_str = ft_pair.second->get_species(); //Get species as a string (beef, dairy)
+                current_state.second->set_a(a_map[type_str][state_code-1], ft_pair.second);
+                current_state.second->set_b(b_map[type_str][state_code-1], ft_pair.second);
+                //std::cout << "Adding " << shipment_volume_map[type_str][state_code-1] << " to state with code " << state_code << std::endl;
+                current_state.second->set_shipment_volume(shipment_volume_map[type_str][state_code-1], ft_pair.second);
+            }
+            current_state.second->init_poisson();
         }
-        current_state.second->init_poisson();
     }
 }
 
@@ -817,7 +835,7 @@ void Grid_manager::removeFarmSubset(std::vector<Farm*>& subVec, std::vector<Farm
 //	std::cout << "Removing "<<subVec.size()<<" farms from list of "<<fullVec.size()<<std::endl;
 
 	// put vectors into fips-indexed maps to speed up matching
-	std::unordered_map< std::string, std::vector<Farm*> > subMap, fullMap; 
+	std::unordered_map< std::string, std::vector<Farm*> > subMap, fullMap;
 	for (auto& sv:subVec){
 		subMap[sv->get_fips()].emplace_back(sv);}
 	for (auto& fv:fullVec){
@@ -840,7 +858,7 @@ void Grid_manager::removeFarmSubset(std::vector<Farm*>& subVec, std::vector<Farm
 				}
 				it2++;
 			}
-		}	
+		}
 	}
 	// rewrite fullVec
 	std::vector<Farm*> temp;
@@ -848,7 +866,7 @@ void Grid_manager::removeFarmSubset(std::vector<Farm*>& subVec, std::vector<Farm
 	  for (auto& f2:f1.second){
 		temp.emplace_back(f2);}}
 	fullVec = temp;
-		
+
 	if (expectedSize != fullVec.size()){
 		std::cout << "Error in removeFarmSubset: expected size"<< expectedSize <<
 		", actual size: "<< fullVec.size() <<". Exiting...";
