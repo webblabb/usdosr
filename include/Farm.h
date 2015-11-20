@@ -21,7 +21,7 @@ class Farm
 		double x_coordinate, ///< x-coordinate from projected longitude (same units as local spread kernel)
 			y_coordinate, ///< y-coordinate from projected latitude (same units as local spread kernel)
 			sus, ///< Calculated total susceptibility of this premises
-			inf; ///< Calculated total infectiousness of this premises	
+			inf; ///< Calculated total infectiousness of this premises
         Point position;
 		County* parent_county;
 		State* parent_state;
@@ -158,12 +158,13 @@ inline County* Farm::get_parent_county() const
 class Farm_type
 {
 public:
-    Farm_type(int index, std::string herd, std::vector<std::string> in_species);
+    Farm_type(std::string herd, std::vector<std::string> in_species);
     ~Farm_type();
     int get_index() const; //inlined
     std::string get_species() const; //inlined
 private:
-    int index = 0;
+    static unsigned int types_created;
+    unsigned int index = 0;
     std::string herd;
     std::string species; //ie dairy, beef
 

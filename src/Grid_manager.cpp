@@ -176,10 +176,10 @@ void Grid_manager::readFips_and_states()
 
 void Grid_manager::readFarms(const std::string& farm_fname)
 {
-    std::clock_t farm_load_start = std::clock();
+    //std::clock_t farm_load_start = std::clock();
     farm_map.reserve(850000);
 	std::cout<<std::endl;
-	int id, tempsize;
+	int id;
 	double x, y;
 	std::string fips;
 	int fcount = 0;
@@ -188,7 +188,7 @@ void Grid_manager::readFarms(const std::string& farm_fname)
 	std::unordered_map<std::string,double> sumQ; ///> Sum of (species count on premises^q), over all premises
 
 	// initialize each species sum to 0
-	for (auto& s:speciesOnPrems){
+	for (std::string s:speciesOnPrems){
 		sumSp[s] = 0.0;
 		sumP[s] = 0.0;
 		sumQ[s] = 0.0;
@@ -227,10 +227,7 @@ void Grid_manager::readFarms(const std::string& farm_fname)
                                   std::endl;
                     continue;
                 }
-				// write farm pointer to private var farm_map
-				farm_map[id] = new Farm(id, x, y, fips);
 
-				++fcount;
 				// add species counts - check that number of columns is as expected
 				if(line_vector.size() < 4+speciesOnPrems.size()){
 					std::cout<<"ERROR (premises file & config 44-46) at line"<<std::endl;
@@ -240,44 +237,48 @@ void Grid_manager::readFarms(const std::string& farm_fname)
 					exit(EXIT_FAILURE);
 				}
 
-				int colcount = 4; // populations start at column 4
-				std::string herd = "";
-				bool herd_found = false;
+				unsigned int colcount = 4; // animal populations start at column 4
+				unsigned int total_animals = 0;
+				std::vector<int> animal_numbers;
+				for(size_t i = colcount; i < line_vector.size(); i++)
+                {
+                    unsigned int tempsize = stringToNum<int>(line_vector[i]);
+                    total_animals += tempsize;
+                    animal_numbers.push_back(tempsize);
+                }
 
-				for (auto& sp:speciesOnPrems){ // for each species
-					tempsize = stringToNum<int>(line_vector[colcount]); // assign value in column "colcount" to "tempsize"
-					farm_map.at(id)->Farm::set_speciesCount(sp,tempsize); // set number for species at premises
-					sumSp[sp] += tempsize;
+                if(total_animals < 1)
+                {
+                    std::cout << "ERROR: Premises with id " << id << " has no animals of any species. "
+                              << "Skipping this farm..." << std::endl;
+					continue;
+                }
+
+				// write farm pointer to private var farm_map
+				farm_map[id] = new Farm(id, x, y, fips);
+				++fcount;
+
+                std::string herd(speciesOnPrems.size(), '0');
+				for (size_t i = 0; i < speciesOnPrems.size(); i++){ // for each species
+					std::string sp = speciesOnPrems[i]; //Name of this species
+					unsigned int number = animal_numbers[i]; //Number of individuals of this species/type
+					farm_map.at(id)->Farm::set_speciesCount(sp, number); // set number for species at premises
+					sumSp[sp] += number;
 					// get infectiousness ("p") for this species (column 4 aligns with param index 0 for species 1, hence -4)
 					double p = infExponents.at(sp);
-					sumP[sp] += pow(double(tempsize),p);
+					sumP[sp] += pow(double(number),p);
 					// get susceptibility ("q") for this species
 					double q = susExponents.at(sp);
-					sumQ[sp] += pow(double(tempsize),q);
+					sumQ[sp] += pow(double(number),q);
 
 					// if there are animals of this species, add to fips-species list to sort by population later
-					if (tempsize>0){
+					if (number>0){
 						fipsSpeciesMap[fips][sp].emplace_back(farm_map.at(id));
 					}
-                    if(tempsize < 1)
+                    if(number > 0)
                     {
-                        herd += '0';
+                        herd[i] = '1';
                     }
-                    else
-                    {
-                        if(herd_found == false)
-                        {
-                            herd += '1';
-                            herd_found = true;
-                        }
-                        else
-                        {
-                            std::cout<<"ERROR: premises " << id << " has more than one species present." <<std::endl;
-                            std::cout<<"Exiting..."<<std::endl;
-                            exit(EXIT_FAILURE);
-                        }
-                    }
-					++colcount;
 				}
 
 				//Assign the correct farm type to the farm.
@@ -1023,8 +1024,8 @@ void Grid_manager::set_FarmSus(Farm* f)
 	// 2.086 x 10^-7, or that times sum of all US cattle: 19.619
 	double premSus = 0.0;
 	for (auto& sp:speciesOnPrems){
-		double count = double(f->get_size(sp)); // i.e. get_size("beef") gets # of beef cattle on premises
-		double spSus = normSus.at(sp)*pow(count,susExponents.at(sp)); // multiply by stored susceptibility value for this species/type
+		double n_animals = double(f->get_size(sp)); // i.e. get_size("beef") gets # of beef cattle on premises
+		double spSus = normSus.at(sp)*pow(n_animals, susExponents.at(sp)); // multiply by stored susceptibility value for this species/type
 		premSus += spSus; // add this species to the total for this premises
 	}
 	f->set_sus(premSus);
@@ -1038,8 +1039,8 @@ void Grid_manager::set_FarmInf(Farm* f)
 	// 2.177 x 10^-7, or that times sum of all US cattle: 20.483
 	double premInf = 0.0;
 	for (auto& sp:speciesOnPrems){
-		double count = double(f->get_size(sp)); // i.e. get_size("beef") gets # of beef cattle on premises
-		double spInf = normInf.at(sp)*pow(count,infExponents.at(sp)); // susceptibility value for this species/type
+		double n_animals = double(f->get_size(sp)); // i.e. get_size("beef") gets # of beef cattle on premises
+		double spInf = normInf.at(sp)*pow(n_animals, infExponents.at(sp)); // susceptibility value for this species/type
 		premInf += spInf; // add this species to the total for this premises
 	}
 	f->set_inf(premInf);
@@ -1088,16 +1089,7 @@ Farm_type* Grid_manager::get_farm_type(std::string herd)
     if(farm_types.find(herd) == farm_types.end())
     {
         //This farm type has not been created yet
-        int index = 0;
-        for(size_t i = 0; i < herd.size(); i++)
-        {
-            if(herd[i] == '1')
-            {
-                index = i;
-                break;
-            }
-        }
-        farm_types[herd] = new Farm_type(index, herd, parameters->species);
+        farm_types[herd] = new Farm_type(herd, parameters->species);
         return farm_types[herd];
     }
     else

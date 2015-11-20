@@ -1,8 +1,10 @@
 #include <stdio.h>
 #include <iostream>
+#include <sstream>
 #include "Farm.h"
 #include "County.h"
 #include "State.h"
+
 
 Farm::Farm(int in_id, double in_x, double in_y, std::string in_fips)
 	:
@@ -68,17 +70,23 @@ State* Farm::get_parent_state() const
     return parent_county->get_parent_state();
 }
 
-Farm_type::Farm_type(int index, std::string herd, std::vector<std::string> in_species) :
-    index(index), herd(herd)
+unsigned int Farm_type::types_created = 0;
+
+Farm_type::Farm_type(std::string herd, std::vector<std::string> in_species) :
+    index(types_created), herd(herd)
 {
+    std::stringstream ss;
     for(size_t i = 0; i < herd.size(); i++)
     {
         if(herd[i] != '0')
         {
-            species = in_species[i];
-            break;
+           ss << in_species[i] << ", ";
         }
     }
+    species = ss.str();
+    species.pop_back();
+    species.pop_back();
+    types_created++; //Static varible that keeps track of the number of different farm types.
 }
 
 Farm_type::~Farm_type()
