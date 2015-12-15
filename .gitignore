@@ -33,7 +33,6 @@ a
 !fips_weights.txt
 
 *.docx
-*.pdf
 *.aux
 *.log
 *.gz
