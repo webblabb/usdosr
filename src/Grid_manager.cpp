@@ -28,7 +28,7 @@ Grid_manager::Grid_manager(const Parameters* p)
 	batch(p->batch),
 	parameters(p)
 {
-	verbose = 1;
+	verbose = 0;
 
 	//See if shipments are completely turned off.
 	shipments_off = true;

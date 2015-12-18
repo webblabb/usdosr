@@ -34,7 +34,7 @@ public:
 
 private:
     int state_code;
-    std::mt19937 generator;
+    std::mt19937 mt19937_generator;
     std::unordered_map<Farm_type*, double> poisson_mean;
     std::vector<County*> member_counties;
     bool state_initialized = false;

@@ -97,44 +97,7 @@ void Shipment_manager::makeShipments(std::vector<Farm*>& infFarms,
         }
         output.swap(new_shipments);
     }
-    else
-    {
-        std::cout << "An attempt to create shipments was made but denied since "
-                  << "shipments have been disabled in the config file." << std::endl;
-    }
-
 }
-//Old makeShipments below
-//void Shipment_manager::makeShipments(std::vector<Farm*>& infFarms, int countyMethod, std::vector<Shipment*>& fs)
-//// makes shipments for ALL premises in counties, not just inf/susc provided in arguments.
-//// county method determines shipments kernel (can change by time)
-//// infFarms determines which farm-level assignments to make.
-//{
-//  if (countyMethod != 0){
-//	startRecentShips = farmShipmentList.size();
-//	startCoRecentShips = countyShipmentList.size();
-//
-//	// get counties (by FIPS codes) of infectious farms
-//	std::set<std::string> FIPSofConcern;
-//	for (auto& i:infFarms){
-//		FIPSofConcern.emplace(i->Farm::get_fips()); // unique FIPS values
-//	}
-//if(verbose>1){std::cout << FIPSofConcern.size()<<" counties of concern from which to generate shipments."<< std::endl;}
-//
-//	// generate county-county shipments for each origin county
-//	for (auto& oc:FIPSofConcern){ // oc = origin county
-//if(verbose>1){std::cout <<"Making shipment(s) for county "<<oc<<std::endl;}
-//		countyCountyShipments(oc, countyMethod); // writes to countyShipmentList
-//	}
-//
-//if(verbose>1){std::cout << countyShipmentList.size()-startCoRecentShips <<" total shipments to assign to farms. "<<std::endl;}
-//	farmFarmShipments(); // reads from countyShipmentList, writes to farmShipmentList
-//	// return the farm shipments from this round
-//	std::vector<Shipment*>::iterator it = farmShipmentList.begin()+startRecentShips;
-//	std::vector<Shipment*> output (it, farmShipmentList.end());
-//	output.swap(fs);
-//  }
-//}
 
 void Shipment_manager::countyCountyShipments(std::string oCounty, int method)
 {

@@ -6,7 +6,7 @@
 State::State(std::string id, int state_code) :
     Region(id),
     state_code(state_code),
-    generator(generate_distribution_seed())
+    mt19937_generator(generate_distribution_seed())
 {
     type = "state";
 }
@@ -14,12 +14,18 @@ State::State(std::string id, int state_code) :
 State::State(std::string id, double x, double y, int state_code) :
     Region(id, x, y),
     state_code(state_code),
-    generator(generate_distribution_seed())
+    mt19937_generator(generate_distribution_seed())
 {
     type = "state";
 }
 
-State::~State() {}
+State::~State()
+{
+    for(auto it = poisson_map.begin(); it != poisson_map.end(); it++)
+    {
+        delete it->second;
+    }
+}
 
 void State::add_county(County* in_county)
 {
@@ -98,7 +104,7 @@ int State::get_poisson_shipments(Farm_type* ft)
 //                 ". Shipment volume for " << ft->get_species() << " is " <<
 //                 ship_volume_map[ft] << ". Mean of poisson d. is " <<
 //                 poisson_mean[ft] << "." << std::endl;
-    return (*poisson_map[ft])(generator);
+    return (*poisson_map[ft])(mt19937_generator);
 }
 
 void State::set_initialized(bool& parameter)

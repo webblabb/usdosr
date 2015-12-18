@@ -242,8 +242,8 @@ void County::all_initialized()
     Region::all_initialized();
 //    if(is_set_area and is_set_state and
 //       is_set_id and region_initialized)
-        if(is_set_area and
-           is_set_id and region_initialized)
+    if(is_set_area and
+       is_set_id and region_initialized)
     {
         county_initialized = true;
     }
