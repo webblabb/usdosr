@@ -85,6 +85,7 @@ class file_manager
 		file_manager();
 		~file_manager();
 		const Parameters* getParams(); // inlined
+		const std::string getSettings(std::string&);
 		void readConfig(std::string&);
 };
 

@@ -10,6 +10,18 @@ file_manager::~file_manager()
 	delete params.kernel;
 }
 
+/// Returns a string to output to run log file, containing batchDateTime (provided as argument), and contents of pv (config lines 1-70)
+const std::string file_manager::getSettings(std::string& bdt)
+{
+	std::string output = bdt;
+	for (int i=1; i<=70; i++){
+		output += "\t";
+		output += pv[i];
+	}
+	output += "\n";
+	return output;
+}
+
 /// Reads configuration file, stores parameter values in a character vector.
 /// Checks validity of values and groups closely related parameters.
 void file_manager::readConfig(std::string& cfile)

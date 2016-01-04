@@ -31,6 +31,23 @@ int main(int argc, char* argv[])
 	file_manager fm; // construct file_manager object
 	fm.readConfig(cfile); // reads config file, creates parameters object, and checks for errors
 	const Parameters* p = fm.getParams();
+	// make string: batch_date_time
+	std::string batchDateTime = p->batch;
+	// get/format current time
+	time_t rawtime;
+	struct tm* timeinfo;
+	char buffer[80];
+	time (&rawtime);
+	timeinfo = localtime(&rawtime);
+	strftime(buffer,80,"_%Y%b%d_%H%M",timeinfo);
+	std::string str(buffer);
+	
+	batchDateTime += str;
+	// write parameters from config file to settings_batchname
+	std::string settingsOutFile = "runlog.txt";
+	// columns are batchDateTime, config lines 1-70, tab-separated
+	std::string printString = fm.getSettings(batchDateTime);
+	printLine(settingsOutFile,printString);
 
 	// set values for global,
 	verboseLevel = p->verboseLevel;
@@ -193,7 +210,7 @@ std::cout << "Loading seed prems from "<<p->seedPremFile<<std::endl;
             if (p->printDetail > 0){
                 // output detail to file
                 // rep, ID, time, sourceID, method
-                std::string detOutFile = p->batch;
+                std::string detOutFile = batchDateTime;
                 detOutFile += "_detail.txt";
                 // specify seed farm/county?
                 if (r==1 && t==1){
@@ -218,7 +235,7 @@ std::cout << "Loading seed prems from "<<p->seedPremFile<<std::endl;
         if (p->printSummary > 0){
             // output summary to file (rep, days inf, run time)
             // rep, # farms infected, # days of infection, seed farm and county, run time
-            std::string sumOutFile = p->batch;
+            std::string sumOutFile = batchDateTime;
             sumOutFile += "_summary.txt";
             if (r==1){
                 std::string header = "Rep\tNum_Inf\tDuration\tSeed_Farms\tSeed_FIPS\tRunTimeSec\n";
@@ -356,7 +373,7 @@ std::cout << "Loading seed prems from "<<p->seedPremFile<<std::endl;
         if (p->printSummary > 0){
             // output summary to file (rep, days inf, run time)
             // rep, # farms infected, # days of infection, seed farm and county, run time
-            std::string sumOutFile = p->batch;
+            std::string sumOutFile = batchDateTime;
             sumOutFile += "_summary.txt";
             if (r==1){
                 std::string header = "Rep\tNum_Inf\tDuration\tSeed_Farms\tSeed_FIPS\tRunTimeSec\n";
