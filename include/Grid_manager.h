@@ -27,7 +27,7 @@ class Grid_manager
 
 		// variables for grid creation
 		unsigned int maxFarms; ///< Threshold number of premises per cell (cell size takes precedence)
-		bool shipments_off; ///Keeps track of if shipments are turned off.
+		bool shipmentsOn; ///Keeps track of if shipments are turned off.
 		std::unordered_map<int, grid_cell*>
 			allCells; ///< Unordered_map of all cells in grid
 		std::unordered_map<int, Farm*>
@@ -71,8 +71,8 @@ class Grid_manager
 		void readStates(std::string state_file); //Reads states & flows from file.
 		void readFips_and_states(); //Reads counties from file.
 		void readFarms(const std::string& farm_fname); //Does all the reading of premises-file
-		void initFips(); //Removes counties without farms and sets shipping probs.
-		void initStates(); //Initiates all farm shipment probs in the states.
+		void initFipsShipping(); //Removes counties without farms and sets shipping probs.
+		void initStatesShipping(); //Initiates all farm shipment probs in the states.
 		void set_maxFarms(unsigned int in_maxFarms); //inlined
 		std::string to_string(grid_cell&) const;
 		std::vector<Farm*> getFarms(
