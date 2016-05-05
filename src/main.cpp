@@ -13,7 +13,7 @@ int verboseLevel; // global variable determining console output
 
 int main(int argc, char* argv[])
 {
-    std::clock_t process_start = std::clock();
+   std::clock_t process_start = std::clock();
 	std::string cfile; // Config file
 // Check for command line arguments
 	if(argc == 2){cfile = argv[1];}
@@ -53,20 +53,16 @@ int main(int argc, char* argv[])
 	verboseLevel = p->verboseLevel;
 
 	int verbose = verboseLevel; // override global value for main here if desired
-	// and local variables that might be changed
-	int reps = p->replicates;
-	// or are frequently accessed
 	int timesteps = p->timesteps;
+	
 	// Read in farms, determine xylimits
 	std::clock_t loading_start = std::clock();
-
 	Grid_manager G(p);
 	// get pointers to full list of farms & cells
 	auto allPrems = G.get_allFarms();
 	auto fipsmap = G.get_FIPSmap();
 	auto allCells = G.get_allCells(); // will be filled when grid is initiated, for now pointer just exists
  	auto fipsSpeciesMap = G.get_fipsSpeciesMap(); // for shipments
-
 	std::clock_t loading_end = std::clock();
 
 	if(verbose>0){
@@ -86,87 +82,60 @@ int main(int argc, char* argv[])
 		G.initiateGrid(p->uniformSide);}
 	// else use density params
 	else {
-		G.initiateGrid((*p).densityParams.at(0), // max prems per cell
-						(*p).densityParams.at(1)); // min cell side}
+		G.initiateGrid(p->densityParams.at(0), // max prems per cell
+					   p->densityParams.at(1)); // min cell side}
 	}
 
 	std::clock_t grid_end = std::clock();
 	double gridGenTimeMS = 1000.0 * (grid_end - grid_start) / CLOCKS_PER_SEC;
 	std::cout << "CPU time for generating grid: " << gridGenTimeMS << "ms." << std::endl;
 
-	std::vector<Farm*> seedFarms;
-	std::unordered_map<int, std::string> FIPSlist; // used if numRandomSeed < 0
-	if (p->seedMethod >= 0){
-		// read in initially infected prems from file
-		std::ifstream f(p->seedPremFile);
-		if(!f){std::cout << "Seed input file not found. Exiting..." << std::endl; exit(EXIT_FAILURE);}
-std::cout << "Loading seed prems from "<<p->seedPremFile<<std::endl;
-			while(! f.eof()){
-				std::string line;
-				getline(f, line); // get line from file "f", save as "line"
-				if(! line.empty()){ // if line has something in it
-					int fID = stringToNum<int>(line);
-					seedFarms.emplace_back(allPrems->at(fID));
-				} // close "if line_vector not empty"
-			} // close "while not end of file"
-		if(verbose>0){std::cout << " Closed seed file." << std::endl;}
-	} // otherwise, seedFarms will be drawn from FIPSmap
-	else if (p->seedMethod < 0){
-		// change number of reps to # of counties (1 per county)
-		reps = fipsmap->size();
-		// make a map of numbers and FIPS, to match up in rep-loops
-		FIPSlist.reserve(fipsmap->size());
-		int fipscount = 1;
-		for (auto& fm:(*fipsmap)){
-			FIPSlist[fipscount] = fm.first;
-			fipscount++;
-		}
+	// Get initially infected (seed) premises 
+	std::vector<std::vector<Farm*>> seedFarmsByRun;
+	G.get_seedPremises(seedFarmsByRun); // saves to seedFarmsByRun
+	
+	if (seedFarmsByRun.size() == 0 ){
+	  std::cout << "ERROR: No valid seed farms provided/located. Exiting... ";
+	  exit(EXIT_FAILURE);
 	}
 
     //~~~~~~~~~~~~~~~~~~ Loop starts here
-    for (int r=1; r<=reps; r++){
-        std::clock_t rep_start = std::clock();
-        // load initially infected farms and instantiate Status manager
-        // note that initial farms are started as exposed
+    for (int r=1; r<=seedFarmsByRun.size(); r++){ 
+    	std::vector<Farm*> seedFarms = seedFarmsByRun[r];
+    	
+			std::clock_t rep_start = std::clock();
+			// load initially infected farms and instantiate Status manager
+			// note that initial farms are started as exposed
 
-        Control_actions Control(p);
+			Control_actions Control(p);
 
-        if (p->seedMethod < 0){ // if choosing seeds by county, choose county based on rep number
-            seedFarms = fipsmap->at(FIPSlist.at(r))->get_farms();
-        }
-        int seedType = p->seedMethod;
-        auto lagP = p->lagParams;
+			Status_manager Status(seedFarms, p, &G, &Control); // seeds initial exposures, modify to pass grid manager, p
+			Shipment_manager Ship(fipsmap, fipsSpeciesMap, &Status, p->shipPremAssignment, p->species, p); // modify to pass grid manager, p
+			Grid_checker gridCheck(allCells, Status.get_sources(),p->kernel);
 
-        Status_manager Status(seedFarms, seedType, lagP, allPrems, timesteps, &Control); // seeds initial exposures, modify to pass grid manager, p
-        Shipment_manager Ship(fipsmap, fipsSpeciesMap, &Status, p->shipPremAssignment, p->species, p); // modify to pass grid manager, p
-        Grid_checker gridCheck(allCells, Status.get_sources(),p->kernel);
+			int t=0;
+			int numSuscept, numExposed;
+			std::vector<Farm*> focalFarms;
+			bool potentialTx = 1;
 
-        int t=0;
-        int numSuscept, numExposed;
-        std::vector<Farm*> focalFarms;
-        bool potentialTx = 1;
-
-       while (t<timesteps && potentialTx){ // timesteps, stop early if dies out
+      while (t<timesteps && potentialTx){ // timesteps, stop early if dies out
             std::clock_t timestep_start = std::clock();
 
             ++t; // starts at 1, ends at timesteps
             Status.updates(t); // disease updates: when applicable, exposed -> infectious, infectious -> immune
     if(verbose>1){std::cout<<std::endl<<"Time "<<t<<std::endl<<"Disease statuses updated."<<std::endl;}
-            Control.updates(t); // control updates: when applicable, exposed -> reported, reported -> banned, banned -> compliant
-    if(verbose>1){std::cout<<"Control statuses updated."<<std::endl;}
+//            Control.updates(t); // control updates: when applicable, exposed -> reported, reported -> banned, banned -> compliant
+//    if(verbose>1){std::cout<<"Control statuses updated."<<std::endl;}
             Status.premsWithStatus("inf", focalFarms);	// set focalFarms as all farms with disease status inf
 
             std::cout << std::endl<<std::endl<<"Timestep "<<t<<": "
             <<Status.numPremsWithStatus("sus")<<" susceptible, "
             <<Status.numPremsWithStatus("exp")<<" exposed, "
             <<focalFarms.size()<<" infectious, "
-            <<Status.numPremsWithStatus("imm")<<" immune premises. "<<std::endl
+            <<Status.numPremsWithStatus("imm")<<" immune premises. "<<std::endl;
 
-            <<Control.getNcounties("report", 1)<<" counties reported. " // reported counties have "reported" status = 1
-            <<Control.getNcounties("shipBan", 1)<<" counties with ban ordered. " // level 1 = ordered, not yet compliant
-            <<Control.getNcounties("shipBan", 2)<<" counties with active shipping ban. "// level 2 = ordered and compliant
-            <<std::endl;
-
+			// output Control statuses to console
+			
              // determine infections that will happen from local diffusion
 
     if(verbose>0){std::cout << "Starting grid check (local spread): "<<std::endl;}
@@ -182,7 +151,7 @@ std::cout << "Loading seed prems from "<<p->seedPremFile<<std::endl;
 
              std::clock_t gridcheck_end = std::clock();
              double gridCheckTimeMS = 1000.0 * (gridcheck_end - gridcheck_start) / CLOCKS_PER_SEC;
-    if(verbose>0){std::cout << "Total grid infections: " << gridInf.size() << std::endl;
+    if(verbose>0){std::cout << "Total local infections: " << gridInf.size() << std::endl;
         std::cout << "CPU time for checking grid: " << gridCheckTimeMS << "ms." << std::endl;}
 
             // determine shipments
@@ -198,8 +167,13 @@ std::cout << "Loading seed prems from "<<p->seedPremFile<<std::endl;
             if(verbose>0){std::cout << "CPU time for shipping: " << shipTimeMS << "ms." << std::endl;}
 
             // change statuses for these farms (checks for duplicates)
-            if (gridInf.size()>0){Status.localExposure(gridInf,t);}
-            if (fs.size()>0){Status.shipExposure(fs,t);} // send farm shipments to be checked, begin exposure where appropriate
+            if (gridInf.size()>0){
+            	Status.localExposure(gridInf,t);
+            }
+            
+            if (fs.size()>0){
+            	Status.shipExposure(fs,t);
+            } // send farm shipments to be checked, begin exposure where appropriate
 
             // at the end of this transmission day, statuses are now...
             Status.premsWithStatus("inf", focalFarms); // assign "inf" farms as focalFarms

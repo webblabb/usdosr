@@ -23,18 +23,19 @@ Shipment_manager::Shipment_manager(
         species(speciesOnPrems),
         parameters(p)
 {
-	verbose = verboseLevel;
+	verbose = 2;
 
-	//Determine if there are no activated shipment methods in parameters.
+	// Determine if there are no activated shipment methods in parameters.
 	shipments_off = true;
-	for(int m : parameters->shipMethods)
-    {
-        if(m > 0)
-            shipments_off = false;
+	for (int m : parameters->shipMethods){
+  	if (m > 0){
+    	shipments_off = false;
     }
+  }
+  
+std::cout << "Shipments_off set to "<< shipments_off <<std::endl;
 
-	if(shipments_off == false)
-    {
+	if (shipments_off == false){
         allFIPS.reserve(FIPSmap->size());
 
         // copy species
@@ -49,10 +50,8 @@ Shipment_manager::Shipment_manager(
         }
 
         if(verbose>0){std::cout << "Shipment manager constructed: "<<FIPSmap->size()<<" counties with premises." << std::endl;}
-    }
-    else
-    {
-        if(verbose>0){std::cout << "Shipment manager constructed but not initialized since shipments are turned off." << std::endl;}
+    } else {
+    	if(verbose>0){std::cout << "Shipment manager constructed but not initialized since shipments are turned off." << std::endl;}
     }
 
 }

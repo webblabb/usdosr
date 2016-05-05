@@ -3,8 +3,7 @@
 
 #include "file_manager.h" // for parameter struct
 #include "grid_cell.h"
-//#include "pairwise.h"
-#include "shared_functions.h" //Needed???
+#include "shared_functions.h" //random_unique
 
 #include <algorithm> // std::sort, std::any_of
 #include <queue> // for checking neighbor cells
@@ -25,9 +24,10 @@ class Grid_manager
 	private:
 		int verbose; ///< Can be set to override global setting for console output
 
+		const Parameters* parameters;
 		// variables for grid creation
 		unsigned int maxFarms; ///< Threshold number of premises per cell (cell size takes precedence)
-		bool shipments_off; ///Keeps track of if shipments are turned off.
+		bool shipmentsOn; ///Keeps track of if shipments are turned off.
 		std::unordered_map<int, grid_cell*>
 			allCells; ///< Unordered_map of all cells in grid
 		std::unordered_map<int, Farm*>
@@ -63,7 +63,6 @@ class Grid_manager
 		int printCellFile;
 		std::string batch; ///< Cells printed to file with name: [batch]_cells.txt
 		std::unordered_map<std::string, Farm_type*> farm_types;
-		const Parameters* parameters;
 
 		// functions
 		std::vector<double> read_replicate_file(std::string fname); //This is temporary until data is read from a database.
@@ -71,8 +70,8 @@ class Grid_manager
 		void readStates(std::string state_file); //Reads states & flows from file.
 		void readFips_and_states(); //Reads counties from file.
 		void readFarms(const std::string& farm_fname); //Does all the reading of premises-file
-		void initFips(); //Removes counties without farms and sets shipping probs.
-		void initStates(); //Initiates all farm shipment probs in the states.
+		void initFipsShipping(); //Removes counties without farms and sets shipping probs.
+		void initStatesShipping(); //Initiates all farm shipment probs in the states.
 		void set_maxFarms(unsigned int in_maxFarms); //inlined
 		std::string to_string(grid_cell&) const;
 		std::vector<Farm*> getFarms(
@@ -92,10 +91,14 @@ class Grid_manager
  		void assignCellIDtoFarms(int cellID, std::vector<Farm*>& farmsInCell);
  		void removeFarmSubset(std::vector<Farm*>&, std::vector<Farm*>&); ///< Remove farms in first vector from second vector
 
+		void read_seedSource(std::string, std::vector<std::string>&); ///< Reads seed file with one FIPS code per line
+		void read_seedSource(std::string, std::vector<int>&); ///< Reads seed file with one premises ID per line
+		void read_seedSource(std::string, std::vector<std::vector<int>>&); ///< Reads seed file with multiple premises IDs per line
+		void select_randomPremisesPerCounty(std::vector<std::vector<Farm*>>&); ///< Selects seed premises from all counties
+		void select_randomPremisesPerCounty(std::vector<std::string>, std::vector<std::vector<Farm*>>&); ///< Selects seed premises from specified counties
+
 		// functions for infection evaluation
-		double shortestCellDist2(
-			grid_cell* cell1,
-			grid_cell* cell2); ///> Calculates (shortest distance between two cells)^2
+		double shortestCellDist2(grid_cell*, grid_cell*); ///> Calculates (shortest distance between two cells)^2
 		void makeCellRefs(); ///> Calculates and stores kernel values and other pre-processing tasks
 		// functions for infection evaluation
 		void set_FarmSus(Farm*); ///> Calculates premises susceptibility and stores in Farm
@@ -131,6 +134,9 @@ class Grid_manager
 
 		const std::unordered_map<std::string, std::unordered_map<std::string, std::vector<Farm*> >>*
 			get_fipsSpeciesMap(); //inlined
+			
+			
+		void get_seedPremises(std::vector<std::vector<Farm*>>&);
 
 		void printCells();
 };
@@ -164,12 +170,6 @@ inline const std::unordered_map<std::string, County*>*
 {
 	return &FIPSmap;
 }
-
-//inline const std::unordered_map<std::string, std::vector<Farm*>>*
-//	Grid_manager::get_FIPSmap()
-//{
-//	return &FIPSmap;
-//}
 
 inline const std::unordered_map<std::string, std::unordered_map<std::string, std::vector<Farm*> >>*
 	Grid_manager::get_fipsSpeciesMap()

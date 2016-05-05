@@ -17,6 +17,7 @@
 ///> Loads premises from file, calculates summary statistics
 Grid_manager::Grid_manager(const Parameters* p)
 	:
+	parameters(p),
 	speciesOnPrems(p->species),
 	susExponents(p->susExponents),
 	infExponents(p->infExponents),
@@ -25,28 +26,34 @@ Grid_manager::Grid_manager(const Parameters* p)
 	kernel(p->kernel),
 	committedFarms(0),
 	printCellFile(p->printCells),
-	batch(p->batch),
-	parameters(p)
+	batch(p->batch)
 {
 	verbose = 0;
 
-	//See if shipments are completely turned off.
-	shipments_off = true;
-	for(int m : parameters->shipMethods)
-    {
-        if(m > 0)
-            shipments_off = false;
+	// See if shipments are completely turned off.
+	shipmentsOn = false;
+	for (int m: parameters->shipMethods){
+        if (m > 0){
+            shipmentsOn = true;
+        }
     }
 
-	if(shipments_off == false)
-    {
-        getReplicateData();
-    }
-    readFips_and_states();
     readFarms(parameters->premFile);
-    initStates();
-    initFips();
 
+	if (shipmentsOn == true){
+        getReplicateData();
+        readFips_and_states();
+        initFipsShipping();
+    	initStatesShipping();
+    } else {
+    	std::cout << "Setting county areas to zero." << std::endl;
+		for(County* c : FIPSvector){
+		  // designate as initialized, data not needed if shipping is off
+		  c -> set_position(0.0, 0.0);
+		  c -> set_area(0.0);
+		}
+    }
+    
 	allCells.reserve(800);
 
 if (verbose>1){
@@ -139,25 +146,20 @@ void Grid_manager::readFips_and_states()
 			    double x = stringToNum<double>(line_vector[4]);
 			    double y = stringToNum<double>(line_vector[5]);
 
-                County* new_county = new County(fips, x, y);
-			    FIPSmap[fips] = new_county;
-			    FIPSvector.emplace_back(new_county);
-			    new_county->set_area(area);
-
-			    // Add county to its corresponding state object
-			    if(state_map.find(state) != state_map.end())
-                {
-                    new_county->set_parent_state(state_map.at(state));
-                }
-                else
-                {
-                    state_map[state] = new State(state, state_code);
-                    n_states_loaded += 1;
-                    new_county->set_parent_state(state_map.at(state));
-                }
-
-			    n_counties_loaded += 1;
-			}
+                if (FIPSmap.find(fips) != FIPSmap.end()){ 
+                // only continue if this county was initiated by presence of a farm within
+                	FIPSmap[fips] -> set_position(x, y);
+			    	FIPSmap[fips] -> set_area(area);
+			    	// Add county to its corresponding state object
+					if(state_map.find(state) != state_map.end()){
+						FIPSmap[fips] -> set_parent_state(state_map.at(state));
+					} else {
+						state_map[state] = new State(state, state_code);
+						n_states_loaded += 1;
+						FIPSmap[fips] -> set_parent_state(state_map.at(state));
+					}
+			    } // end "if fips is in FIPSmap"
+			} // end "if line vector has something in it"
         }
         f.close();
 	}
@@ -166,12 +168,12 @@ void Grid_manager::readFips_and_states()
         std::cout << "County file not found. Exiting..." << std::endl;
         exit(EXIT_FAILURE);
     }
+    n_counties_loaded = FIPSmap.size();
 
     std::clock_t fips_load_end = std::clock();
     std::cout << n_counties_loaded << " counties and " << n_states_loaded << " states created successfully in " <<
               1000.0 * (fips_load_end - fips_load_start) / CLOCKS_PER_SEC <<
               "ms." << std::endl;
-    //Counties created, now they need farms.
 }
 
 void Grid_manager::readFarms(const std::string& farm_fname)
@@ -219,17 +221,9 @@ void Grid_manager::readFarms(const std::string& farm_fname)
 					x = stringToNum<double>(line_vector[2]);
 					y = stringToNum<double>(line_vector[3]);
 				}
-				//check that the county of the farm exists
-				if(FIPSmap.find(fips) == FIPSmap.end())
-                {
-                    std::cout << "The fips " << fips << ", which is in the premises data, " <<
-                                 "cannot be found among the loaded counties. Skipping this farm." <<
-                                  std::endl;
-                    continue;
-                }
 
 				// add species counts - check that number of columns is as expected
-				if(line_vector.size() < 4+speciesOnPrems.size()){
+				if (line_vector.size() < 4+speciesOnPrems.size()){
 					std::cout<<"ERROR (premises file & config 44-46) at line"<<std::endl;
 					std::cout<< line <<std::endl;
 					std::cout<< ": number of columns with animal populations don't match up with list of species provided."<<std::endl;
@@ -257,7 +251,24 @@ void Grid_manager::readFarms(const std::string& farm_fname)
 				// write farm pointer to private var farm_map
 				farm_map[id] = new Farm(id, x, y, fips);
 				++fcount;
-
+				
+				// If county doesn't exist, create it
+				if (FIPSmap.find(fips) == FIPSmap.end()){
+                    County* new_county = new County(fips);
+			    	FIPSmap[fips] = new_county;
+			    	FIPSvector.emplace_back(new_county);
+                }
+                
+				// Add farm to its corresponding county object
+				try{
+					FIPSmap.at(fips)->add_farm(farm_map.at(id));
+				}
+				catch(std::exception& e){
+					std::cout << "When adding premises " << id << " to county " << fips << "." <<
+							  e.what() << std::endl;
+					exit(EXIT_FAILURE);
+				}
+				
                 std::string herd(speciesOnPrems.size(), '0');
 				for (size_t i = 0; i < speciesOnPrems.size(); i++){ // for each species
 					std::string sp = speciesOnPrems[i]; //Name of this species
@@ -272,10 +283,10 @@ void Grid_manager::readFarms(const std::string& farm_fname)
 					sumQ[sp] += pow(double(number),q);
 
 					// if there are animals of this species, add to fips-species list to sort by population later
-					if (number>0){
+					if (number > 0){
 						fipsSpeciesMap[fips][sp].emplace_back(farm_map.at(id));
 					}
-                    if(number > 0)
+                    if (number > 0)
                     {
                         herd[i] = '1';
                     }
@@ -284,19 +295,6 @@ void Grid_manager::readFarms(const std::string& farm_fname)
 				//Assign the correct farm type to the farm.
                 Farm_type* farm_type = get_farm_type(herd);
                 farm_map[id]->set_farm_type(farm_type);
-
-				// Add farm to its corresponding county object
-                try
-                {
-                    FIPSmap.at(fips)->add_farm(farm_map.at(id));
-                }
-                catch(std::exception& e)
-                {
-                    std::cout << "When adding premises " << id << " to county " << fips << "." <<
-                              e.what() << std::endl;
-                    exit(EXIT_FAILURE);
-                }
-
 
 				// compare/replace limits of xy plane
 				if (fcount>1){// if this is not the first farm
@@ -343,23 +341,18 @@ if (verbose>1){std::cout << "Initializing xy limits.";}
 	for (auto& f:farm_map){
 		set_FarmSus(f.second);
 		set_FarmInf(f.second);
-        if(verbose>1){
-            if (f.second->get_inf() > maxFarmInf){maxFarmInf = f.second->get_inf();}
-            if (f.second->get_sus() > maxFarmSus){maxFarmSus = f.second->get_sus();}
-        //	if (f.second->get_fips() == "8"){
-        //		std::cout<<"Set Cumbria farm "<<f.first<<" sus to "<<f.second->get_sus()<<" and inf to "<<f.second->get_inf()<<std::endl;
-        //	}
-        }
+        if (f.second->get_inf() > maxFarmInf){maxFarmInf = f.second->get_inf();}
+    	if (f.second->get_sus() > maxFarmSus){maxFarmSus = f.second->get_sus();}
 	}
     std::cout<<"Max farm inf: "<<maxFarmInf<<", max farm sus: "<<maxFarmSus<<std::endl;
 }
 
-void Grid_manager::initFips()
+void Grid_manager::initFipsShipping()
 {
     std::clock_t fips_init_start = std::clock();
 
-    //Get and set the shipping weights for the counties if shipments are turned on
-    if(shipments_off == false)
+    // Get and set the shipping weights for the counties if shipments are turned on
+    if(shipmentsOn == true)
     {
         std::cout << "Reading fips shipping weights..." << std::endl;
         std::ifstream f(parameters->fips_weights);
@@ -400,26 +393,12 @@ void Grid_manager::initFips()
             exit(EXIT_FAILURE);
         }
     }
-
-    //Remove counties without any premises
-    std::vector<std::string> to_delete;
-    for(auto c : FIPSmap)
-    {
-        if(c.second->get_n_farms() == 0)
-            to_delete.emplace_back(c.first);
+    
+    for(County* c : FIPSvector){
+	  //provide each county with a vector of pointers to all other counties so
+      //it has access to them.
+      c->set_all_counties(FIPSvector);
     }
-
-    for(auto it = to_delete.begin(); it != to_delete.end(); it++)
-        FIPSmap.erase(*it);
-
-    std::cout << "Deleted " << to_delete.size() <<
-                 " counties that had no premises." << std::endl;
-
-
-    //provide each county with a vector of pointers to all other counties so
-    //it has access to them.
-    for(County* c : FIPSvector)
-        c->set_all_counties(FIPSvector);
 
     std::clock_t fips_init_end = std::clock();
     std::cout << "Counties initiated in " <<
@@ -427,25 +406,22 @@ void Grid_manager::initFips()
               "ms." << std::endl;
 }
 
-void Grid_manager::initStates()
-{
-    for(auto current_state : state_map)
-    {
-        //Set all the shipment-related replicate specific data once for each farm type.
-        //only if transports are active.
-        if(shipments_off == false)
-        {
-            int state_code = current_state.second->get_code();
-            for(auto ft_pair : farm_types)
-            {
-                std::string type_str = ft_pair.second->get_species(); //Get species as a string (beef, dairy)
-                current_state.second->set_a(a_map[type_str][state_code-1], ft_pair.second);
-                current_state.second->set_b(b_map[type_str][state_code-1], ft_pair.second);
-                //std::cout << "Adding " << shipment_volume_map[type_str][state_code-1] << " to state with code " << state_code << std::endl;
-                current_state.second->set_shipment_volume(shipment_volume_map[type_str][state_code-1], ft_pair.second);
-            }
-            current_state.second->init_poisson();
-        }
+void Grid_manager::initStatesShipping(){
+	// Set all the shipment-related replicate specific data once for each farm type.
+	// only if transports are active.
+	if(shipmentsOn == true){
+		for(auto current_state : state_map){
+			int state_code = current_state.second->get_code();
+			for(auto ft_pair : farm_types)
+			{
+				std::string type_str = ft_pair.second->get_species(); //Get species as a string (beef, dairy)
+				current_state.second->set_a(a_map[type_str][state_code-1], ft_pair.second);
+				current_state.second->set_b(b_map[type_str][state_code-1], ft_pair.second);
+				//std::cout << "Adding " << shipment_volume_map[type_str][state_code-1] << " to state with code " << state_code << std::endl;
+				current_state.second->set_shipment_volume(shipment_volume_map[type_str][state_code-1], ft_pair.second);
+			}
+			current_state.second->init_poisson();
+		}
     }
 }
 
@@ -1029,6 +1005,7 @@ void Grid_manager::set_FarmSus(Farm* f)
 		premSus += spSus; // add this species to the total for this premises
 	}
 	f->set_sus(premSus);
+	//std::cout << "Prem sus = " << f->get_sus() << ". ";
 }
 
 /// Used after grid creation to assign infectiousness values to individual premises
@@ -1044,6 +1021,8 @@ void Grid_manager::set_FarmInf(Farm* f)
 		premInf += spInf; // add this species to the total for this premises
 	}
 	f->set_inf(premInf);
+	//std::cout << "Prem inf = " << f->get_inf() << ". ";
+
 }
 
 /// Prints file with specifications of cells
@@ -1096,4 +1075,148 @@ Farm_type* Grid_manager::get_farm_type(std::string herd)
     {
         return farm_types[herd];
     }
+}
+
+
+/// Reads seed infection source file, expects vector of strings back
+void Grid_manager::read_seedSource(std::string seedSource, std::vector<std::string>& output)
+{
+	std::vector<std::string> tempOutput;
+	std::ifstream f(seedSource);
+	if(!f){std::cout << "Seed source file not found. Exiting..." << std::endl; exit(EXIT_FAILURE);}
+	std::cout << "Loading seed data from "<<seedSource<<std::endl;
+		while(! f.eof()){
+			std::string line;
+			getline(f, line); // get line from file "f", save as "line"
+			if(! line.empty()){ // if line has something in it
+				// check for 5 characters? no straightforward "nchar" function
+				tempOutput.emplace_back(line);
+			} // close "if line_vector not empty"
+		} // close "while not end of file"
+		tempOutput.swap(output);
+		if(verbose>0){std::cout << " Closed seed file." << std::endl;}
+}
+
+/// Overloaded version of readSource, expects vector of ints back
+void Grid_manager::read_seedSource(std::string seedSource, std::vector<int>& output)
+{
+	std::vector<int> tempOutput;
+	std::ifstream f(seedSource);
+	if(!f){std::cout << "Seed source file not found. Exiting..." << std::endl; exit(EXIT_FAILURE);}
+	std::cout << "Loading seed data from "<<seedSource<<std::endl;
+		while(! f.eof()){
+			std::string line;
+			getline(f, line); // get line from file "f", save as "line"
+			if(! line.empty()){ // if line has something in it
+				tempOutput.emplace_back(stringToNum<int>(line));
+			} // close "if line_vector not empty"
+		} // close "while not end of file"
+		tempOutput.swap(output);
+		if(verbose>0){std::cout << " Closed seed file." << std::endl;}
+}
+
+/// Overloaded version of readSource, expects vector of vector of ints back
+void Grid_manager::read_seedSource(std::string seedSource, std::vector<std::vector<int>>& output)
+{
+	std::vector<int> tempLine;
+	std::vector<std::vector<int>> tempOutput;
+	std::ifstream f(seedSource);
+	if(!f){std::cout << "Seed source file not found. Exiting..." << std::endl; exit(EXIT_FAILURE);}
+	std::cout << "Loading seed data from "<<seedSource<<std::endl;
+		while(! f.eof()){
+			std::string line;
+			getline(f, line); // get line from file "f", save as "line"
+			if(! line.empty()){ // if line has something in it
+				tempLine = stringToIntVec(line);
+				tempOutput.emplace_back(tempLine);
+			} // close "if line_vector not empty"
+		} // close "while not end of file"
+		tempOutput.swap(output);
+		if(verbose>0){std::cout << " Closed seed file." << std::endl;}
+}
+
+///< Selects one random premises per county (returns one for every county with at least one
+/// premises)
+void Grid_manager::select_randomPremisesPerCounty(std::vector<std::vector<Farm*>>& output)
+{
+	std::cout << "Selecting a random farm from each of "<<FIPSvector.size()<<" counties."
+	<< std::endl;
+	std::vector<std::vector<Farm*>> tempOutput;
+		tempOutput.reserve(FIPSvector.size());
+	std::vector<Farm*> tempPremVector(1);
+	for (auto& c:FIPSvector){
+		std::vector<Farm*> premisesInCounty = c->get_farms();
+		random_unique(premisesInCounty, 1, tempPremVector); // stores random premises in tempPremVector
+		tempOutput.emplace_back(tempPremVector);		
+	}
+	tempOutput.swap(output);	
+}
+
+///< Overloaded version of select random premises per county, for specific list of FIPS
+void Grid_manager::select_randomPremisesPerCounty(std::vector<std::string> fipsStrings, 
+	std::vector<std::vector<Farm*>>& output)
+{
+	std::vector<std::vector<Farm*>> tempOutput;
+		tempOutput.reserve(fipsStrings.size());
+	std::vector<Farm*> tempPremVector(1);
+	for (auto& c:fipsStrings){
+		std::vector<Farm*> premisesInCounty = FIPSmap.at(c)->get_farms();
+		random_unique(premisesInCounty, 1, tempPremVector); // stores random premises in tempPremVector
+		tempOutput.emplace_back(tempPremVector);
+	}
+	tempOutput.swap(output);	
+}
+
+/// Each run ( = simulation = replicate) is initiated by designating one of the following
+/// as "exposed":
+/// - one randomly chosen farm per county (seedSource = "allFips" or seedSourceType = "fips")
+/// - one specific premises (seedSource = "singlePremises", one ID per line of file)
+/// - multiple specific premises (seedSource = "multiplePremises", multiple comma-separated
+///   premises IDs per line of file)
+void Grid_manager::get_seedPremises(std::vector<std::vector<Farm*>>& output){
+	std::vector<std::vector<Farm*>> seedFarmsByRun;
+	if (parameters->seedSource == "allFips"){// if seeding one per county
+		// get a random farm per county
+        select_randomPremisesPerCounty(seedFarmsByRun); // saves to seedFarmsByRun
+    } else if (parameters->seedSource != "allFips"){ // will need to read file
+    	if (parameters->seedSourceType == "fips"){
+    		std::vector<std::string> sourceFipsStrings;
+    		// read source file (expect vector of strings back)
+    		read_seedSource(parameters->seedSource, sourceFipsStrings);
+    		// get a random farm per county
+    		select_randomPremisesPerCounty(sourceFipsStrings, seedFarmsByRun); // saves to seedFarmsByRun
+    	} else if (parameters->seedSourceType == "singlePremises"){
+    		std::vector<int> sourcePremIDs;
+    		// read source file (expect vector of ints back)
+    		read_seedSource(parameters->seedSource, sourcePremIDs);
+			// translate strings to premIDs
+			for (auto& pID:sourcePremIDs){
+				if (farm_map.count(pID) == 0){
+					std::cout << "Warning: Premises " << pID << 
+					" not found, skipping this source of infection." << std::endl;
+				} else {
+					std::vector<Farm*> tempPremVector(1);
+					tempPremVector.emplace_back(farm_map.at(pID));
+					seedFarmsByRun.emplace_back(tempPremVector);
+				}
+			}
+    	} else if (parameters->seedSourceType == "multiplePremises"){
+    		std::vector<std::vector<int>> sourcePremIDs;
+    		// read source file in file manager (expect vector of vector of ints back)
+    		read_seedSource(parameters->seedSource, sourcePremIDs);
+    		std::vector<Farm*> tempPremVector;
+    		for (auto& lineVector: sourcePremIDs){
+    			for (auto& pId: lineVector){
+    				if (farm_map.count(pId) == 0){
+					  	std::cout << "Warning: Premises " << pId << 
+					  	" not found, skipping this source of infection." << std::endl;
+						} else {
+					  	tempPremVector.emplace_back(farm_map.at(pId));
+						}
+    			}
+    			seedFarmsByRun.emplace_back(tempPremVector);
+    		}     		
+    	}
+	}
+	seedFarmsByRun.swap(output);
 }

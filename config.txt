@@ -19,30 +19,30 @@ init0001 #(1) Batch name, used as prefix for output files. Only letters, numbers
 * #(10)
 
 ######################## General settings ########################
-lustrefs/FLAPS_1000runs/FLAPS0001.txt		#(11)~Name of file containing premises ID, FIPS, x, y, population - ie FLAPS_beefdairy_20151201_formatted.txt. Make sure the premises file doesn't have numbers in 1e+05 format (may happen with IDs)
+inputfiles/FLAPS_beefdairy_20151201_formatted.txt		#(11)~Name of file containing premises ID, FIPS, x, y, population - ie FLAPS_beefdairy_20151201_formatted.txt. Make sure the premises file doesn't have numbers in 1e+05 format (may happen with IDs)
 beef,dairy 			#(12)~List of species for which counts are provided in premises file, comma-separated
 365 				#(13)~Timesteps (days) to run
-1 	#(14)~Number of replicates to run (auto-set to 1 if (23) is set to seed county by county).
+*	#(14)
 1 	#(15)~Verbose level: Output extra information to console as model runs (0=off, 1=basic steps, 2=debug)
 0 	#(16)x~Pairwise algorithm on (1) or off (0) in addition to gridding (disabled)
 0 	#(17)~Reverse x/y option: in case input file is entered as lat/long (y/x)(set to 1) instead of long/lat (x/y)(set to 0)
 inputfiles/FIPS_20151805.txt #(18)~Name of file containing fips name, state name, area (m2), x, y. Tab separated.
-inputfiles/fips_weights.txt #~Name of file containing fips number, and a weight for each species, tab separated. (19)
+inputfiles/fips_weights.txt #(19)~Name of file containing fips number, and a weight for each species, tab separated.
 * #(20)
 
 ######################## Infection-related settings ########################
-* 	#(21) Name of file containing PREMISES identifiers from which to seed infection
-*	#(22)x Name of file containing data-based local spread probabilities by distance, ie inputfiles/UKDataKernel.txt
--1 	#(23)~Seed method. 0: use all premises in file from, (>0) choose this many random premises from file, (<0) choose this many seeds _per county_ (changes # of reps to # of FIPS)
+allFips #(21)~Seed source, filename or "allFips". Filename is of file containing identifiers (FIPS codes or premisesIDs) from which to seed infection, one line per simulation. "allFips" specifies to choose from all counties containing premises. To seed from multiple premises at once, provide comma-separated premisesIDs in the file (one line per simulation).
+fips 		#(22)~Seed file type - type of information provided per line of (21). "fips" = choose 1 premises at random within the FIPS code on a given line in (21), "singlePremises" = use the premisesID provided on a given line in (21), "multiplePremises" = use all comma separated premisesIDs on a given line in (21)
+*	#(23) 
 0.42,0.49 	#(24)~Susceptibility exponents(q), species-specific & comma-separated in order listed in (12) 0.42,0.49
 0.41,0.2 	#(25)~Infectiousness exponents(p), species-specific & comma-separated in order listed in (12) 0.41,0.2
 5.7,1		#(26)~Susceptibility constants(S), species-specific & comma-separated in order listed in (12) 5.7,1
 0.00082, 0.00083 #(27)~Infectiousness constants(T), species-specific & comma-separated in order listed in (12)0.00082,0.00083
-0			#(28)~Kernel type for local (diffusion) spread: k1/(1 + (distance/k2)^k3)
+0			#(28)~Kernel type for local (diffusion) spread: 0: k1/(1 + (distance/k2)^k3), 1: data file in (22)
 0.089,1600,4.6	#(29)x~Kernel parameters k1, k2, k3
-5,0 		#(30)~Mean, variance (around normal) days from premises exposure to infectiousness (latency duration)
-5,0 		#(31)~Mean, variance (around normal) days from premises infectiousness to immunity (infectiousness duration)
-* #(32)
+*				#(30) Name of file containing data-based local spread probabilities by distance, ie inputfiles/UKDataKernel.txt
+5,0 		#(31)~Mean, variance (around normal) days from premises exposure to infectiousness (latency duration)
+5,0 		#(32)~Mean, variance (around normal) days from premises infectiousness to immunity (infectiousness duration)
 * #(33)
 * #(34)
 * #(35)
@@ -55,7 +55,7 @@ inputfiles/fips_weights.txt #~Name of file containing fips number, and a weight 
 * #(40)
 
 ######################## Shipment-related settings ########################
-0 	#(41)~Method(s) to generate county-county shipments (USAMM), comma-separated (0= shipments off, 1=random)
+1 	#(41)~Method(s) to generate county-county shipments (USAMM), comma-separated (-1= shipments off, 1=random)
 1 	#(42)~Timepoints at which to begin using each of the methods above (first timepoint must be 1), comma-separated
 0 	#(43)~Method to assign shipments to premises within counties (farmFarmMethod): 0: random, 1: like-size to like-size, 2: largest inf to random, 3: random to largest sus, 4: largest inf to largest sus
 * #(44)
