@@ -17,6 +17,7 @@
 ///> Loads premises from file, calculates summary statistics
 Grid_manager::Grid_manager(const Parameters* p)
 	:
+	parameters(p),
 	speciesOnPrems(p->species),
 	susExponents(p->susExponents),
 	infExponents(p->infExponents),
@@ -25,8 +26,7 @@ Grid_manager::Grid_manager(const Parameters* p)
 	kernel(p->kernel),
 	committedFarms(0),
 	printCellFile(p->printCells),
-	batch(p->batch),
-	parameters(p)
+	batch(p->batch)
 {
 	verbose = 0;
 
@@ -44,7 +44,14 @@ Grid_manager::Grid_manager(const Parameters* p)
         getReplicateData();
         readFips_and_states();
         initFipsShipping();
-        initStatesShipping();
+    	initStatesShipping();
+    } else {
+    	std::cout << "Setting county areas to zero." << std::endl;
+		for(County* c : FIPSvector){
+		  // designate as initialized, data not needed if shipping is off
+		  c -> set_position(0.0, 0.0);
+		  c -> set_area(0.0);
+		}
     }
     
 	allCells.reserve(800);
@@ -334,13 +341,8 @@ if (verbose>1){std::cout << "Initializing xy limits.";}
 	for (auto& f:farm_map){
 		set_FarmSus(f.second);
 		set_FarmInf(f.second);
-        if(verbose>1){
-            if (f.second->get_inf() > maxFarmInf){maxFarmInf = f.second->get_inf();}
-            if (f.second->get_sus() > maxFarmSus){maxFarmSus = f.second->get_sus();}
-        //	if (f.second->get_fips() == "8"){
-        //		std::cout<<"Set Cumbria farm "<<f.first<<" sus to "<<f.second->get_sus()<<" and inf to "<<f.second->get_inf()<<std::endl;
-        //	}
-        }
+        if (f.second->get_inf() > maxFarmInf){maxFarmInf = f.second->get_inf();}
+    	if (f.second->get_sus() > maxFarmSus){maxFarmSus = f.second->get_sus();}
 	}
     std::cout<<"Max farm inf: "<<maxFarmInf<<", max farm sus: "<<maxFarmSus<<std::endl;
 }
@@ -391,11 +393,12 @@ void Grid_manager::initFipsShipping()
             exit(EXIT_FAILURE);
         }
     }
-
-    //provide each county with a vector of pointers to all other counties so
-    //it has access to them.
-    for(County* c : FIPSvector)
-        c->set_all_counties(FIPSvector);
+    
+    for(County* c : FIPSvector){
+	  //provide each county with a vector of pointers to all other counties so
+      //it has access to them.
+      c->set_all_counties(FIPSvector);
+    }
 
     std::clock_t fips_init_end = std::clock();
     std::cout << "Counties initiated in " <<
@@ -1002,6 +1005,7 @@ void Grid_manager::set_FarmSus(Farm* f)
 		premSus += spSus; // add this species to the total for this premises
 	}
 	f->set_sus(premSus);
+	//std::cout << "Prem sus = " << f->get_sus() << ". ";
 }
 
 /// Used after grid creation to assign infectiousness values to individual premises
@@ -1017,6 +1021,8 @@ void Grid_manager::set_FarmInf(Farm* f)
 		premInf += spInf; // add this species to the total for this premises
 	}
 	f->set_inf(premInf);
+	//std::cout << "Prem inf = " << f->get_inf() << ". ";
+
 }
 
 /// Prints file with specifications of cells
@@ -1069,4 +1075,148 @@ Farm_type* Grid_manager::get_farm_type(std::string herd)
     {
         return farm_types[herd];
     }
+}
+
+
+/// Reads seed infection source file, expects vector of strings back
+void Grid_manager::read_seedSource(std::string seedSource, std::vector<std::string>& output)
+{
+	std::vector<std::string> tempOutput;
+	std::ifstream f(seedSource);
+	if(!f){std::cout << "Seed source file not found. Exiting..." << std::endl; exit(EXIT_FAILURE);}
+	std::cout << "Loading seed data from "<<seedSource<<std::endl;
+		while(! f.eof()){
+			std::string line;
+			getline(f, line); // get line from file "f", save as "line"
+			if(! line.empty()){ // if line has something in it
+				// check for 5 characters? no straightforward "nchar" function
+				tempOutput.emplace_back(line);
+			} // close "if line_vector not empty"
+		} // close "while not end of file"
+		tempOutput.swap(output);
+		if(verbose>0){std::cout << " Closed seed file." << std::endl;}
+}
+
+/// Overloaded version of readSource, expects vector of ints back
+void Grid_manager::read_seedSource(std::string seedSource, std::vector<int>& output)
+{
+	std::vector<int> tempOutput;
+	std::ifstream f(seedSource);
+	if(!f){std::cout << "Seed source file not found. Exiting..." << std::endl; exit(EXIT_FAILURE);}
+	std::cout << "Loading seed data from "<<seedSource<<std::endl;
+		while(! f.eof()){
+			std::string line;
+			getline(f, line); // get line from file "f", save as "line"
+			if(! line.empty()){ // if line has something in it
+				tempOutput.emplace_back(stringToNum<int>(line));
+			} // close "if line_vector not empty"
+		} // close "while not end of file"
+		tempOutput.swap(output);
+		if(verbose>0){std::cout << " Closed seed file." << std::endl;}
+}
+
+/// Overloaded version of readSource, expects vector of vector of ints back
+void Grid_manager::read_seedSource(std::string seedSource, std::vector<std::vector<int>>& output)
+{
+	std::vector<int> tempLine;
+	std::vector<std::vector<int>> tempOutput;
+	std::ifstream f(seedSource);
+	if(!f){std::cout << "Seed source file not found. Exiting..." << std::endl; exit(EXIT_FAILURE);}
+	std::cout << "Loading seed data from "<<seedSource<<std::endl;
+		while(! f.eof()){
+			std::string line;
+			getline(f, line); // get line from file "f", save as "line"
+			if(! line.empty()){ // if line has something in it
+				tempLine = stringToIntVec(line);
+				tempOutput.emplace_back(tempLine);
+			} // close "if line_vector not empty"
+		} // close "while not end of file"
+		tempOutput.swap(output);
+		if(verbose>0){std::cout << " Closed seed file." << std::endl;}
+}
+
+///< Selects one random premises per county (returns one for every county with at least one
+/// premises)
+void Grid_manager::select_randomPremisesPerCounty(std::vector<std::vector<Farm*>>& output)
+{
+	std::cout << "Selecting a random farm from each of "<<FIPSvector.size()<<" counties."
+	<< std::endl;
+	std::vector<std::vector<Farm*>> tempOutput;
+		tempOutput.reserve(FIPSvector.size());
+	std::vector<Farm*> tempPremVector(1);
+	for (auto& c:FIPSvector){
+		std::vector<Farm*> premisesInCounty = c->get_farms();
+		random_unique(premisesInCounty, 1, tempPremVector); // stores random premises in tempPremVector
+		tempOutput.emplace_back(tempPremVector);		
+	}
+	tempOutput.swap(output);	
+}
+
+///< Overloaded version of select random premises per county, for specific list of FIPS
+void Grid_manager::select_randomPremisesPerCounty(std::vector<std::string> fipsStrings, 
+	std::vector<std::vector<Farm*>>& output)
+{
+	std::vector<std::vector<Farm*>> tempOutput;
+		tempOutput.reserve(fipsStrings.size());
+	std::vector<Farm*> tempPremVector(1);
+	for (auto& c:fipsStrings){
+		std::vector<Farm*> premisesInCounty = FIPSmap.at(c)->get_farms();
+		random_unique(premisesInCounty, 1, tempPremVector); // stores random premises in tempPremVector
+		tempOutput.emplace_back(tempPremVector);
+	}
+	tempOutput.swap(output);	
+}
+
+/// Each run ( = simulation = replicate) is initiated by designating one of the following
+/// as "exposed":
+/// - one randomly chosen farm per county (seedSource = "allFips" or seedSourceType = "fips")
+/// - one specific premises (seedSource = "singlePremises", one ID per line of file)
+/// - multiple specific premises (seedSource = "multiplePremises", multiple comma-separated
+///   premises IDs per line of file)
+void Grid_manager::get_seedPremises(std::vector<std::vector<Farm*>>& output){
+	std::vector<std::vector<Farm*>> seedFarmsByRun;
+	if (parameters->seedSource == "allFips"){// if seeding one per county
+		// get a random farm per county
+        select_randomPremisesPerCounty(seedFarmsByRun); // saves to seedFarmsByRun
+    } else if (parameters->seedSource != "allFips"){ // will need to read file
+    	if (parameters->seedSourceType == "fips"){
+    		std::vector<std::string> sourceFipsStrings;
+    		// read source file (expect vector of strings back)
+    		read_seedSource(parameters->seedSource, sourceFipsStrings);
+    		// get a random farm per county
+    		select_randomPremisesPerCounty(sourceFipsStrings, seedFarmsByRun); // saves to seedFarmsByRun
+    	} else if (parameters->seedSourceType == "singlePremises"){
+    		std::vector<int> sourcePremIDs;
+    		// read source file (expect vector of ints back)
+    		read_seedSource(parameters->seedSource, sourcePremIDs);
+			// translate strings to premIDs
+			for (auto& pID:sourcePremIDs){
+				if (farm_map.count(pID) == 0){
+					std::cout << "Warning: Premises " << pID << 
+					" not found, skipping this source of infection." << std::endl;
+				} else {
+					std::vector<Farm*> tempPremVector(1);
+					tempPremVector.emplace_back(farm_map.at(pID));
+					seedFarmsByRun.emplace_back(tempPremVector);
+				}
+			}
+    	} else if (parameters->seedSourceType == "multiplePremises"){
+    		std::vector<std::vector<int>> sourcePremIDs;
+    		// read source file in file manager (expect vector of vector of ints back)
+    		read_seedSource(parameters->seedSource, sourcePremIDs);
+    		std::vector<Farm*> tempPremVector;
+    		for (auto& lineVector: sourcePremIDs){
+    			for (auto& pId: lineVector){
+    				if (farm_map.count(pId) == 0){
+					  	std::cout << "Warning: Premises " << pId << 
+					  	" not found, skipping this source of infection." << std::endl;
+						} else {
+					  	tempPremVector.emplace_back(farm_map.at(pId));
+						}
+    			}
+    			seedFarmsByRun.emplace_back(tempPremVector);
+    		}     		
+    	}
+	}
+	seedFarmsByRun.swap(output);
 }

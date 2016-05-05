@@ -31,9 +31,9 @@ struct Parameters
 	bool reverseXY;
 
 	// infection parameters
-	std::string seedPremFile;
+	std::string seedSource;
 	std::string dataKernelFile; ///< Name of file containing local spread probabilities by distance (set kernelType to 1)
-	int seedMethod;
+	std::string seedSourceType;
 	std::unordered_map<std::string,double> susExponents; ///< Species-specific exponents for susceptibility (q in USDOSv1)
 	std::unordered_map<std::string,double> infExponents; ///< Species-specific exponents for infectiousness (p in USDOSv1)
 	std::unordered_map<std::string,double> susConsts; ///< Species-specific constants for susceptibility (S in Tildesley ProcB 2008)
@@ -87,6 +87,7 @@ class file_manager
 		const Parameters* getParams(); // inlined
 		const std::string getSettings(std::string&);
 		void readConfig(std::string&);
+
 };
 
 inline const Parameters* file_manager::getParams()

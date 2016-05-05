@@ -81,10 +81,7 @@ void file_manager::readConfig(std::string& cfile)
 		params.timesteps = stringToNum<int>(pv[13]);
 		if (params.timesteps<1){std::cout << "Warning (config 13): Number of timesteps must be 1 or more. Setting number of timesteps to 365." << std::endl;
 			params.timesteps = 365;}
-		// Replicates
-		params.replicates = stringToNum<int>(pv[14]);
-		if (params.replicates<1){std::cout << "Warning (config 14): Number of replications must be 1 or more. Setting number of replications to 1." << std::endl;
-			params.replicates = 1;}
+		// pv[14] unused
 		// Verbose level
 		params.verboseLevel = stringToNum<int>(pv[15]);
 		if (params.verboseLevel!=0 && params.verboseLevel!=1 && params.verboseLevel!=2){
@@ -110,12 +107,15 @@ void file_manager::readConfig(std::string& cfile)
         //pv[20];
 		// Infectious seed file
 		if (pv[21]=="*"){
-			std::cout << "ERROR (config 21): No infectious premises seed file specified." << std::endl; exitflag=1;}
-		params.seedPremFile = pv[21];
-		// Data-based kernel file (checked against kernel option)
-		params.dataKernelFile = pv[22];
+			std::cout << "ERROR (config 21): No infectious premises seed source specified." << std::endl; exitflag=1;}
+		params.seedSource = pv[21];
 		// Infection seed method
-		params.seedMethod = stringToNum<int>(pv[23]);
+		params.seedSourceType = pv[22];
+		if (params.seedSourceType.compare("fips") == 0 && 
+				params.seedSourceType.compare("singlePremises") == 0 &&
+				params.seedSourceType.compare("multiplePremises") == 0){
+		std::cout << "ERROR (config 22): Seed source type must be 'fips','singlePremises', or 'multiplePremises'." << std::endl; exitflag=1;}
+		// pv[23] unused
 		// Susceptibility exponents by species
 		std::vector<double> tempVec1 = stringToNumVec(pv[24]);
 		checkExit = checkPositive(tempVec1, 24); if (checkExit==1){exitflag=1;}
@@ -151,20 +151,22 @@ void file_manager::readConfig(std::string& cfile)
 		// Kernel type & parameters
 		if (pv[28]!="0" && pv[28]!="1"){std::cout << "ERROR (config 28): Kernel type must be 0 (power law) or 1 (data-based)." << std::endl; exitflag=1;}
 		params.kernelType = stringToNum<int>(pv[28]);
-		if (params.dataKernelFile!="*" && params.kernelType!=1){std::cout<<"Warning: Data kernel file provided but kernel type is not set to 1 - file will be ignored." << std::endl;}
-		if (params.kernelType == 1 && params.dataKernelFile=="*"){std::cout<<"ERROR (config 28): Kernel type 1 (data-based) requires file in config 22."<< std::endl; exitflag=1;}
 		params.kernelParams = stringToNumVec(pv[29]);
 		if (params.kernelType == 0 && params.kernelParams.size() < 3){
 			std::cout<<"ERROR (config 29): For kernel type 0, three kernel parameters are required." <<std::endl; exitflag=1;}
+		// Data-based kernel file (checked against kernel option)
+		params.dataKernelFile = pv[30];
+		if (params.dataKernelFile!="*" && params.kernelType!=1){std::cout<<"Warning: Data kernel file provided but kernel type is not set to 1; file will be ignored." << std::endl;}
+		if (params.kernelType == 1 && params.dataKernelFile=="*"){std::cout<<"ERROR (config 28): Kernel type 1 (data-based) requires file in config 30."<< std::endl; exitflag=1;}
 		// Latency parameters
-		checkExit = checkMeanVar(pv[30],30,"latency"); if (checkExit==1){exitflag=1;} // if exit triggered by this check, set exitflag=1
-		std::vector<double> tempVec = stringToNumVec(pv[30]);
+		checkExit = checkMeanVar(pv[31],31,"latency"); if (checkExit==1){exitflag=1;} // if exit triggered by this check, set exitflag=1
+		std::vector<double> tempVec = stringToNumVec(pv[31]);
 		params.latencyParams = std::make_tuple(tempVec[0],tempVec[1]);
 		// Infectiousness parameters
-		checkExit = checkMeanVar(pv[31],31,"infectiousness"); if (checkExit==1){exitflag=1;} // if exit triggered by this check, set exitflag=1
-		tempVec = stringToNumVec(pv[31]);
+		checkExit = checkMeanVar(pv[32],32,"infectiousness"); if (checkExit==1){exitflag=1;} // if exit triggered by this check, set exitflag=1
+		tempVec = stringToNumVec(pv[32]);
 		params.infectiousParams = std::make_tuple(tempVec[0],tempVec[1]);
-		//pv[32] ... pv[35]
+		//pv[33] ... pv[35]
 		// Grid settings
 		if (pv[36]=="*" && pv[37]=="*" && pv[38]=="*"){std::cout << "ERROR (config 36-38): No grid cell parameters specified." << std::endl; exitflag=1;}
 		params.cellFile = pv[36];
@@ -217,14 +219,6 @@ void file_manager::readConfig(std::string& cfile)
 			std::cout << "Exiting..." << std::endl;
 			exit(EXIT_FAILURE);
 		}
-
-		// Group infection lag parameters
-		params.lagParams["latency"] = params.latencyParams; 		//exposed-infectious
-		params.lagParams["infectious"] = params.infectiousParams; 	//infectious-recovered
-
-		// Group control-related lag parameters
-		params.controlLags["indexReport"].emplace_back(params.indexReportLag); 	//first case exposed-reported
-		params.controlLags["report"].emplace_back(params.reportLag); 				//exposed-reported
 
 		// Group shipment ban parameters
 		params.controlLags["shipBan"].emplace_back(std::make_tuple(0,0)); // Level/index 0
