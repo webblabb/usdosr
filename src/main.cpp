@@ -1,4 +1,7 @@
 // main.cpp - controls timesteps, initiating various managers, and output
+
+#include <Rcpp.h>
+
 #include <iostream>
 #include <ctime>
 #include <stdlib.h>
@@ -11,23 +14,13 @@
 
 int verboseLevel; // global variable determining console output
 
-int main(int argc, char* argv[])
-{
-   std::clock_t process_start = std::clock();
-	std::string cfile; // Config file
-// Check for command line arguments
-	if(argc == 2){cfile = argv[1];}
-	else if(argc < 2){
-		std::cout << "ERROR: No config file specified." << std::endl <<
-		"Exiting..." << std::endl;
-		exit(EXIT_FAILURE);
-	}
-	else if(argc > 2){
-		std::cout << "ERROR: Too many input arguments specified. Should only be config file." << std::endl <<
-		"Exiting..." << std::endl;
-		exit(EXIT_FAILURE);
-	}
+// [[Rcpp::plugins(cpp11)]]
 
+// [[Rcpp::export]]
+int run_usdos(std::string cfile)
+{
+  std::clock_t process_start = std::clock();
+	
 	file_manager fm; // construct file_manager object
 	fm.readConfig(cfile); // reads config file, creates parameters object, and checks for errors
 	const Parameters* p = fm.getParams();
