@@ -1,5 +1,3 @@
-// main.cpp - controls timesteps, initiating various managers, and output
-
 #include <Rcpp.h>
 
 #include <iostream>
@@ -16,6 +14,10 @@ int verboseLevel; // global variable determining console output
 
 // [[Rcpp::plugins(cpp11)]]
 
+//' Runs USDOS model for a given config file.
+//' 
+//' @param cfile the name of the config file to use
+//' @return writes output to file
 // [[Rcpp::export]]
 int run_usdos(std::string cfile)
 {
