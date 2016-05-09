@@ -21,6 +21,11 @@ int run_usdos(std::string cfile)
 {
   std::clock_t process_start = std::clock();
 	
+	std::ifstream f(cfile);
+	if(!f.is_open()){
+	  Rcpp::stop("Config file does not exist.");
+	} 
+	
 	file_manager fm; // construct file_manager object
 	fm.readConfig(cfile); // reads config file, creates parameters object, and checks for errors
 	const Parameters* p = fm.getParams();

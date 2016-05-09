@@ -1,3 +1,5 @@
+#include <Rcpp.h>
+
 #include "file_manager.h"
 
 file_manager::file_manager()
@@ -241,9 +243,9 @@ void file_manager::readConfig(std::string& cfile)
 if (verbose>0){std::cout<<"Parameter loading complete."<<std::endl;}
 
 	} else { // if file not found
-		std::cout << "ERROR: Configuration file not found: " << cfile << std::endl <<
-		"Exiting..." << std::endl;
-		exit(EXIT_FAILURE);
+	  
+	  Rcpp::stop("Config file does not exist.");
+
 	}
 }
 
