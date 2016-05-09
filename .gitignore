@@ -21,3 +21,4 @@ vignettes/*.pdf
 
 # Compiled code
 *.o
+*.so
