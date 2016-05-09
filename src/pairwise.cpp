@@ -1,3 +1,5 @@
+#include <Rcpp.h>
+
 #include "pairwise.h"
 
 pairwise::pairwise(Farm* f,std::vector<Farm*>& comp, double maxProb)
@@ -13,7 +15,7 @@ pairwise::pairwise(Farm* f,std::vector<Farm*>& comp, double maxProb)
 	double fInf = f->Farm::get_inf(); // get focal infectiousness
 	
 	for (auto& c:comp){
-		double random = unif_rand();
+		double random = R::runif(0, 1);
 			randomDraws[c] = random;	
 		if (random <= maxProb){ // is this random number small enough to calculate the distance for?	
 			double cx = c -> Farm::get_x(); // get comp x coordinate

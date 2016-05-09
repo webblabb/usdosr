@@ -3,6 +3,8 @@
 #ifndef shared_functions_h
 #define shared_functions_h
 
+#include <Rcpp.h>
+
 #include <algorithm>
 #include <random> // for random number generator
 #include <chrono> // for random number generator
@@ -26,8 +28,6 @@ struct Shipment // used in Shipment, Status
 	int ban; ///< Ban level: 0 = no ban, 1 = ban ordered but not active, 2 ban ordered & active, 3 = ban active & compliant
 };
 
-	double unif_rand(); ///< Uniform distribution random number generator
-	double norm_rand(); ///< Normal distribution random number generator
 	int draw_binom(int, double); ///< Draw number of successes from a binomial distribution
 	unsigned int generate_distribution_seed();
 	double oneMinusExp(double); ///< Calculates \f$1 - e^x\f$ using a two-term Taylor approximation for x<1e-5
@@ -63,7 +63,7 @@ template<typename T>
 T randomFrom(std::vector<T>& vec)
 {
 	int maxSize = vec.size();
-	double rUnif = unif_rand();
+	double rUnif = R::runif(0, 1);
 	int rIndex = (int) floor(rUnif*maxSize);
 	
 	if (rUnif == 1){rIndex = vec.size()-1;} // Return last element (rather than out-of-range vec[maxSize])
@@ -89,7 +89,7 @@ void random_unique(std::vector<T> elements, int num_random, std::vector<T>& outp
 	// endIndex separates non-selected values (elements [0, endIndex-1]) from selected values
 	for (auto i = 1; i<= num_random; i++){
 		// choose random number between 0 and 1
-		double rUnif = unif_rand();
+		double rUnif = R::runif(0, 1);
 		// scale up to endIndex, so r is an index in [0, endIndex)
 		if (rUnif == 1 ){rUnif=0.999;} // avoids assigning actual endIndex value (out of range)
 		int r = (int)floor(rUnif*endIndex);
