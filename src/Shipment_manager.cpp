@@ -25,7 +25,7 @@ Shipment_manager::Shipment_manager(
         species(speciesOnPrems),
         parameters(p)
 {
-	verbose = 2;
+	verbose = 0;
 
 	// Determine if there are no activated shipment methods in parameters.
 	shipments_off = true;
@@ -34,8 +34,10 @@ Shipment_manager::Shipment_manager(
     	shipments_off = false;
     }
   }
-  
-std::cout << "Shipments_off set to "<< shipments_off <<std::endl;
+
+	if(verbose > 0){
+	  std::cout << "Shipments_off set to "<< shipments_off <<std::endl;
+	}  
 
 	if (shipments_off == false){
         allFIPS.reserve(FIPSmap->size());

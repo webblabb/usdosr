@@ -171,9 +171,11 @@ void Grid_manager::readFips_and_states()
     n_counties_loaded = FIPSmap.size();
 
     std::clock_t fips_load_end = std::clock();
-    std::cout << n_counties_loaded << " counties and " << n_states_loaded << " states created successfully in " <<
+    if(verbose > 0){
+      std::cout << n_counties_loaded << " counties and " << n_states_loaded << " states created successfully in " <<
               1000.0 * (fips_load_end - fips_load_start) / CLOCKS_PER_SEC <<
               "ms." << std::endl;
+    }
 }
 
 void Grid_manager::readFarms(const std::string& farm_fname)
@@ -332,7 +334,9 @@ if (verbose>1){std::cout << "Initializing xy limits.";}
 		// sp is species name, sumP is sum of each (herd size^p)
 		normInf[sp] = infValues.at(sp)*(sumSp.at(sp)/sumP.at(sp)); // infectiousness normalizer
 		normSus[sp] = susValues.at(sp)*(sumSp.at(sp)/sumQ.at(sp)); // susceptibility normalizer
-        std::cout<<sp<<" normalized inf: "<<normInf.at(sp)<<", normalized sus: "<<normSus.at(sp)<<std::endl;
+		if(verbose > 0){
+		  std::cout<<sp<<" normalized inf: "<<normInf.at(sp)<<", normalized sus: "<<normSus.at(sp)<<std::endl; 
+		}
 	}
 
     double maxFarmInf = 0.0;
@@ -344,7 +348,9 @@ if (verbose>1){std::cout << "Initializing xy limits.";}
         if (f.second->get_inf() > maxFarmInf){maxFarmInf = f.second->get_inf();}
     	if (f.second->get_sus() > maxFarmSus){maxFarmSus = f.second->get_sus();}
 	}
+	if(verbose > 0){
     std::cout<<"Max farm inf: "<<maxFarmInf<<", max farm sus: "<<maxFarmSus<<std::endl;
+	}
 }
 
 void Grid_manager::initFipsShipping()
@@ -401,9 +407,11 @@ void Grid_manager::initFipsShipping()
     }
 
     std::clock_t fips_init_end = std::clock();
-    std::cout << "Counties initiated in " <<
+    if(verbose > 0){
+      std::cout << "Counties initiated in " <<
               1000.0 * (fips_init_end - fips_init_start) / CLOCKS_PER_SEC <<
               "ms." << std::endl;
+    }
 }
 
 void Grid_manager::initStatesShipping(){
@@ -524,8 +532,11 @@ void Grid_manager::initiateGrid(const unsigned int in_maxFarms, const int minCut
 // minCutoff: minimum cell size
 {
 	set_maxFarms(in_maxFarms);
-	std::cout << "Max farms set to " << maxFarms << std::endl;
-    if(verbose>0){std::cout << "Splitting into grid cells..." << std::endl;}
+
+    if(verbose>0){
+      std::cout << "Max farms set to " << maxFarms << std::endl;
+      std::cout << "Splitting into grid cells..." << std::endl;
+      }
  	int cellCount = 0;
     std::stack<std::tuple<int,double,double,double>> queue;// temporary list of cells to check for meeting criteria for commitment
     std::vector<Farm*> farmsInCell; // vector of (pointers to) farms in working cell - using vector to get to specific elements
@@ -606,8 +617,11 @@ void Grid_manager::initiateGrid(const unsigned int in_maxFarms, const int minCut
     }
     } // end "while anything in queue"
 
-	std::cout << "Grid of "<< allCells.size()<<" cells created, with min side "<<minCutoff<<
-	" and max "<<maxFarms<<" farms. Pre-calculating distances..." << std::endl;
+  if(verbose > 0){
+    std::cout << "Grid of "<< allCells.size()<<" cells created, with min side "<<minCutoff<<
+      " and max "<<maxFarms<<" farms. Pre-calculating distances..." << std::endl;
+  }
+
 	if (farm_map.size()!=committedFarms){
 		std::cout<<"ERROR: "<<committedFarms<<" farms committed, expected "
 		<<farm_map.size()<<std::endl;
@@ -1139,8 +1153,10 @@ void Grid_manager::read_seedSource(std::string seedSource, std::vector<std::vect
 /// premises)
 void Grid_manager::select_randomPremisesPerCounty(std::vector<std::vector<Farm*>>& output)
 {
-	std::cout << "Selecting a random farm from each of "<<FIPSvector.size()<<" counties."
-	<< std::endl;
+  if(verbose > 0){
+    std::cout << "Selecting a random farm from each of "<<FIPSvector.size()<<" counties."
+              << std::endl; 
+  }
 	std::vector<std::vector<Farm*>> tempOutput;
 		tempOutput.reserve(FIPSvector.size());
 	std::vector<Farm*> tempPremVector(1);

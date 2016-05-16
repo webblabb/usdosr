@@ -88,7 +88,9 @@ int run_usdos(std::string cfile)
 
 	std::clock_t grid_end = std::clock();
 	double gridGenTimeMS = 1000.0 * (grid_end - grid_start) / CLOCKS_PER_SEC;
-	std::cout << "CPU time for generating grid: " << gridGenTimeMS << "ms." << std::endl;
+	if (verbose > 0){
+	  std::cout << "CPU time for generating grid: " << gridGenTimeMS << "ms." << std::endl;
+	}
 
 	// Get initially infected (seed) premises 
 	std::vector<std::vector<Farm*>> seedFarmsByRun;
@@ -127,12 +129,13 @@ int run_usdos(std::string cfile)
 //            Control.updates(t); // control updates: when applicable, exposed -> reported, reported -> banned, banned -> compliant
 //    if(verbose>1){std::cout<<"Control statuses updated."<<std::endl;}
             Status.premsWithStatus("inf", focalFarms);	// set focalFarms as all farms with disease status inf
-
-            std::cout << std::endl<<std::endl<<"Timestep "<<t<<": "
-            <<Status.numPremsWithStatus("sus")<<" susceptible, "
-            <<Status.numPremsWithStatus("exp")<<" exposed, "
-            <<focalFarms.size()<<" infectious, "
-            <<Status.numPremsWithStatus("imm")<<" immune premises. "<<std::endl;
+            if(verbose > 0){
+              std::cout << std::endl<<std::endl<<"Timestep "<<t<<": "
+              <<Status.numPremsWithStatus("sus")<<" susceptible, "
+              <<Status.numPremsWithStatus("exp")<<" exposed, "
+              <<focalFarms.size()<<" infectious, "
+              <<Status.numPremsWithStatus("imm")<<" immune premises. "<<std::endl;
+            }
 
 			// output Control statuses to console
 			
@@ -198,13 +201,18 @@ int run_usdos(std::string cfile)
             potentialTx = ((focalFarms.size()>0 && numSuscept>0) || (numExposed>0 && numSuscept>0));
 
             std::clock_t timestep_end = std::clock();
-            double timestepTimeMS = 1000.0 * (timestep_end - timestep_start) / CLOCKS_PER_SEC;
-            std::cout << "CPU time for timestep "<< timestepTimeMS << "ms." << std::endl;
+            if(verbose > 0){
+              double timestepTimeMS = 1000.0 * (timestep_end - timestep_start) / CLOCKS_PER_SEC;
+              std::cout << "CPU time for timestep "<< timestepTimeMS << "ms." << std::endl;
+            }
         }  	// end "while under time and exposed/infectious and susceptible farms remain"
 
         std::clock_t rep_end = std::clock();
         double repTimeMS = 1000.0 * (rep_end - rep_start) / CLOCKS_PER_SEC;
-        std::cout << "CPU time for rep "<<r<<" ("<<t<<" timesteps): " << repTimeMS << "ms." << std::endl;
+        
+        if(verbose > 0){
+          std::cout << "CPU time for rep "<<r<<" ("<<t<<" timesteps): " << repTimeMS << "ms." << std::endl;
+        }
 
         if (p->printSummary > 0){
             // output summary to file (rep, days inf, run time)

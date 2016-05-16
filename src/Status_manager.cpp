@@ -36,8 +36,10 @@ if (verbose>1){
 	// 2. Infectiouness to immunity (end time past simulation)
 	statusShift inf_imm {"inf","imm",std::make_tuple(pastEndTime,0)};
 	diseaseSeq.emplace_back(inf_imm);
-	
-std::cout << "Status manager initiated."<<std::endl;
+
+	if(verbose > 0){
+	  std::cout << "Status manager initiated."<<std::endl;
+	}	
 }
 
 Status_manager::~Status_manager()
