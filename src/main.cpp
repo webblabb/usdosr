@@ -121,6 +121,9 @@ int run_usdos(std::string cfile)
 			bool potentialTx = 1;
 
       while (t<timesteps && potentialTx){ // timesteps, stop early if dies out
+        
+            Rcpp::checkUserInterrupt();
+        
             std::clock_t timestep_start = std::clock();
 
             ++t; // starts at 1, ends at timesteps
