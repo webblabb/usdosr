@@ -27,20 +27,20 @@ class Grid_manager
 		const Parameters* parameters;
 		// variables for grid creation
 		unsigned int maxFarms; ///< Threshold number of premises per cell (cell size takes precedence)
-		bool shipmentsOn; ///Keeps track of if shipments are turned off.
+		bool shipments_off; ///Keeps track of if shipments are turned off.
 		std::unordered_map<int, grid_cell*>
 			allCells; ///< Unordered_map of all cells in grid
 		std::unordered_map<int, Farm*>
 			farm_map; ///< Unordered_map of all premises objects
 		std::unordered_map<std::string, State*>
-            state_map; //Contains states, name as key.
-        std::map<std::string, std::vector<double>> a_map; //Stores a-parameters for states
-        std::map<std::string, std::vector<double>> b_map; //Stores b-parameters for states
+      state_map; //Contains states, name as key.
+    std::map<std::string, std::vector<double>> a_map; //Stores a-parameters for states
+    std::map<std::string, std::vector<double>> b_map; //Stores b-parameters for states
 		std::map<std::string, std::vector<double>> shipment_volume_map; //Stores shipment volumes for the states.
 		std::unordered_map<std::string, County*>
 			FIPSmap; // key is fips code, value is county object
-        std::vector<County*>
-            FIPSvector;
+    std::vector<County*>
+      FIPSvector;
 		std::unordered_map<std::string,
 			std::unordered_map< std::string, std::vector<Farm*> >> fipsSpeciesMap;
 			// key is fips code, then species name, then sorted by population size

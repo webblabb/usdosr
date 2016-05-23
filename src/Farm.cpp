@@ -98,6 +98,10 @@ Prem_status::Prem_status(Farm* f)
 	Farm(*f), // call copy constructor of Farm to fill in all other members
 	diseaseStatus("sus")
 {
+	// avoid segmentation faults on first element assignment
+	start.clear();
+	end.clear();
+	controlStatus.clear();
 }
 
 Prem_status::~Prem_status()

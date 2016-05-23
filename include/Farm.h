@@ -89,67 +89,6 @@ const inline std::unordered_map< std::string, int >* Farm::get_spCounts()
 {
 	return &speciesCounts;
 }
-
-/// Derived class inheriting from Farm, containing additional info on infection statuses
-/// and deleted at the end of each replicate. One object of this type is created for each
-/// premises when it has any kind of status change (either disease or implemented control,
-/// i.e. prophylactic vaccination).
-class Prem_status: public Farm
-{
-	private:
-		std::unordered_map< std::string, int > statuses; /// Map with key: control status, value: int level for that status (used by Control_actions)
-		std::unordered_map< std::string, int > start; /// Start times for disease statuses (used by Status_manager)
-		std::unordered_map< std::string, int > end; /// End times for disease statuses (used by Status_manager)
-		std::string diseaseStatus; /// Current disease status (used by Status_manager)
-
-	public:
-		Prem_status(Farm*);
-		~Prem_status();
-
- 		int get_start(std::string) const; //inlined
- 		int get_end(std::string) const; //inlined
- 		std::string get_diseaseStatus() const; //inlined
- 		bool beenExposed() const; //inlined
- 		void set_control_status(const std::string, const int); //inlined - set level for control status
- 		void set_start(const std::string, const int); //inlined - set start time for disease status
- 		void set_end(const std::string, const int); //inlined - set end time for disease status
-		void set_diseaseStatus(std::string&); //inlined
-
-};
-
-inline int Prem_status::get_start(std::string s) const
-{
-	return start.at(s);
-}
-inline int Prem_status::get_end(std::string s) const
-{
-	return end.at(s);
-}
-inline std::string Prem_status::get_diseaseStatus() const
-{
-	return diseaseStatus;
-}
-/// Checks whether or not a premises has been exposed to infection by checking for the presence of an "exp" start time
-inline bool Prem_status::beenExposed() const
-{
-	return start.count("exp")==1;
-}
-inline void Prem_status::set_control_status(const std::string s, const int level)
-{
-	statuses[s] = level;
-}
-inline void Prem_status::set_start(const std::string status, const int t)
-{
-	start[status] = t;
-}
-inline void Prem_status::set_end(const std::string status, const int t)
-{
-	end[status] = t;
-}
-inline void Prem_status::set_diseaseStatus(std::string& stat)
-{
-	diseaseStatus = stat;
-}
 inline County* Farm::get_parent_county() const
 {
     return parent_county;
@@ -178,6 +117,87 @@ inline int Farm_type::get_index() const
 inline std::string Farm_type::get_species() const
 {
     return species;
+}
+
+/// Derived class inheriting from Farm, containing additional info on replicate-specific statuses
+/// and deleted at the end of each replicate. One object of this type is created for each
+/// premises per simulation when it has any kind of status change (i.e. reporting, exposed, 
+/// prophylactic vaccination).
+class Prem_status: public Farm
+{
+	private:
+		std::string fileStatus; /// Current file status, one of: notDangerousContact, dangerousContact, reported
+		std::string diseaseStatus; /// Current disease status, one of: exp, inf, imm
+		std::unordered_map< std::string, std::string > controlStatus; /// Map with key: control status, value: string for that status
+
+		std::unordered_map<std::string, int> start; /// Start times for each status. Assumes unique names among file, disease, and control statuses due to mapping by status name.
+		std::unordered_map<std::string, int> end; /// End times for each status. Assumes unique names among file, disease, and control statuses due to mapping by status name.
+
+	public:
+		Prem_status(Farm*);
+		~Prem_status();
+
+ 		std::string get_fileStatus() const; //inlined
+ 		std::string get_diseaseStatus() const; //inlined
+		std::string get_controlStatus(std::string) const; //inlined
+
+ 		int get_start(std::string) const; //inlined
+ 		int get_end(std::string) const; //inlined
+ 		
+ 		void set_fileStatus(const std::string); //inlined
+ 		void set_diseaseStatus(const std::string); //inlined
+ 		void set_controlStatus(const std::string, std::string); //inlined - set status for control stype
+
+ 		void set_start(const std::string, const int); //inlined - set start time for status
+ 		void set_end(const std::string, const int); //inlined - set end time for status
+
+ 		bool beenExposed() const; //inlined
+};
+
+inline std::string Prem_status::get_fileStatus() const
+{
+	return fileStatus;
+}
+inline std::string Prem_status::get_diseaseStatus() const
+{
+	return diseaseStatus;
+}
+inline std::string Prem_status::get_controlStatus(std::string controlType) const
+{
+	return controlStatus.at(controlType);
+}
+inline int Prem_status::get_start(std::string s) const
+{
+	return start.at(s);
+}
+inline int Prem_status::get_end(std::string s) const
+{
+	return end.at(s);
+}
+inline void Prem_status::set_fileStatus(const std::string status)
+{
+	fileStatus = status;
+}
+inline void Prem_status::set_diseaseStatus(const std::string stat)
+{
+	diseaseStatus = stat;
+}
+inline void Prem_status::set_controlStatus(const std::string controlType, std::string status)
+{
+	controlStatus[controlType] = status;
+}
+inline void Prem_status::set_start(const std::string status, const int t)
+{
+	start[status] = t;
+}
+inline void Prem_status::set_end(const std::string status, const int t)
+{
+	end[status] = t;
+}
+/// Checks whether or not a premises has been exposed to infection by checking for the presence of an "exp" start time
+inline bool Prem_status::beenExposed() const
+{
+	return start.count("exp")==1;
 }
 
 #endif //FARM_H

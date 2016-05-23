@@ -18,23 +18,20 @@ Shipment_manager::Shipment_manager(
 	const Parameters* p) :
         FIPSmap(in_FIPSmap),
         fipsSpeciesMap(fipsSpMap),
+        parameters(p),
         S(in_S),
         farmFarmMethod(ffm),
-        species(speciesOnPrems),
-        parameters(p)
+        species(speciesOnPrems)
 {
 	verbose = 2;
 
-	// Determine if there are no activated shipment methods in parameters.
-	shipments_off = true;
-	for (int m : parameters->shipMethods){
-  	if (m > 0){
-    	shipments_off = false;
-    }
+	// Determine if shipping is turned off in parameters
+	shipments_off = false;
+	int firstShipMethod = (parameters->shipMethods).front();
+  if (firstShipMethod == -1){
+    	shipments_off = true;
   }
   
-std::cout << "Shipments_off set to "<< shipments_off <<std::endl;
-
 	if (shipments_off == false){
         allFIPS.reserve(FIPSmap->size());
 
@@ -71,27 +68,29 @@ void Shipment_manager::makeShipments(std::vector<Farm*>& infFarms,
     if(shipments_off == false)
     {
         std::vector<Shipment*> new_shipments;
+//std::cout <<"Generating shipments from " << infFarms.size() << " infectious farms"<<std::endl;
         for(Farm* current_farm : infFarms)
         {
             int n_shipments = current_farm->get_n_shipments();
-            if(n_shipments > 0)
-            {
+             if(n_shipments > 0)
+             {
                 std::cout << n_shipments << " shipments originated from " << current_farm->get_id() << std::endl;
             }
 
             for(int i = 0; i < n_shipments; i++)
             {
                 Shipment* s = generateInfectiousShipment(current_farm);
+                s->transmission = 1;
                 new_shipments.push_back(s);
                 farmShipmentList.push_back(s);
 
                 //temp
-                std::cout << "\tTime: " << s->t << std::endl;
-                std::cout << "\tOrigin: " << s->origID << std::endl;
-                std::cout << "\tDestination: " << s->destID << std::endl;
-                std::cout << "\tO fips: " << s->origFIPS << std::endl;
-                std::cout << "\tD fips: " << s->destFIPS << std::endl;
-                std::cout << "\tSpecies: " << s->species << std::endl;
+                // std::cout << "\tTime: " << s->t << std::endl;
+//                 std::cout << "\tOrigin: " << s->origID << std::endl;
+//                 std::cout << "\tDestination: " << s->destID << std::endl;
+//                 std::cout << "\tO fips: " << s->origFIPS << std::endl;
+//                 std::cout << "\tD fips: " << s->destFIPS << std::endl;
+//                 std::cout << "\tSpecies: " << s->species << std::endl;
             }
         }
         output.swap(new_shipments);
@@ -133,7 +132,7 @@ Farm* Shipment_manager::largestStatus(std::vector<Farm*>& premVec, std::string& 
 	bool found = 0;
 	auto i = premVec.back(); // start at end of sorted vector (largest prem) and work backwards
 	while (found==0){
-		if(S->get_status(i).compare(status)==0){ // if prem has this status, stop and return this prem
+		if(S->get_diseaseStatus(i).compare(status)==0){ // if prem has this status, stop and return this prem
 			found = 1;
 		} else if ( i>premVec.front() ){i--; // keep moving backwards
 		} else if ( i==premVec.front() ){ i = premVec.back(); found = 1;} // if no prems have this status, return largest

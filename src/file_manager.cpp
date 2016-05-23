@@ -14,7 +14,7 @@ file_manager::~file_manager()
 const std::string file_manager::getSettings(std::string& bdt)
 {
 	std::string output = bdt;
-	for (int i=1; i<=70; i++){
+	for (int i=1; i<=75; i++){
 		output += "\t";
 		output += pv[i];
 	}
@@ -44,7 +44,7 @@ void file_manager::readConfig(std::string& cfile)
 			line.erase(std::remove_if(line.begin(), line.end(), isspace), line.end());
 			if(line.size() != 0){pv.emplace_back(line);}
 		}
-		if (pv.size()!=71){std::cout<<"Warning: expected configuration file with 70 lines, loaded file with "<<pv.size()-1<<" lines."<<std::endl;
+		if (pv.size()!=76){std::cout<<"Warning: expected configuration file with 75 lines, loaded file with "<<pv.size()-1<<" lines."<<std::endl;
 		} else {
 		std::cout << "Configuration file loaded with "<<pv.size()-1<<" lines."<<std::endl;}
 
@@ -190,40 +190,92 @@ void file_manager::readConfig(std::string& cfile)
 		params.shipMethodTimeStarts.emplace_back(params.timesteps+1); // add this b/c whichElement function needs a maximum (element won't be used)
 		if (pv[43]=="*"){std::cout << "ERROR (config 43): No premises-level shipment assignment method specified." << std::endl; exitflag=1;}
 		params.shipPremAssignment = stringToNum<int>(pv[43]);
-		//pv[44] ... pv[50]
+		//pv[44] ... pv[52]
+
+		// Control - type names
+		params.controlTypes = stringToStringVec(pv[53]);
+		for (auto& ct:params.controlTypes){
+			if (ct != "cull" && ct != "vax" && ct != "shipBan"){
+				std::cout << "ERROR (config 53): Unrecognized control type listed, must be 'cull', 'vax', 'shipBan'" << std::endl; exitflag=1;}
+		}
+		// Control - spatial scale for each type
+		params.controlScales = stringToStringVec(pv[54]);
+		for (auto& cs:params.controlScales){
+			if (cs != "premises" && cs != "county" && cs != "state"){
+				std::cout << "ERROR (config 54): Unrecognized control scale listed, must be 'premises','county', or 'state'" << std::endl; exitflag=1;}
+			}
+			if (params.controlScales.size() != params.controlTypes.size()){
+			std::cout << "ERROR (config 53 and 54): Different number of arguments and control types.";
+			exitflag=1;
+			}
+		// Control - time lags for each control: report to initiation
+		std::vector<double> reportToInitiateMeans = stringToNumVec(pv[55]);
+			checkExit = checkPositive(reportToInitiateMeans, 55); if (checkExit==1){exitflag=1;}
+			if (reportToInitiateMeans.size() != params.controlTypes.size()){
+			std::cout << "ERROR (config 53 and 55): Different number of arguments and control types.";
+			exitflag=1;
+			}
+		// Control - time lags for each control: report to initiation
+		std::vector<double> reportToInitiateVars = stringToNumVec(pv[56]);
+			checkExit = checkPositive(reportToInitiateVars, 56); if (checkExit==1){exitflag=1;}
+			if (reportToInitiateVars.size() != params.controlTypes.size()){
+			std::cout << "ERROR (config 53 and 56): Different number of arguments and control types.";
+			exitflag=1;
+			}
+		// Control - time lags for each control: initiation to effective
+		std::vector<double> initiateToEffectiveMeans = stringToNumVec(pv[57]);
+			checkExit = checkPositive(initiateToEffectiveMeans, 57); if (checkExit==1){exitflag=1;}
+			if (initiateToEffectiveMeans.size() != params.controlTypes.size()){
+			std::cout << "ERROR (config 53 and 57): Different number of arguments and control types.";
+			exitflag=1;
+			}
+		// Control - time lags for each control: initiation to effective
+		std::vector<double> initiateToEffectiveVars = stringToNumVec(pv[58]);
+			checkExit = checkPositive(initiateToEffectiveVars, 58); if (checkExit==1){exitflag=1;}
+			if (initiateToEffectiveVars.size() != params.controlTypes.size()){
+			std::cout << "ERROR (config 53 and 58): Different number of arguments and control types.";
+			exitflag=1;
+			}		
+		// Control - time lags for each control: effective to inactive
+		std::vector<double> effectiveToInactiveMeans = stringToNumVec(pv[59]);
+			checkExit = checkPositive(effectiveToInactiveMeans, 59); if (checkExit==1){exitflag=1;}
+			if (effectiveToInactiveMeans.size() != params.controlTypes.size()){
+			std::cout << "ERROR (config 53 and 59): Different number of arguments and control types.";
+			exitflag=1;
+			}
+		// Control - time lags for each control: effective to inactive
+		std::vector<double> effectiveToInactiveVars = stringToNumVec(pv[60]);
+			checkExit = checkPositive(effectiveToInactiveVars, 60); if (checkExit==1){exitflag=1;}
+			if (effectiveToInactiveVars.size() != params.controlTypes.size()){
+			std::cout << "ERROR (config 53 and 60): Different number of arguments and control types.";
+			exitflag=1;
+			}
+		// Control - effectiveness of each control, including compliance
+		std::vector<double> effectiveness = stringToNumVec(pv[61]);
+			checkExit = checkZeroToOne(effectiveness, 61); if (checkExit==1){exitflag=1;}
+			if (effectiveness.size() != params.controlTypes.size()){
+			std::cout << "ERROR (config 53 and 61): Different number of arguments and control types.";
+			exitflag=1;
+			}
+		// pv[62]
+		
 		// Reporting lags - index
-		checkExit = checkMeanVar(pv[51],51,"index reporting"); if (checkExit==1){exitflag=1;}
-		tempVec = stringToNumVec(pv[51]);
+		checkExit = checkMeanVar(pv[71],71,"index reporting"); if (checkExit==1){exitflag=1;}
+		tempVec = stringToNumVec(pv[71]);
 		params.indexReportLag = std::make_tuple(tempVec[0],tempVec[1]);
-		// Reporting lags - normal
-		checkExit = checkMeanVar(pv[52],52,"reporting"); if (checkExit==1){exitflag=1;}
-		tempVec = stringToNumVec(pv[52]);
-		params.indexReportLag = std::make_tuple(tempVec[0],tempVec[1]);
-		// Control - shipping bans
-		params.shipBanCompliance = stringToNum<double>(pv[53]);
-		if (params.shipBanCompliance<0 || params.shipBanCompliance>100){
-			std::cout << "ERROR (config 53): Shipment ban compliance must be specified as percentage." << std::endl; exitflag=1;}
-		params.banLevel = stringToNum<int>(pv[54]);
-		if (params.banLevel!=0 && params.banLevel!=1){std::cout << "ERROR (config 54): Shipment ban scale must be county-(0) or state-(1) level." << std::endl;  exitflag=1;}
-		// Ban lag - initiation
-		checkExit = checkMeanVar(pv[55],55,"ban initiation"); if (checkExit==1){exitflag=1;}
-		tempVec = stringToNumVec(pv[55]);
-		params.reportToOrderBan = std::make_tuple(tempVec[0],tempVec[1]);
-		// Ban lag - compliance
-		checkExit = checkMeanVar(pv[56],56,"ban compliance"); if (checkExit==1){exitflag=1;}
-		tempVec = stringToNumVec(pv[56]);
-		params.orderToCompliance = std::make_tuple(tempVec[0],tempVec[1]);
-		//pv[57] ... pv[60]
+		// Reporting lags - normal, not dangerous contact
+		checkExit = checkMeanVar(pv[72],72,"non-DC reporting"); if (checkExit==1){exitflag=1;}
+		tempVec = stringToNumVec(pv[72]);
+		params.nonDCReportLag = std::make_tuple(tempVec[0],tempVec[1]);
+		// Reporting lags - dangerous contacts
+		checkExit = checkMeanVar(pv[73],73,"DC reporting"); if (checkExit==1){exitflag=1;}
+		tempVec = stringToNumVec(pv[73]);
+		params.dcReportLag = std::make_tuple(tempVec[0],tempVec[1]);
 
 		if (exitflag){
 			std::cout << "Exiting..." << std::endl;
 			exit(EXIT_FAILURE);
 		}
-
-		// Group shipment ban parameters
-		params.controlLags["shipBan"].emplace_back(std::make_tuple(0,0)); // Level/index 0
-		params.controlLags["shipBan"].emplace_back(params.reportToOrderBan); // Level/index 1: time from report to order
-		params.controlLags["shipBan"].emplace_back(params.orderToCompliance); // Level/index 2: time from order to implementation
 
 		// Construct kernel object
 		switch (params.kernelType)
@@ -237,6 +289,8 @@ void file_manager::readConfig(std::string& cfile)
 				break;
 			}
 		}
+		
+		// Put control parameters into proper containers
 
 if (verbose>0){std::cout<<"Parameter loading complete."<<std::endl;}
 
@@ -290,6 +344,22 @@ bool file_manager::checkPositive(std::vector<double>& tempVec, int lineNum)
 		auto tv = tempVec[it];
 		if(tv<0){
 			std::cout << "ERROR (config "<<lineNum<<"): All parameters must be positive. " << std::endl;
+			exitflag=1;
+		}
+		it++;
+	}
+	return exitflag;
+}
+
+/// Check that value is between 0 and 1
+bool file_manager::checkZeroToOne(std::vector<double>& tempVec, int lineNum)
+{
+	bool exitflag = 0;
+	unsigned int it = 0;
+	while (it < tempVec.size() && exitflag ==0){
+		auto tv = tempVec[it];
+		if(tv<0 || tv>1){
+			std::cout << "ERROR (config "<<lineNum<<"): All values must be between 0 and 1. " << std::endl;
 			exitflag=1;
 		}
 		it++;

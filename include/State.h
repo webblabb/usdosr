@@ -31,6 +31,7 @@ public:
     int get_poisson_shipments(Farm_type* ft);
     double get_flow(); //Inlined
     int get_n_counties(); //inlined
+    int get_n_farms() const;
 
 private:
     int state_code;

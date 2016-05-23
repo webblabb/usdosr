@@ -4,9 +4,19 @@
 #include <fstream>
 #include "shared_functions.h"
 #include "Local_spread.h"
-// shared_functions includes iostream, sstream, string, vector, parameters definition
+// shared_functions includes iostream, sstream, string, vector
 
 extern int verboseLevel;
+
+/// Contains if-then conditions and parameters for a control rule
+struct Control_rule
+{
+	std::string trigger;
+	double threshold;
+	std::string action;
+	double radius;
+	std::string order;
+};
 
 /// Contains all parameters loaded from file
 struct Parameters
@@ -55,18 +65,22 @@ struct Parameters
 	std::vector<int> shipMethodTimeStarts;
 	int shipPremAssignment;
 
-	// control parameters
+	// control parameters - maps indexed by controlType name
+	std::vector<std::string> controlTypes;
+	std::vector<std::string> controlScales;
+	std::unordered_map<std::string,std::tuple<double,double>> reportToInitiateLag;
+	std::unordered_map<std::string,std::tuple<double,double>> initiateToEffectiveLag;
+	std::unordered_map<std::string,std::tuple<double,double>> effectiveToInactiveLag;
+	std::unordered_map<std::string,double> effectiveness;
+	
+	// control rules
+	std::vector<Control_rule> controlRules;
+	
+	// reporting parameters
 	std::tuple<double,double> indexReportLag;
-	std::tuple<double,double> reportLag;
-	// shipping ban
-	double shipBanCompliance;
-	int banLevel;
-	std::tuple<double,double> reportToOrderBan;
-	std::tuple<double,double> orderToCompliance;
+	std::tuple<double,double> nonDCReportLag;
+	std::tuple<double,double> dcReportLag;
 
-	// related parameter sets
-	std::unordered_map< std::string, std::tuple<double,double> > lagParams;
-	std::unordered_map< std::string, std::vector<std::tuple<double,double>> > controlLags;
 };
 
 /// Loads and checks parameters from configuration file
@@ -80,6 +94,7 @@ class file_manager
 		bool checkMeanVar(std::string&, int, std::string);
 		bool checkPositive(std::vector<int>&, int);
 		bool checkPositive(std::vector<double>&, int);
+		bool checkZeroToOne(std::vector<double>&, int);
 
 	public:
 		file_manager();

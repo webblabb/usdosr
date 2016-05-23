@@ -35,7 +35,7 @@ unsigned int generate_distribution_seed()
 }
 
 /// Based on algorithm described at http://www.johndcook.com/blog/cpp_expm1/
-/// \param[in]	x	Exponent values
+/// \param[in]	x	Exponent value
 double oneMinusExp(double x)
 {
 	if (x == 0){
@@ -47,7 +47,7 @@ double oneMinusExp(double x)
 	}
 }
 
-/// Used by Status_manager and Control_rules to determine status level progression times
+/// Used by Status_manager to determine status level progression times
 ///	\param[in]	params	Tuple of two doubles, the mean and variance
 int normDelay(std::tuple<double, double>& params)
 {

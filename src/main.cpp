@@ -60,7 +60,7 @@ int main(int argc, char* argv[])
 	Grid_manager G(p);
 	// get pointers to full list of farms & cells
 	auto allPrems = G.get_allFarms();
-	auto fipsmap = G.get_FIPSmap();
+	const auto fipsmap = G.get_FIPSmap();
 	auto allCells = G.get_allCells(); // will be filled when grid is initiated, for now pointer just exists
  	auto fipsSpeciesMap = G.get_fipsSpeciesMap(); // for shipments
 	std::clock_t loading_end = std::clock();
@@ -98,18 +98,16 @@ int main(int argc, char* argv[])
 	  std::cout << "ERROR: No valid seed farms provided/located. Exiting... ";
 	  exit(EXIT_FAILURE);
 	}
+	
+	Control_actions Control(p);
 
     //~~~~~~~~~~~~~~~~~~ Loop starts here
-    for (int r=1; r<=seedFarmsByRun.size(); r++){ 
-    	std::vector<Farm*> seedFarms = seedFarmsByRun[r];
-    	
+    for (int r=0; r<=seedFarmsByRun.size()-1; r++){     	
 			std::clock_t rep_start = std::clock();
 			// load initially infected farms and instantiate Status manager
 			// note that initial farms are started as exposed
-
-			Control_actions Control(p);
-
-			Status_manager Status(seedFarms, p, &G, &Control); // seeds initial exposures, modify to pass grid manager, p
+    	std::vector<Farm*> seedFarms = seedFarmsByRun[r];
+			Status_manager Status(seedFarms, p, &G, &Control); // seeds initial exposures
 			Shipment_manager Ship(fipsmap, fipsSpeciesMap, &Status, p->shipPremAssignment, p->species, p); // modify to pass grid manager, p
 			Grid_checker gridCheck(allCells, Status.get_sources(),p->kernel);
 
@@ -147,7 +145,7 @@ int main(int argc, char* argv[])
 
              std::vector<Farm*> gridInf;
              gridInf.reserve(allPrems->size());
-             gridCheck.take_exposed(gridInf); // simultaneously takes values and clears in gridCheck, resetting with reserve of number of all prems
+             gridCheck.take_exposed(gridInf); // swaps infectious farms from gridCheck, resetting with reserve of number of all prems
 
              std::clock_t gridcheck_end = std::clock();
              double gridCheckTimeMS = 1000.0 * (gridcheck_end - gridcheck_start) / CLOCKS_PER_SEC;

@@ -30,6 +30,7 @@ State::~State()
 void State::add_county(County* in_county)
 {
     bool already_present = false;
+    // can this be replaced with find?
     for(County* existing_county : member_counties)
     {
         if(existing_county == in_county)
@@ -53,14 +54,16 @@ void State::init_poisson()
         for(County* current_county : member_counties)
         {
             n_farms += current_county->get_n_farms(current_ft);
+//std::cout << "In State::init_poisson, county "<< current_county->get_id() << " has " << n_farms << " farms" << std::endl;
         }
 
-        if(n_farms != 0)
+        if(n_farms > 0)
         {
             poisson_mean[current_ft] = ship_volume_map[current_ft] / n_farms;
+            //std::cout <<"Poisson mean set to "<<poisson_mean[current_ft]<< " for farm type species " 
+            //<< current_ft-> get_species() << std::endl;
         }
         poisson_map[current_ft] = new std::poisson_distribution<int>(poisson_mean[current_ft]);
-        //std::cout << "Mean for " << id << " is " << poisson_mean << ", shipments_per_t: " << shipments_per_t << ", n_farms: " << n_farms << std::endl;
     }
     set_initialized(is_set_poisson);
 }
@@ -119,4 +122,13 @@ void State::all_initialized()
     {
         state_initialized = true;
     }
+}
+
+int State::get_n_farms() const
+{
+		int sum = 0;
+    for (auto c : member_counties){
+    	sum += c->get_n_farms();
+    }
+    return sum;
 }

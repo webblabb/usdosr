@@ -29,10 +29,11 @@ class Shipment_manager
 {
 	private:
 		int verbose; ///< Can be set to override global setting for console output
-        bool shipments_off;
-		// const pointers to Grid_manager objects:
+    bool shipments_off;
+		// const pointers to Grid_manager objects, parameters:
 		const std::unordered_map<std::string, County*>* FIPSmap;
 		const std::unordered_map<std::string, std::unordered_map<std::string, std::vector<Farm*> >>* fipsSpeciesMap;
+		const Parameters* parameters;
 
 		Status_manager* S; ///< Const pointer to Status manager (to access up-to-date premises statuses)
 		// used to generate random shipments
@@ -53,8 +54,7 @@ class Shipment_manager
 		Farm* largestStatus(std::vector<Farm*>&, std::string&); ///< Finds largest premises with "status", from vector sorted by population
 		void farmFarmShipments(); ///< Assigns county shipments to individual farms
 		Shipment* generateInfectiousShipment(Farm* origin_farm);
-		const Parameters* parameters;
-
+		
 	public:
 		Shipment_manager(
 			const std::unordered_map<std::string, County*>* in_FIPSmap, // a map of FIPS codes to farms

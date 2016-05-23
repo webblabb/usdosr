@@ -45,7 +45,7 @@ public:
     void set_area(double in_area);
     void set_weights(std::vector<double> in_weights);
     void set_parent_state(State* target);
-    void set_control_status(std::string status, int level);
+   // void set_control_status(std::string status, int level);
     void set_all_counties(std::vector<County*> in_counties);
 
     double get_area(); //Inlined
@@ -54,7 +54,7 @@ public:
     std::vector<Farm*> get_farms(); //Inlined
     std::vector<Farm*>& get_farms(Farm_type* ft);
     std::unordered_map<std::string, int> get_statuses(); //Inlined
-    int get_control_status(std::string status); //Inlined
+   // int get_control_status(std::string status); //Inlined
     State* get_parent_state(); //Inlined
     County* get_shipment_destination(Farm_type* ft);
     double get_weight(Farm_type* in_type);
@@ -62,6 +62,8 @@ public:
 
     void calculate_centroid();
     void print_bools();
+    bool is_initialized();
+
     //bool is_present(Farm_type* farm_type);
 
 private:
@@ -72,11 +74,11 @@ private:
     std::unordered_map<Farm_type*, std::vector<Farm*>> farms_by_type;
     //std::vector<Farm_type*> present_farm_types;
     std::unordered_map <County*, double> county_distances;
-    std::unordered_map<std::string, int> statuses; // for control type and level
+    //std::unordered_map<std::string, int> statuses; // for control type and level
     std::vector<Shipment_kernel*> shipment_kernels; //By farm type index.
     std::vector<Alias_table<County*>> county_probabilities; //By farm type index.
-    std::vector<Farm*> infected_farms;
-    std::vector<Farm*> susceptible_farms;
+    //std::vector<Farm*> infected_farms;
+    //std::vector<Farm*> susceptible_farms;
     std::vector<County*> all_counties;
 
     bool county_initialized = false;
@@ -123,22 +125,22 @@ inline State* County::get_parent_state()
     return parent_state;
 }
 
-inline std::unordered_map<std::string, int> County::get_statuses()
-{
-    if(!county_initialized)
-        not_initialized();
+// inline std::unordered_map<std::string, int> County::get_statuses()
+// {
+//     if(!county_initialized)
+//         not_initialized();
+// 
+//     return statuses;
+// }
 
-    return statuses;
-}
-
-inline int County::get_control_status(std::string status)
-{
-    if(!county_initialized)
-        not_initialized();
-
-    if(statuses.find(status) == statuses.end())
-        return 0;
-    else
-        return statuses.at(status);
-}
+// inline int County::get_control_status(std::string status)
+// {
+//     if(!county_initialized)
+//         not_initialized();
+// 
+//     if(statuses.find(status) == statuses.end())
+//         return 0;
+//     else
+//         return statuses.at(status);
+//}
 #endif // COUNTY_H

@@ -28,14 +28,13 @@ County::~County()
 //kernel and a function that calculates the distance between two point objects (pointers).
 void County::init_probabilities(std::vector<County*>& in_counties)
 {
-    if(!county_initialized)
+    if(!is_initialized())
     {
         std::cout << "Make sure all of the following are set before attempting to "
                   << "initialize shipment probabilities." << std::endl;
         print_bools();
         not_initialized();
     }
-
     county_probabilities.resize(farms_by_type.size());
     shipment_kernels.resize(farms_by_type.size());
 
@@ -50,16 +49,19 @@ void County::init_probabilities(std::vector<County*>& in_counties)
         double normalization_sum = 0.0;
 
         //Get all kernel values and keep track of the total for use when normalizing.
+        int c_count = 0;
         for(auto c : in_counties)
         {
+             std::cout << "Calc. probability of sending from " << this->get_id() << " to " 
+             << c->get_id() << ". Weight is " << c->get_weight(current_ft) << std::endl;
             //std::cout << "Doing county " << c->get_id() << std::endl;
-            double kernel_value = 0.0;
             //Kernel value * Flow of state of 'origin' county * number of farms in 'origin' county.
-            kernel_value = k->kernel(this, c) * c->get_weight(current_ft);
+            double kernel_value = k->kernel(this, c) * c->get_weight(current_ft);
             probabilities.push_back(kernel_value);
             normalization_sum += kernel_value;
-            //std::cout << "Calc. probability of sending from " << this->get_id() << " to " << c->get_id() << ". Weight is " << c->get_weight(current_ft) << std::endl;
+            c_count++;
         }
+        
 
         //Normalize probabilities.
         for(auto it = probabilities.begin(); it != probabilities.end(); it++)
@@ -113,10 +115,10 @@ void County::set_parent_state(State* target)
     set_initialized(is_set_state);
 }
 
-void County::set_control_status(std::string status, int level)
-{
-    statuses[status] = level;
-}
+// void County::set_control_status(std::string status, int level)
+// {
+//     statuses[status] = level;
+// }
 
 void County::set_all_counties(std::vector<County*> in_counties)
 {
@@ -128,13 +130,13 @@ std::vector<Farm*>& County::get_farms(Farm_type* ft)
     return farms_by_type[ft];
 }
 
-//Generates one shipment originating from this county.
+/// Generates one shipment originating from this county.
 County* County::get_shipment_destination(Farm_type* ft)
 {
     County* destination = nullptr;
     if(!is_set_shipment) //If the shipping prob has not been created for this county before
     {
-        std::cout << "The shipping probabilities of " << id << " has not yet been set. Calculating..." << std::endl;
+//      std::cout << "The shipping probabilities of " << id << " has not yet been set. Calculating..." << std::endl;
         std::clock_t shipping_start = std::clock();
         this->init_probabilities(all_counties);
         std::cout << "Probabilities calculated in " <<
@@ -145,7 +147,7 @@ County* County::get_shipment_destination(Farm_type* ft)
     if(farms_by_type.find(ft) == farms_by_type.end())
     {
         std::cout << "There are no farms of type " << ft->get_species() <<
-                     " in county " << id << "." << std::endl;
+                     " in county " << id << ". Exiting..." << std::endl;
         exit(EXIT_FAILURE);
     }
     destination = county_probabilities[ft->get_index()].generate();
@@ -247,6 +249,11 @@ void County::all_initialized()
     {
         county_initialized = true;
     }
+}
+
+bool County::is_initialized()
+{
+	return (is_set_area and is_set_id and region_initialized);
 }
 
 //bool County::is_present(Farm_type* farm_type)
