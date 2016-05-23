@@ -44,3 +44,4 @@ a
 # Folders with Doxygen files (can be re-generated using doxyfile)
 html/
 latex/
+*.cbp
