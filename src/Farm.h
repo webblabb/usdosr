@@ -121,7 +121,7 @@ inline std::string Farm_type::get_species() const
 
 /// Derived class inheriting from Farm, containing additional info on replicate-specific statuses
 /// and deleted at the end of each replicate. One object of this type is created for each
-/// premises per simulation when it has any kind of status change (i.e. reporting, exposed, 
+/// premises per simulation when it has any kind of status change (i.e. reporting, exposed,
 /// prophylactic vaccination).
 class Prem_status: public Farm
 {
@@ -143,7 +143,7 @@ class Prem_status: public Farm
 
  		int get_start(std::string) const; //inlined
  		int get_end(std::string) const; //inlined
- 		
+
  		void set_fileStatus(const std::string); //inlined
  		void set_diseaseStatus(const std::string); //inlined
  		void set_controlStatus(const std::string, std::string); //inlined - set status for control stype

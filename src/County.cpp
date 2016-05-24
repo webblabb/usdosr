@@ -52,7 +52,7 @@ void County::init_probabilities(std::vector<County*>& in_counties)
         int c_count = 0;
         for(auto c : in_counties)
         {
-             std::cout << "Calc. probability of sending from " << this->get_id() << " to " 
+             std::cout << "Calc. probability of sending from " << this->get_id() << " to "
              << c->get_id() << ". Weight is " << c->get_weight(current_ft) << std::endl;
             //std::cout << "Doing county " << c->get_id() << std::endl;
             //Kernel value * Flow of state of 'origin' county * number of farms in 'origin' county.
@@ -61,7 +61,7 @@ void County::init_probabilities(std::vector<County*>& in_counties)
             normalization_sum += kernel_value;
             c_count++;
         }
-        
+
 
         //Normalize probabilities.
         for(auto it = probabilities.begin(); it != probabilities.end(); it++)
@@ -266,4 +266,3 @@ bool County::is_initialized()
 //    }
 //    return present;
 //}
-

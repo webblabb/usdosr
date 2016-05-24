@@ -15,4 +15,3 @@ Control_actions::Control_actions(const Parameters* p)
 Control_actions::~Control_actions()
 {
 }
-

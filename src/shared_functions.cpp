@@ -1,21 +1,8 @@
+#include <Rcpp.h>
+
 #include "shared_functions.h"
 #include "Farm.h"
 
-double unif_rand()
-{
-	static std::uniform_real_distribution<double> unif_dist(0.0, 1.0);
-	static unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count();
-	static std::mt19937 generator(seed); //Mersenne Twister pseudo-random number generator. Generally considered research-grade.
-	return unif_dist(generator);
-}
-
-double norm_rand()
-{
-	static std::normal_distribution<double> norm_dist(0,1);
-	static unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count();
-	static std::mt19937 generator(seed); //Mersenne Twister pseudo-random number generator. Generally considered research-grade.
-	return norm_dist(generator);
-}
 
 /// Used in gridding (binomial method) to determing # of infected farms
 /// \param[in]	N	Number of trials (premises in cell)
@@ -23,10 +10,7 @@ double norm_rand()
 int draw_binom(int N, double prob)
 // draw from a binomial distribution based on N farms and prob (calc with focalInf & gridKern)
 {
-	std::binomial_distribution<int> binom_dist(N,prob);
-	static unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count();
-	static std::mt19937 generator(seed); //Mersenne Twister pseudo-random number generator. Generally considered research-grade.
-	return binom_dist(generator);
+  return R::rbinom(N, prob);
 }
 
 unsigned int generate_distribution_seed()
@@ -53,7 +37,7 @@ int normDelay(std::tuple<double, double>& params)
 {
 	double mean = std::get<0>(params);
 	double var = std::get<1>(params);
-	double normDraw = norm_rand()*var + mean; // scale # drawn from N(0,1) to mean and variance
+	double normDraw = R::rnorm(0, 1)*var + mean; // scale # drawn from N(0,1) to mean and variance
 	int draw = (int)(normDraw+0.5); // round up to nearest day
 	if(draw<1){draw = 1;}
 	return draw;

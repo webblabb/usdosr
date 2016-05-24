@@ -129,7 +129,7 @@ inline State* County::get_parent_state()
 // {
 //     if(!county_initialized)
 //         not_initialized();
-// 
+//
 //     return statuses;
 // }
 
@@ -137,7 +137,7 @@ inline State* County::get_parent_state()
 // {
 //     if(!county_initialized)
 //         not_initialized();
-// 
+//
 //     if(statuses.find(status) == statuses.end())
 //         return 0;
 //     else

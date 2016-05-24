@@ -1,4 +1,5 @@
-// main.cpp - controls timesteps, initiating various managers, and output
+#include <Rcpp.h>
+
 #include <iostream>
 #include <ctime>
 #include <stdlib.h>
@@ -11,21 +12,20 @@
 
 int verboseLevel; // global variable determining console output
 
-int main(int argc, char* argv[])
+// [[Rcpp::plugins(cpp11)]]
+
+//' Runs USDOS model for a given config file.
+//'
+//' @param cfile the name of the config file to use
+//' @return writes output to file
+// [[Rcpp::export]]
+int run_usdos(std::string cfile)
 {
-   std::clock_t process_start = std::clock();
-	std::string cfile; // Config file
-// Check for command line arguments
-	if(argc == 2){cfile = argv[1];}
-	else if(argc < 2){
-		std::cout << "ERROR: No config file specified." << std::endl <<
-		"Exiting..." << std::endl;
-		exit(EXIT_FAILURE);
-	}
-	else if(argc > 2){
-		std::cout << "ERROR: Too many input arguments specified. Should only be config file." << std::endl <<
-		"Exiting..." << std::endl;
-		exit(EXIT_FAILURE);
+  std::clock_t process_start = std::clock();
+
+	std::ifstream f(cfile);
+	if(!f.is_open()){
+	  Rcpp::stop("Config file does not exist.");
 	}
 
 	file_manager fm; // construct file_manager object
@@ -41,7 +41,7 @@ int main(int argc, char* argv[])
 	timeinfo = localtime(&rawtime);
 	strftime(buffer,80,"_%Y%b%d_%H%M",timeinfo);
 	std::string str(buffer);
-	
+
 	batchDateTime += str;
 	// write parameters from config file to settings_batchname
 	std::string settingsOutFile = "runlog.txt";
@@ -54,7 +54,7 @@ int main(int argc, char* argv[])
 
 	int verbose = verboseLevel; // override global value for main here if desired
 	int timesteps = p->timesteps;
-	
+
 	// Read in farms, determine xylimits
 	std::clock_t loading_start = std::clock();
 	Grid_manager G(p);
@@ -88,21 +88,23 @@ int main(int argc, char* argv[])
 
 	std::clock_t grid_end = std::clock();
 	double gridGenTimeMS = 1000.0 * (grid_end - grid_start) / CLOCKS_PER_SEC;
-	std::cout << "CPU time for generating grid: " << gridGenTimeMS << "ms." << std::endl;
+	if (verbose > 0){
+	  std::cout << "CPU time for generating grid: " << gridGenTimeMS << "ms." << std::endl;
+	}
 
-	// Get initially infected (seed) premises 
+	// Get initially infected (seed) premises
 	std::vector<std::vector<Farm*>> seedFarmsByRun;
 	G.get_seedPremises(seedFarmsByRun); // saves to seedFarmsByRun
-	
+
 	if (seedFarmsByRun.size() == 0 ){
 	  std::cout << "ERROR: No valid seed farms provided/located. Exiting... ";
 	  exit(EXIT_FAILURE);
 	}
-	
+
 	Control_actions Control(p);
 
     //~~~~~~~~~~~~~~~~~~ Loop starts here
-    for (int r=0; r<=seedFarmsByRun.size()-1; r++){     	
+    for (int r=0; r<=seedFarmsByRun.size()-1; r++){
 			std::clock_t rep_start = std::clock();
 			// load initially infected farms and instantiate Status manager
 			// note that initial farms are started as exposed
@@ -117,6 +119,9 @@ int main(int argc, char* argv[])
 			bool potentialTx = 1;
 
       while (t<timesteps && potentialTx){ // timesteps, stop early if dies out
+
+            Rcpp::checkUserInterrupt();
+
             std::clock_t timestep_start = std::clock();
 
             ++t; // starts at 1, ends at timesteps
@@ -125,15 +130,16 @@ int main(int argc, char* argv[])
 //            Control.updates(t); // control updates: when applicable, exposed -> reported, reported -> banned, banned -> compliant
 //    if(verbose>1){std::cout<<"Control statuses updated."<<std::endl;}
             Status.premsWithStatus("inf", focalFarms);	// set focalFarms as all farms with disease status inf
-
-            std::cout << std::endl<<std::endl<<"Timestep "<<t<<": "
-            <<Status.numPremsWithStatus("sus")<<" susceptible, "
-            <<Status.numPremsWithStatus("exp")<<" exposed, "
-            <<focalFarms.size()<<" infectious, "
-            <<Status.numPremsWithStatus("imm")<<" immune premises. "<<std::endl;
+            if(verbose > 0){
+              std::cout << std::endl<<std::endl<<"Timestep "<<t<<": "
+              <<Status.numPremsWithStatus("sus")<<" susceptible, "
+              <<Status.numPremsWithStatus("exp")<<" exposed, "
+              <<focalFarms.size()<<" infectious, "
+              <<Status.numPremsWithStatus("imm")<<" immune premises. "<<std::endl;
+            }
 
 			// output Control statuses to console
-			
+
              // determine infections that will happen from local diffusion
 
     if(verbose>0){std::cout << "Starting grid check (local spread): "<<std::endl;}
@@ -168,7 +174,7 @@ int main(int argc, char* argv[])
             if (gridInf.size()>0){
             	Status.localExposure(gridInf,t);
             }
-            
+
             if (fs.size()>0){
             	Status.shipExposure(fs,t);
             } // send farm shipments to be checked, begin exposure where appropriate
@@ -196,13 +202,18 @@ int main(int argc, char* argv[])
             potentialTx = ((focalFarms.size()>0 && numSuscept>0) || (numExposed>0 && numSuscept>0));
 
             std::clock_t timestep_end = std::clock();
-            double timestepTimeMS = 1000.0 * (timestep_end - timestep_start) / CLOCKS_PER_SEC;
-            std::cout << "CPU time for timestep "<< timestepTimeMS << "ms." << std::endl;
+            if(verbose > 0){
+              double timestepTimeMS = 1000.0 * (timestep_end - timestep_start) / CLOCKS_PER_SEC;
+              std::cout << "CPU time for timestep "<< timestepTimeMS << "ms." << std::endl;
+            }
         }  	// end "while under time and exposed/infectious and susceptible farms remain"
 
         std::clock_t rep_end = std::clock();
         double repTimeMS = 1000.0 * (rep_end - rep_start) / CLOCKS_PER_SEC;
-        std::cout << "CPU time for rep "<<r<<" ("<<t<<" timesteps): " << repTimeMS << "ms." << std::endl;
+
+        if(verbose > 0){
+          std::cout << "CPU time for rep "<<r<<" ("<<t<<" timesteps): " << repTimeMS << "ms." << std::endl;
+        }
 
         if (p->printSummary > 0){
             // output summary to file (rep, days inf, run time)

@@ -1,3 +1,5 @@
+#include <Rcpp.h>
+
 #include "file_manager.h"
 
 file_manager::file_manager()
@@ -111,7 +113,7 @@ void file_manager::readConfig(std::string& cfile)
 		params.seedSource = pv[21];
 		// Infection seed method
 		params.seedSourceType = pv[22];
-		if (params.seedSourceType.compare("fips") == 0 && 
+		if (params.seedSourceType.compare("fips") == 0 &&
 				params.seedSourceType.compare("singlePremises") == 0 &&
 				params.seedSourceType.compare("multiplePremises") == 0){
 		std::cout << "ERROR (config 22): Seed source type must be 'fips','singlePremises', or 'multiplePremises'." << std::endl; exitflag=1;}
@@ -235,7 +237,7 @@ void file_manager::readConfig(std::string& cfile)
 			if (initiateToEffectiveVars.size() != params.controlTypes.size()){
 			std::cout << "ERROR (config 53 and 58): Different number of arguments and control types.";
 			exitflag=1;
-			}		
+			}
 		// Control - time lags for each control: effective to inactive
 		std::vector<double> effectiveToInactiveMeans = stringToNumVec(pv[59]);
 			checkExit = checkPositive(effectiveToInactiveMeans, 59); if (checkExit==1){exitflag=1;}
@@ -258,7 +260,7 @@ void file_manager::readConfig(std::string& cfile)
 			exitflag=1;
 			}
 		// pv[62]
-		
+
 		// Reporting lags - index
 		checkExit = checkMeanVar(pv[71],71,"index reporting"); if (checkExit==1){exitflag=1;}
 		tempVec = stringToNumVec(pv[71]);
@@ -289,15 +291,15 @@ void file_manager::readConfig(std::string& cfile)
 				break;
 			}
 		}
-		
+
 		// Put control parameters into proper containers
 
 if (verbose>0){std::cout<<"Parameter loading complete."<<std::endl;}
 
 	} else { // if file not found
-		std::cout << "ERROR: Configuration file not found: " << cfile << std::endl <<
-		"Exiting..." << std::endl;
-		exit(EXIT_FAILURE);
+
+	  Rcpp::stop("Config file does not exist.");
+
 	}
 }
 

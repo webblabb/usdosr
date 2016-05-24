@@ -1,6 +1,6 @@
 #include "Status_manager.h"
 
-Status_manager::Status_manager(std::vector<Farm*>& focalFarms, const Parameters* parameters, 
+Status_manager::Status_manager(std::vector<Farm*>& focalFarms, const Parameters* parameters,
 	Grid_manager* grid, Control_actions* control) :
 		seededFarms(focalFarms), // saved for output
 		parameters(parameters),
@@ -12,7 +12,7 @@ Status_manager::Status_manager(std::vector<Farm*>& focalFarms, const Parameters*
     nPrems(allPrems->size())
 {
 	verbose = verboseLevel;
-	
+
 	for (auto& f:focalFarms){ // set seed farms as exposed, also starts control sequence
 		set_diseaseStatus(f, 1, "exp", parameters->latencyParams);
 		// set time until reported
@@ -28,7 +28,7 @@ if (verbose>1){
 
 	// store species for formatting later
 	species = parameters->species;
-	
+
 	// Specify sequence of file statuses and associated lag times
 	// 1. notDangerousContact to reported
 	statusShift notDC_rep {"notDangerousContact", "reported", parameters->infectiousParams};
@@ -42,12 +42,12 @@ if (verbose>1){
 	// 2. Infectiouness to immunity (end time past simulation end)
 	statusShift inf_imm {"inf", "imm", std::make_tuple(pastEndTime,0)};
 	diseaseSeq.emplace_back(inf_imm);
-	
+
 	// Specify sequence of control statuses and associated lag times
 	// 1. Reported to implemented
 	// 2. Implemented to effective
 	// 3. Effective to inactive
-	
+
 	std::cout << "Status manager initiated."<<std::endl;
 }
 
@@ -71,7 +71,7 @@ void Status_manager::addPremStatus(Farm* f)
 ///	\param[in]	startTime	Time at which this status begins (usually immediate)
 /// \param[in]	status status to which this farm will be set
 ///	\param[in]	lag	Tuple of mean, variance of time lag in days until next status begins. For permanent statuses (i.e. reported), use mean=pastEndTime, var=0
-void Status_manager::set_fileStatus(Farm* f, int startTime, std::string status, 
+void Status_manager::set_fileStatus(Farm* f, int startTime, std::string status,
 	std::tuple<double,double> timeUntilNextStatus)
 {
 	int fid = f->Farm::get_id();
@@ -86,7 +86,7 @@ void Status_manager::set_fileStatus(Farm* f, int startTime, std::string status,
 	changedStatus.at(fid)->Prem_status::set_start(status,startTime);
 	int endTime = startTime+normDelay(timeUntilNextStatus);
 	changedStatus.at(fid)->set_end(status,endTime);
-	
+
 	// add to appropriate file-status list
 	bool firstOfStatus = 0;
 	if (diseaseStatuses.count(status)==0){
@@ -98,7 +98,7 @@ void Status_manager::set_fileStatus(Farm* f, int startTime, std::string status,
 		diseaseStatuses.at(status).lo = 0;
 		diseaseStatuses.at(status).hi = 0;
 	}
-	
+
 }
 
 /// Changes disease status of a farm, and determines time when next disease status begins.
@@ -110,7 +110,7 @@ void Status_manager::set_fileStatus(Farm* f, int startTime, std::string status,
 ///	\param[in]	startTime	Time at which this status begins (usually immediate)
 /// \param[in]	status	Disease status to which this farm will be set
 ///	\param[in]	lag	Tuple of mean, variance of time lag in days until next disease status begins. For permanent statuses (i.e. immune), use mean=pastEndTime, var=0
-void Status_manager::set_diseaseStatus(Farm* f, int startTime, std::string status, 
+void Status_manager::set_diseaseStatus(Farm* f, int startTime, std::string status,
 	std::tuple<double,double> timeUntilNextStatus)
 {
 	int fid = f->Farm::get_id();
@@ -147,7 +147,7 @@ void Status_manager::set_diseaseStatus(Farm* f, int startTime, std::string statu
 ///	\param[in]	startTime	Time at which this status begins (usually immediate)
 /// \param[in]	status	Status to which this farm will be set
 ///	\param[in]	lag	Tuple of mean, variance of time lag in days until next status begins. For permanent statuses (i.e. culled), use mean=pastEndTime, var=0
-void Status_manager::set_controlStatus(Farm* f, int startTime, std::string status, 
+void Status_manager::set_controlStatus(Farm* f, int startTime, std::string status,
 	std::string level, std::tuple<double,double> timeUntilNextStatus)
 {
 	int fid = f->Farm::get_id();
@@ -155,13 +155,13 @@ void Status_manager::set_controlStatus(Farm* f, int startTime, std::string statu
 	if (changedStatus.count(fid)==0){
 		addPremStatus(f);
 	}
-	
+
 	changedStatus.at(fid)->set_controlStatus(status, level);
 	// set start and end times for this status
 	changedStatus.at(fid)->Prem_status::set_start(status,startTime);
 	int endTime = startTime+normDelay(timeUntilNextStatus);
 	changedStatus.at(fid)->set_end(status,endTime);
-	
+
 	// add to appropriate disease-status list
 	bool firstOfStatus = 0;
 		if (diseaseStatuses.count(status)==0){firstOfStatus=1;}
@@ -306,15 +306,15 @@ void Status_manager::premsWithStatus(std::string s, std::vector<Farm*>& output2)
 	output1.swap(output2);
 }
 
-/// Returns current number of premises with status s (as of last call to updates) 
+/// Returns current number of premises with status s (as of last call to updates)
 int Status_manager::numPremsWithStatus(std::string s)
 {
 	int total = 0;
-	if (s.compare("sus")==0){ 
+	if (s.compare("sus")==0){
 		total = nPrems - notSus.size();
 	} else if (diseaseStatuses.count(s)==1){
 		total = diseaseStatuses.at(s).hi - diseaseStatuses.at(s).lo +1; // number of farms between [lo, hi]
-	} 
+	}
  return total;
 }
 

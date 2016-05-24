@@ -45,7 +45,7 @@ class Status_manager
 		int verbose; ///< Can be set to override global setting for console output
 
 		std::vector<statusShift> diseaseSeq; ///< Sequence of disease statuses and associated lag times
-		
+
 		std::unordered_map<std::string, statusList> fileStatuses; ///< Disease statuses with affected farms with start/end times
 		std::unordered_map<std::string, statusList> diseaseStatuses; ///< Disease statuses with affected farms with start/end times
 
@@ -53,13 +53,13 @@ class Status_manager
 
 		std::unordered_map<int, Prem_status*> changedStatus; ///< Premises that have had any disease or control status change
 		std::vector<Farm*> notSus; ///< Farms that are in any disease state except susceptible (are not eligible for local spread exposure)
-		
+
 		std::unordered_map< Farm*, std::vector<std::tuple<Farm*, int>> > sources; ///< Exposed farm, source of infection, type of spread (0=local, 1=ship)
 
 		void get_seedCos(std::vector<std::string>&);
 		void set_fileStatus(Farm*, int, std::string, std::tuple<double,double>);
-		void set_diseaseStatus(Farm*, int, std::string, std::tuple<double,double>); 
-		void set_controlStatus(Farm*, int, std::string, std::string, std::tuple<double,double>); 
+		void set_diseaseStatus(Farm*, int, std::string, std::tuple<double,double>);
+		void set_controlStatus(Farm*, int, std::string, std::string, std::tuple<double,double>);
 		void addPremStatus(Farm*); // add Prem_status object for use in Status, Control
 
 		//void get_infCounties(std::vector<std::string>&);
@@ -70,7 +70,7 @@ class Status_manager
 		// Parameters pointer
 		// Grid_manager pointer
 		// Control_actions pointer
-		Status_manager(std::vector<Farm*>&, const Parameters*, Grid_manager*, 
+		Status_manager(std::vector<Farm*>&, const Parameters*, Grid_manager*,
 		  Control_actions*);
 		~Status_manager();
 

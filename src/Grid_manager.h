@@ -134,8 +134,8 @@ class Grid_manager
 
 		const std::unordered_map<std::string, std::unordered_map<std::string, std::vector<Farm*> >>*
 			get_fipsSpeciesMap(); //inlined
-			
-			
+
+
 		void get_seedPremises(std::vector<std::vector<Farm*>>&);
 
 		void printCells();

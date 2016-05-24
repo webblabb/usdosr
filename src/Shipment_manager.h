@@ -54,7 +54,7 @@ class Shipment_manager
 		Farm* largestStatus(std::vector<Farm*>&, std::string&); ///< Finds largest premises with "status", from vector sorted by population
 		void farmFarmShipments(); ///< Assigns county shipments to individual farms
 		Shipment* generateInfectiousShipment(Farm* origin_farm);
-		
+
 	public:
 		Shipment_manager(
 			const std::unordered_map<std::string, County*>* in_FIPSmap, // a map of FIPS codes to farms

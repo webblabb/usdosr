@@ -60,7 +60,7 @@ void State::init_poisson()
         if(n_farms > 0)
         {
             poisson_mean[current_ft] = ship_volume_map[current_ft] / n_farms;
-            //std::cout <<"Poisson mean set to "<<poisson_mean[current_ft]<< " for farm type species " 
+            //std::cout <<"Poisson mean set to "<<poisson_mean[current_ft]<< " for farm type species "
             //<< current_ft-> get_species() << std::endl;
         }
         poisson_map[current_ft] = new std::poisson_distribution<int>(poisson_mean[current_ft]);

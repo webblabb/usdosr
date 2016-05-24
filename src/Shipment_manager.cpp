@@ -1,3 +1,5 @@
+#include <Rcpp.h>
+
 #include <cmath> // floor
 #include <iostream> // for error-checking output
 #include "Shipment_manager.h" // includes Farm, shared_functions
@@ -31,7 +33,7 @@ Shipment_manager::Shipment_manager(
   if (firstShipMethod == -1){
     	shipments_off = true;
   }
-  
+
 	if (shipments_off == false){
         allFIPS.reserve(FIPSmap->size());
 
@@ -105,7 +107,7 @@ void Shipment_manager::countyCountyShipments(std::string oCounty, int method)
 			break; // no shipments
 		case 1:{
 		//  randomly assign destination counties
-			double random = unif_rand();
+			double random = R::runif(0, 1);
 			bool makeShipment = (random < 0.99); // proportion of all counties make a shipment
 			if (makeShipment){
 				std::vector<std::string> possibleSp;
@@ -206,8 +208,8 @@ if(verbose>1){std::cout<<"Origin FIPS: "<<oFIPS<<" has "<<oPrems.size()<<" prems
 					dCumSums.emplace_back(dCumSums[di-1]+dPremSizes[di]);}
 
 				for (int v=0; v!=volume; v++){
-					int oRand = unif_rand()*oCumSums.back(); // scale random up to maximum
-					int dRand = unif_rand()*dCumSums.back(); // scale random up to maximum
+					int oRand = R::runif(0, 1)*oCumSums.back(); // scale random up to maximum
+					int dRand = R::runif(0, 1)*dCumSums.back(); // scale random up to maximum
 					int oElement = whichElement(oRand,oCumSums); // whichElement is in shared_functions.h
 					int dElement = whichElement(dRand,dCumSums); // whichElement is in shared_functions.h
 					Farm* oPrem = oPrems[oElement];

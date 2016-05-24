@@ -72,10 +72,10 @@ struct Parameters
 	std::unordered_map<std::string,std::tuple<double,double>> initiateToEffectiveLag;
 	std::unordered_map<std::string,std::tuple<double,double>> effectiveToInactiveLag;
 	std::unordered_map<std::string,double> effectiveness;
-	
+
 	// control rules
 	std::vector<Control_rule> controlRules;
-	
+
 	// reporting parameters
 	std::tuple<double,double> indexReportLag;
 	std::tuple<double,double> nonDCReportLag;
@@ -90,7 +90,7 @@ class file_manager
 		int verbose; ///< Can be set to override global setting for console output
 		std::vector<std::string> pv; ///< Parameter vector for reading in from file
 		Parameters params;
-		
+
 		bool checkMeanVar(std::string&, int, std::string);
 		bool checkPositive(std::vector<int>&, int);
 		bool checkPositive(std::vector<double>&, int);
