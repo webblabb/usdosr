@@ -1,0 +1,3 @@
+useDynLib(usdosr)
+exportPattern("^[[:alpha:]]+")
+importFrom(Rcpp, evalCpp)

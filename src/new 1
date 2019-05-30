@@ -1,0 +1,35 @@
+//In File_manager.cpp it states:
+
+if (params.dangerousContacts_on == 1){
+			params.maxDCScale = 0;
+			for (auto& d:dcScaling){ // d is std::string that looks like "sus,1.3"
+				std::vector<std::string> temp = stringToStringVec(d);
+				if (temp.size() != 2){
+					std::cout<<"ERROR (config 74): Only two arguments (status and scale) per semicolon-separated set. Exiting...";
+					exitflag=1;
+				} else { // has 2 elements, check that first is valid status
+				  std::string statusAtSourceReport = temp.at(0);
+					std::vector<std::string> statusAtSourceReportVec; statusAtSourceReportVec.emplace_back(statusAtSourceReport);
+					std::string options_dc = "sus,exp,inf";
+					options = stringToStringVec(options_dc);
+					checkExit = limitedValues(statusAtSourceReportVec, options, 74); if (checkExit==1){exitflag=1;}
+					// check that second is positive number
+					double dcScale = 0;
+					try{
+						dcScale = stringToNum<double>(temp.at(1));
+					} catch(std::exception& e){
+						std::cout<<"ERROR (config 74): Second argument in set must be numeric. Exiting...";
+						exitflag=1;
+					}
+					if (dcScale<0){
+						std::cout<<"ERROR (config 74): Second argument in set must be >0. Exiting...";
+						exitflag=1;
+					}
+					params.dcRiskScale[statusAtSourceReport] = dcScale;
+					// save largest of scale values
+					if (dcScale > params.maxDCScale){
+						params.maxDCScale = dcScale;
+					}
+ 				} // end "if 2 arguments provided in set"
+			} // end "for each set of arguments"
+		} // end "if dangerousContacts_on"

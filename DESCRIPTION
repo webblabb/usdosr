@@ -1,0 +1,21 @@
+Package: usdosr
+Type: Package
+Title: United States Disease Outbreak Simulation
+Version: 2.2
+Date: 2019-05-13
+Author: Kim Tsao,
+  Stefan Sellman,
+  Lindsay Beck-Johnson,
+  Deedra Murrieta,
+  Clay Hallman,
+  Clint Leach,
+  Katie Owers,
+  Tom Lindstrom,
+  Mike Tildesley,
+  Colleen Webb
+Maintainer: Webb lab <webblaboratory@gmail.com>
+Description: Wraps the USDOS source code in an R function.
+License: LICENSE file
+URL: https://webblabb.github.io/usammusdos
+Imports: Rcpp (>= 0.12.4)
+LinkingTo: Rcpp, RcppGSL
