@@ -17,15 +17,12 @@ public:
     Region(std::string id);
     Region(std::string id, double x, double y);
     virtual ~Region();
-    //virtual void set_farms(const std::vector<Farm*>& in_farms) = 0;
-    //virtual void add_farm(Farm* in_farm) = 0;
     double distance_to(Region* target) const;
     double measure_distance(const Point* p1, const Point* p2) const;
 
     void set_position(double x, double y);
 
     std::string get_id(); //Inlined
-    //const std::vector<Farm*>& get_farms(); //Inlined
     const Point* get_centroid(); //Inlined
     const std::string get_type() const; //inlined
 
@@ -45,8 +42,6 @@ protected:
 
 inline std::string Region::get_id()
 {
-//     if(!region_initialized)
-//         not_initialized();
 // Region does not need to be completely initialized in order to return an id
     return id;
 }
@@ -71,7 +66,7 @@ class Region_status: public Region
 		std::vector<std::string> controlStatus; /// Vector of control statuses ever applied
 		std::vector<double> probPreventExposure;
 		std::vector<double> probPreventTransmission;
-		
+
 		std::unordered_map<std::string, int> start; /// Start times for each status. Assumes unique names among file, disease, and control statuses due to mapping by status name.
 		std::unordered_map<std::string, int> end; /// End times for each status. Assumes unique names among file, disease, and control statuses due to mapping by status name.
 
@@ -80,7 +75,7 @@ class Region_status: public Region
 		~Region_status();
 		void report(); //inlined
 		void add_controlStatus(std::string); //inlined
-		
+
 		double get_probPreventExposure() const;
 		void add_probPreventExposure(double); //inlined
 		void rem_probPreventExposure(double);

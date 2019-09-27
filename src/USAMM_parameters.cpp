@@ -43,18 +43,7 @@ USAMM_parameters::USAMM_parameters(const Parameters* p, Farm_type* ft) :
     initialize_supernode_cov(p->USAMM_supernode_files.at(species_index),
                              county_ocov_map, county_dcov_map);
 
-    //Should the kernel parameters be used as they are in the res file or
-    //should they be transformed (from std & kurt to a and b).
-    //Note to self:
-    //Should no longer be used after changing from std & kurt to half-dist and ratio.
-    //(reading a and b output from usamm version 1 works slighly differently)
     use_raw_parameters = false;
-//    if(p->shipment_kernel.compare("power_exp") == 0 or
-//       p->shipment_kernel.compare("one_minus_exp") == 0 or
-//       p->shipment_kernel.compare("local") == 0)
-//    {
-//        use_raw_parameters = true;
-//    }
 }
 
 USAMM_parameters::~USAMM_parameters()

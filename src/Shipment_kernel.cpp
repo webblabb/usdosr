@@ -46,8 +46,7 @@ Shipment_kernel::Shipment_kernel(double a, double b, std::string type, bool binn
 
     a_sq = a*a;
     b_half = b * 0.5;
-    //This sets R and dx1 which are member variables.
-//    set_kernel_R_and_dx1(a, b, x1, x2);
+
     if(binning_on and binned_distances.empty())
     {
         set_bins_peters(50);
@@ -232,15 +231,6 @@ double Shipment_kernel::one_minus_exp_from_half_and_R_func(double d)
 double Shipment_kernel::local_kernel_from_half_and_R_func(double d)
 {
     return 1 / (1 + std::pow(d/a, b));
-}
-
-//This function calculates the distance at which the kernel value is x1 (dx1) and
-//the relation between the distances where the kernel values are x1 and x2 (R) for
-//the 'original' kernel (power_exp_from_half_and_R_func).
-void Shipment_kernel::set_kernel_R_and_dx1(double a, double b, double x1, double x2)
-{
-    R = std::exp(-std::log(std::log(1/x1) / std::log(1/x2)) / b);
-    dx1 = a * std::pow(std::log(1/x1), 1/b);
 }
 
 double Shipment_kernel::linear_euclidean(County* c1, County* c2)

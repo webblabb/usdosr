@@ -1,0 +1,6 @@
+Changelog for usdosr package
+
+v2.2: Initial release
+
+v2.2.1
+-Removed dependency on old Alias_table class

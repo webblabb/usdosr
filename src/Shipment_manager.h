@@ -74,7 +74,7 @@ class Shipment_manager
 		// functions
 		void initialize();
 		Farm* largestStatus(std::vector<Farm*>&, std::string&); ///< Finds largest premises with "status", from vector sorted by population
-//		void farmFarmShipments(); ///< Assigns county shipments to individual farms
+
 		///Creates and returns a pointer to a shipment struct.
 		Shipment* generateInfectiousShipment(Farm* origin_farm, size_t timestep, size_t day_of_year,
                                              const std::string& time_period);

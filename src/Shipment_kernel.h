@@ -79,8 +79,6 @@ private:
     double power_exp_from_half_and_R_func(double d);
     ///Additional kernel 2
     double local_kernel_from_half_and_R_func(double d);
-    ///Function to get points at which kernel values = x1 and = x2 required by the interface functions.
-    void set_kernel_R_and_dx1(double a, double b, double x1, double x2);
     ///Normal euclidean distance between two counties.
     double linear_euclidean(County* c1, County* c2);
     ///Returns the squared distance between two counties. See class

@@ -36,11 +36,10 @@ int run_usdos(std::string cfile, bool gen_shipment_network = false)
   if(gen_shipment_network){
     std::cout << "Generating shipment network." << std::endl;
   }
-  
-  // Fixing number of generated networks at 1
+
   int n_networks = 1;
 
-	File_manager fm; // construct file_manager object
+  File_manager fm; // construct file_manager object
 	fm.readConfig(cfile); // reads config file, creates parameters object, and checks for errors
 	const Parameters* p = fm.getParams();
 
@@ -106,7 +105,7 @@ if(verbose>0){
 }
 
     if(!gen_shipment_network) //Not making a shipment network, running disease simulation.
-    {		
+    {
         Control_manager Control(p, &G); // pass parameters and Grid_manager pointer
         // Get initially infected (seed) premises
         std::vector<std::vector<Farm*>> seedFarmsByRun;

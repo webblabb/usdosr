@@ -37,7 +37,7 @@ State::~State()
 void State::add_county(County* in_county)
 {
     bool already_present = false;
-    // can this be replaced with find?
+    // can this be replaced with find? For readability - yes. For performance - doesn't matter.
     for(County* existing_county : member_counties)
     {
         if(existing_county == in_county)
@@ -244,24 +244,6 @@ void State::set_shipping_parameters_v2(USAMM_parameters& usamm_par,
         set_s(s, ft);
         set_std(stdev, ft);
         set_kurt(kurt, ft);
-
-        //Update the state level lambda, the rate of shipments leaving
-        //the state / day, given by the sum of all individual farm-level
-        //shipment rates. Farm level shipment rate is w_f * null_lambda,
-        //where w_f is the farms shipping weight given by some farm-level covariates
-        //and null_lambda is a state level parameter estimated by usamm
-        //defined as the daily shipping rate of a farm with weight = 1.0.
-        //
-        //First, the farms' weights need to be updated according to the new
-        //covariate parameters for this time period. This is done county-by-county
-        //in order to minimize calculations (all county level parts of the farm-level
-        //calculation is a constant that is shared between farms within the
-        //same county.
-//        double lambda_sum = 0.0;
-//        for(County* c : member_counties)
-//        {
-//            lambda_sum += c->update_farm_weights();
-//        }
 }
 
 int State::generate_shipments_N(Farm_type* ft, int days_rem)

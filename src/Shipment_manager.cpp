@@ -89,7 +89,7 @@ void Shipment_manager::makeShipmentsMultinomial(size_t timestep, size_t days_in_
                                                 std::string time_period, std::vector<Shipment*>& output,
                                                 std::vector<Farm*>& infFarms, std::vector<Farm_type*> ft_vec)
 {
-    //Select what farms will be involved in the genereation of shipments.
+    //Select what farms will be involved in the generation of shipments.
     //Running with an empty infFarms is a signal to generating a full network of shipments,
     //so then we use all farms.
     std::vector<Farm*> affected_farms;
@@ -108,7 +108,7 @@ void Shipment_manager::makeShipmentsMultinomial(size_t timestep, size_t days_in_
         affected_farms.assign(infFarms.begin(), infFarms.end());
     }
 
-    //Sort all affected fams according to farm type and state.
+    //Sort all affected farms according to farm type and state.
     std::map<Farm_type*, std::map<State*, std::vector<Farm*>>> affected_farms_by_ft_state;
     for(Farm* f : affected_farms)
     {
@@ -116,7 +116,7 @@ void Shipment_manager::makeShipmentsMultinomial(size_t timestep, size_t days_in_
     }
 
     //For each farm type and state, draw the number of shipments originating from there
-    //this time step from a Poisson distribution using the sum of each individiual
+    //this time step from a Poisson distribution using the sum of each individual
     //farms shipping rate as the state-level rate. Then, assign these shipments to
     //the farms within the state using a multinomial distribution where each farm
     //is weighted by some parameter (here all farms have equal weight).
@@ -264,143 +264,6 @@ Farm* Shipment_manager::largestStatus(std::vector<Farm*>& premVec, std::string& 
 	return i;
 }
 
-/// Assigns shipments to farms from one county to another, distributed:
-/// randomly (method=0),
-/// with probability related to farm size (method=1)
-/// from biggest farms in county to random destinations (method=2)
-/// from random destinations to biggest farm in county (method=3)
-/// distribute only between biggest farms in each county (method = 4)
-/// Leaves empty placeholder for ban status - only accounted for when changing status in main.
-//void Shipment_manager::farmFarmShipments()
-//{
-//	std::vector<coShipment>::iterator cit = countyShipmentList.begin()+startCoRecentShips;
-//	// use only the most recent county shipments
-//	for (auto& s = cit; s!=countyShipmentList.end(); ++s){
-//		std::string oFIPS = s->origFIPS;
-//		std::string dFIPS = s->destFIPS;
-//		std::string sp = s->species;
-//		int volume = s->volume;
-//std::cout<<"Assigning shipment: "<<oFIPS<<", "<<dFIPS<<", "<<sp<<", "<<volume<<std::endl;
-//
-//		// get all farms with species sp in counties - can be sent to/from any farm regardless of status
-//		std::vector<Farm*> oPrems = fipsSpeciesMap->at(oFIPS).at(sp); // already sorted by population
-//		std::vector<Farm*> dPrems = fipsSpeciesMap->at(dFIPS).at(sp);
-//if(verbose>1){std::cout<<"Origin FIPS: "<<oFIPS<<" has "<<oPrems.size()<<" prems, destination FIPS: "<<dFIPS<<" has "<<dPrems.size()<<std::endl;}
-//
-//		// sizes of prems with this species, sorted by population size
-//		std::vector<int> oPremSizes, dPremSizes;
-//		for (auto& ps:oPrems){oPremSizes.emplace_back(ps->Farm::get_size(sp));} // store population
-//		 // if origin and destination FIPS are the same
-//		if (oFIPS==dFIPS){
-//			dPremSizes = oPremSizes;
-//		} else {
-//			for (auto& ps:dPrems){dPremSizes.emplace_back(ps->Farm::get_size(sp));} // store population
-//		}
-//
-//		// check if there are 0 premises in county - prob wouldn't happen in USAMM? For now, skip that shipment
-//		if (oPrems.size()==0 || dPrems.size()==0){
-//			std::cout<<"County without proper premises type, skipping shipment."<<std::endl;
-//		} else {
-//		// assignment
-//		switch (farmFarmMethod)
-//		{
-//			case 0:{ // random
-//				std::vector<Farm*> origPrems;
-//				random_unique(oPrems,volume,origPrems); // pick v random premises, write to origPrems
-//				std::vector<Farm*> destPrems;
-//				random_unique(dPrems,volume,destPrems);
-//				for (int v = 0; v!= volume; v++){ // for each shipment
-//					 farmShipmentList.emplace_back( new Shipment {0, // time (will be filled by Status manager)
-//						origPrems[v]->get_id(), // origin
-//						destPrems[v]->get_id(), // destination
-//						oFIPS,
-//						dFIPS,
-//						sp, // species
-//						""}); // ban (will be filled by Status manager)
-//				}
-//				break;
-//			}
-//			case 1:{ // shipment probability based on relative farm size
-//				// get cumulative sums of sizes for farms in county to distribute probabilities
-//				std::vector<int> oCumSums = {0};
-//				std::vector<int> dCumSums = {0};
-//				for (unsigned int oi=0; oi!=oPremSizes.size(); oi++){ //oi = origin iterator
-//					oCumSums.emplace_back(oCumSums[oi-1]+oPremSizes[oi]);}
-//				for (unsigned int di=0; di!=dPremSizes.size(); di++){ //di = destination iterator
-//					dCumSums.emplace_back(dCumSums[di-1]+dPremSizes[di]);}
-//
-//				for (int v=0; v!=volume; v++){
-//					int oRand = uniform_rand()*oCumSums.back(); // scale random up to maximum
-//					int dRand = uniform_rand()*dCumSums.back(); // scale random up to maximum
-//					int oElement = whichElement(oRand,oCumSums); // whichElement is in shared_functions.h
-//					int dElement = whichElement(dRand,dCumSums); // whichElement is in shared_functions.h
-//					Farm* oPrem = oPrems[oElement];
-//					Farm* dPrem = dPrems[dElement];
-//					farmShipmentList.emplace_back( new Shipment {0, // time (filled later)
-//						oPrem->get_id(),
-//						dPrem->get_id(),
-//						oFIPS,
-//						dFIPS,
-//						sp,
-//						""}); // ban (filled later)
-//				}
-//				break;
-//			}
-//			case 2:{ // shipped from biggest infectious farm to random destinations
-//				for (int v = 0; v!= volume; v++){ // for each shipment between these counties
-//					std::string infstring = "inf";
-//					Farm* oPrem = largestStatus(oPrems,infstring);
-//					Farm* dPrem = randomFrom(dPrems);
-//					farmShipmentList.emplace_back( new Shipment {0, // time (filled later)
-//						oPrem->get_id(),
-//						dPrem->get_id(),
-//						oFIPS,
-//						dFIPS,
-//						sp,
-//						""}); // ban (filled later)
-//				}
-//				break;
-//			}
-//			case 3:{ // shipped from random destinations to the biggest susceptible farm
-//				for (int v = 0; v!= volume; v++){ // for each shipment between these counties
-//					std::string susstring = "sus";
-//					Farm* oPrem = randomFrom(oPrems);
-//					Farm* dPrem = largestStatus(dPrems,susstring);
-//					farmShipmentList.emplace_back( new Shipment {0, // time (filled later)
-//						oPrem->get_id(),
-//						dPrem->get_id(),
-//						oFIPS,
-//						dFIPS,
-//						sp,
-//						""}); // ban (filled later)
-//				}
-//				break;
-//			}
-//			case 4:{ // shipped between biggest farms
-//				for (int v = 0; v!= volume; v++){ // for each shipment between these counties
-//					std::string infstring = "inf";
-//					std::string susstring = "sus";
-//					Farm* oPrem = largestStatus(oPrems,infstring);
-//					Farm* dPrem = largestStatus(dPrems,susstring);
-//					farmShipmentList.emplace_back(new Shipment {0, // time (filled later)
-//						oPrem->get_id(),
-//						dPrem->get_id(),
-//						oFIPS,
-//						dFIPS,
-//						sp,
-//						""}); // ban (filled later)
-//				}
-//				break;
-//			}
-//			default:{
-//				std::cout << "Method for farmFarmShipments not recognized." << std::endl;
-//			}
-//		} // end switch-case
-//		} // end if there are premises in origin and dest counties
-//	} // end for each county-level shipment
-//	std::cout<<farmShipmentList.size()-startRecentShips<<" total farm shipments."<<std::endl;
-//}
-
 Shipment* Shipment_manager::generateInfectiousShipment(Farm* origin_farm, size_t timestep, size_t day_of_year,
                                                        const std::string& time_period)
 {
@@ -420,7 +283,7 @@ if(verbose>1){std::cout << "The destination county (" << dest_county->get_id() <
         dest_county = origin_county->get_shipment_destination(origin_type);
     }
 
-    //Pick one random element from the dest. countys vector of farms of correct type.
+    //Pick one random element from the dest. county's vector of farms of correct type.
     std::vector<Farm*> destination_county_farms = dest_county->get_farms(origin_type);
     Farm* destination_farm = randomFrom(destination_county_farms);
     size_t shipment_volume = 0;

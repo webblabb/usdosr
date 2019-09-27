@@ -12,8 +12,7 @@
 #include <gsl/gsl_randist.h>
 
 County::County(std::string id, std::string kernel_str) :
-    Region(id), kernel_str(kernel_str), area(0.0),
-    mt19937_generator(generate_distribution_seed())
+    Region(id), kernel_str(kernel_str), area(0.0)
 {
     verbose = verboseLevel;
     type = "county";
@@ -23,8 +22,7 @@ County::County(std::string id, std::string kernel_str) :
 }
 
 County::County(std::string id, double x, double y, std::string kernel_str) :
-    Region(id, x, y), kernel_str(kernel_str), area(0.0),
-    mt19937_generator(generate_distribution_seed())
+    Region(id, x, y), kernel_str(kernel_str), area(0.0)
 {
     type = "county";
 }
@@ -79,7 +77,7 @@ void County::update_shipping_probabilities(std::vector<County*>& in_counties)
         //Get all kernel values and keep track of the total for use when normalizing.
         for(auto c : in_counties)
         {
-            //Destination inflow weight based on number of possible farms that can recieve in the receiving county,
+            //Destination inflow weight based on number of possible farms that can receive in the receiving county,
             //therefore n-1 if sending within the county itself.
             double d_farm_weight = c->get_d_farm_weight_sum(current_ft);
             if(c == this)
@@ -249,11 +247,6 @@ void County::set_all_counties(std::vector<County*>* in_counties)
     all_counties = in_counties;
 }
 
-// void County::set_control_status(std::string status, int level)
-// {
-//     statuses[status] = level;
-// }
-
 std::vector<Farm*> County::get_farms(Farm_type* ft)
 {
     return farms_by_type[ft];
@@ -315,7 +308,7 @@ County* County::get_shipment_destination(Farm_type* ft)
                      " in county " << id << ". Exiting..." << std::endl;
         Rcpp::stop("");
     }
-//    destination = shipping_probabilities[ft->get_index()].generate();
+
     size_t ft_i = ft->get_index();
     size_t k = n_outcomes.at(ft_i);
     unsigned int outcomes[k];
