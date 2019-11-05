@@ -4,10 +4,16 @@ USDOS wrapped in Rcpp package for use in R.  Provides a single function `run_usd
 
 ## Installation
 
-To install, either download the repository and build the package yourself, or use
+To install, either use R's devtools package 
 ```r
 devtools::install_github("webblabb/usdosr")
 ```
+or build the package yourself using these steps:
+1. Download and unzip the repository
+2. In a terminal window, navigate to the directory containing the package directory.
+3. Type `R CMD build usdosr-master`. This will bring up several lines of checking, cleaning, preparing, etc. and a final line that says "building 'usdosr_{version number}.tar.gz' "
+4. Install the package by typing `R CMD INSTALL 'usdosr_{version number}.tar.gz'`
+
 
 ## Use
 
