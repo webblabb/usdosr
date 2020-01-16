@@ -17,7 +17,7 @@ or build the package yourself using these steps:
 
 ## Use
 
-An example use case would be to put all of the config files in a subdirectory of the working directory (`/configs`) and do a parallel loop over them:
+An example use case would be to put all of the config files in the working directory and do a parallel loop over them:
 
 ```r
 library(doParallel)
@@ -31,21 +31,22 @@ library(usdosr)
 cl <- makeCluster(3)
 registerDoParallel(cl)
 
-# Set seed for reproducible results
-set.seed(1234)
-
 # List all config files in working directory
-configs <- list.files("configs")
+configs <- list.files(path = ".", pattern = "config_")
 
-out <- foreach(file = iter(configs), .errorhandling = "stop",
-        .packages = c("usdosr")) %dorng% {
+# run USDOS on those configs
+foreach(i = 1:length(configs), .errorhandling = "stop",
+        .packages = c("usdosr")) %dopar% {
+          
+          run_usdos(configs[i])
+          
+        } 
 
-  run_usdos(paste("configs/", file, sep = ""))
-
-}
+# Stop the cluster
+stopCluster(cl)
+        
 ```
 
-Note that the `out` object will just contain zeros, but should have the random number seeds of each run stored as attributes that can be used to reproduce that specific run if necessary.
 
 ## Documentation
 
