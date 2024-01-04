@@ -51,3 +51,5 @@ stopCluster(cl)
 ## Documentation
 
 See the project [website](https://webblabb.github.io/usammusdos) for project documentation and manuals.
+
+© 2019 Colorado State University
