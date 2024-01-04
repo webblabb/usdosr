@@ -1,3 +1,4 @@
+//© 2019 Colorado State University
 // main.cpp - controls timesteps, initiating various managers, and output
 #include <RcppGSL.h>
 
