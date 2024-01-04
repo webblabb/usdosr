@@ -19,3 +19,4 @@ License: LICENSE file
 URL: https://webblabb.github.io/usammusdos
 Imports: Rcpp (>= 0.12.4)
 LinkingTo: Rcpp, RcppGSL
+Copyright: © 2019 Colorado State University
